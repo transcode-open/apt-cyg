@@ -89,22 +89,25 @@ function findworkspace()
 
 function getsetup() 
 {
-  touch setup.ini
-  mv setup.ini setup.ini-save
-  wget $mirror/setup.bz2
-  if test -e setup.bz2 && test $? -eq 0
+  if test "$noscripts" == "0"
   then
-    bunzip2 setup.bz2
-    mv setup setup.ini
-    echo Updated setup.ini
-  else
-    wget $mirror/setup.ini
-    if test -e setup.ini && test $? -eq 0
+    touch setup.ini
+    mv setup.ini setup.ini-save
+    wget $mirror/setup.bz2
+    if test -e setup.bz2 && test $? -eq 0
     then
+      bunzip2 setup.bz2
+      mv setup setup.ini
       echo Updated setup.ini
     else
-      mv setup.ini-save setup.ini
-      echo Error updating setup.ini, reverting
+      wget $mirror/setup.ini
+      if test -e setup.ini && test $? -eq 0
+      then
+        echo Updated setup.ini
+      else
+        mv setup.ini-save setup.ini
+        echo Error updating setup.ini, reverting
+      fi
     fi
   fi
 }
