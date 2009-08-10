@@ -44,6 +44,7 @@ function usage()
   echo "  --mirror, -m <url> : set mirror"
   echo "  --cache, -c <dir>  : set cache"
   echo "  --file, -f <file>  : read package names from file"
+  echo "  --noupdate, -u     : don't update setup.ini from mirror"
   echo "  --help"
   echo "  --version"
 }
@@ -52,10 +53,10 @@ function usage()
 
 function version()
 {
-  echo "apt-cyg version 0.56"
+  echo "apt-cyg version 0.57"
   echo "Written by Stephen Jungels"
   echo ""
-  echo "Copyright (c) 2005, 2006 Stephen Jungels.  Released under the GPL."
+  echo "Copyright (c) 2005-9 Stephen Jungels.  Released under the GPL."
 }
 
 
@@ -89,7 +90,7 @@ function findworkspace()
 
 function getsetup() 
 {
-  if test "$noscripts" == "0"
+  if test "$noscripts" == "0" -a "$noupdate" == "0"
   then
     touch setup.ini
     mv setup.ini setup.ini-save
@@ -126,6 +127,7 @@ function checkpackages()
 # process options
 
 noscripts=0
+noupdate=0
 file=""
 dofile=0
 command=""
@@ -148,6 +150,11 @@ do
 
     --noscripts)
       noscripts=1
+      shift
+    ;;
+
+    --noupdate|-u)
+      noupdate=1
       shift
     ;;
 
