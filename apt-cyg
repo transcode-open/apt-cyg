@@ -1,3 +1,4 @@
+
 #!/bin/bash
 
 # apt-cyg: install tool for cygwin similar to debian apt-get
@@ -323,12 +324,18 @@ case "$command" in
       exit 1
     fi
     echo Found package $pkg
-    
-    
+
     # download and unpack the bz2 file
-    
+
     # pick the latest version, which comes first
     install=`cat "release/$pkg/desc" | awk '/^install: / { print $2; exit }'` 
+
+    if test "-$install-" = "--"
+    then
+      echo "Could not find \"install\" in package description: obsolete package?"
+      exit 1
+    fi
+
     file=`basename $install`
     cd "release/$pkg"
     wget -nc $mirror/$install
