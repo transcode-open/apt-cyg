@@ -24,3 +24,9 @@ Then use apt-cyg, for example:
 
   # apt-cyg install nano
 
+Contributing
+------------
+
+This project has been re-published on GitHub to make contributing easier. Feel free to fork and modify this script.
+
+The [Google Code project](https://code.google.com/p/apt-cyg/) has a list of open issues.
