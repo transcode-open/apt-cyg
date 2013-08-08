@@ -71,10 +71,17 @@ function version()
 
 function findworkspace()
 {
-  # default working directory and mirror
+  # default working directory, mirror and architecture
   
   mirror=ftp://mirror.mcs.anl.gov/pub/cygwin
+  arch=x86
+  if test "arch" == "x86_64"
+  then
+    arch=x86_64
+  fi
   cache=/setup
+
+    
   
   # work wherever setup worked last, if possible
   
@@ -103,14 +110,14 @@ function getsetup()
   then
     touch setup.ini
     mv setup.ini setup.ini-save
-    wget -N $mirror/x86/setup.bz2
+    wget -N $mirror/$arch/setup.bz2
     if test -e setup.bz2 && test $? -eq 0
     then
       bunzip2 setup.bz2
       mv setup setup.ini
       echo Updated setup.ini
     else
-      wget -N $mirror/x86/setup.ini
+      wget -N $mirror/$arch/setup.ini
       if test -e setup.ini && test $? -eq 0
       then
         echo Updated setup.ini
