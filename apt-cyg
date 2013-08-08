@@ -103,14 +103,14 @@ function getsetup()
   then
     touch setup.ini
     mv setup.ini setup.ini-save
-    wget -N $mirror/setup.bz2
+    wget -N $mirror/x86/setup.bz2
     if test -e setup.bz2 && test $? -eq 0
     then
       bunzip2 setup.bz2
       mv setup setup.ini
       echo Updated setup.ini
     else
-      wget -N $mirror/setup.ini
+      wget -N $mirror/x86/setup.ini
       if test -e setup.ini && test $? -eq 0
       then
         echo Updated setup.ini
@@ -346,7 +346,7 @@ case "$command" in
 
     file=`basename $install`
     cd "release/$pkg"
-    wget -nc $mirror/$install
+    wget -nc $mirror/x86/$install
     
     # check the md5
     digest=`cat "desc" | awk '/^install: / { print $4; exit }'` 
