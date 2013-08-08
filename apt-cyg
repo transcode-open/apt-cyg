@@ -346,7 +346,7 @@ case "$command" in
 
     file=`basename $install`
     cd "release/$pkg"
-    wget -nc $mirror/x86/$install
+    wget -nc $mirror/$install
     
     # check the md5
     digest=`cat "desc" | awk '/^install: / { print $4; exit }'` 
