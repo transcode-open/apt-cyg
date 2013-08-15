@@ -119,7 +119,7 @@ function getsetup()
       mv setup setup.ini
       echo Updated setup.ini
     else
-      wget -N $mirror/setup.ini
+      wget -N $mirror/$arch/setup.ini
       if test -e setup.ini && test $? -eq 0
       then
         echo Updated setup.ini
