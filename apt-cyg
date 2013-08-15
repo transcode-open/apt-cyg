@@ -99,18 +99,27 @@ function findworkspace()
 
 function getsetup() 
 {
+
+  ARCH=`uname -m | grep _64`
+  if test "-$ARCH-" = "--"
+  then
+    arch="x86"
+  else
+    arch="x86_64"
+  fi
+
   if test "$noscripts" == "0" -a "$noupdate" == "0"
   then
     touch setup.ini
     mv setup.ini setup.ini-save
-    wget -N $mirror/setup.bz2
+    wget -N $mirror/$arch/setup.bz2
     if test -e setup.bz2 && test $? -eq 0
     then
       bunzip2 setup.bz2
       mv setup setup.ini
       echo Updated setup.ini
     else
-      wget -N $mirror/setup.ini
+      wget -N $mirror/$arch/setup.ini
       if test -e setup.ini && test $? -eq 0
       then
         echo Updated setup.ini
