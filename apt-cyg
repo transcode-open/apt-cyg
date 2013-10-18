@@ -358,7 +358,11 @@ case "$command" in
     fi
     
     echo "Unpacking..."
-    cat $file | bunzip2 | tar > "/etc/setup/$pkg.lst" xvf - -C /
+    case "$file" in
+      *.tar.bz2) cat $file | bunzip2 | tar > "/etc/setup/$pkg.lst" xvf - -C / ;;
+      *.tar.xz)  cat $file | xz -dv  | tar > "/etc/setup/$pkg.lst" xvf - -C / ;;
+      *) echo Unknown extension, exiting : $file; exit 1 ;;
+    esac
     gzip -f "/etc/setup/$pkg.lst"
     cd ../..
     
