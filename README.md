@@ -30,3 +30,9 @@ Contributing
 This project has been re-published on GitHub to make contributing easier. Feel free to fork and modify this script.
 
 The [Google Code project](https://code.google.com/p/apt-cyg/) has a list of open issues.
+
+Changelog
+---------
+
+[2013-10-23] added multiarch support, autor: https://github.com/aguynamedryan/apt-cyg
+[2013-10-23] added xz archives support, autor: ernierasta
