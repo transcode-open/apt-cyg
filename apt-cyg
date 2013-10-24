@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # apt-cyg: install tool for cygwin similar to debian apt-get
 
