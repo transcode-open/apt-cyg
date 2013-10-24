@@ -28,13 +28,10 @@
 # this script requires some packages
 
 WGET=`which wget 2> /dev/null`
-BZIP2=`which bzip2 2> /dev/null`
 TAR=`which tar 2> /dev/null`
 GAWK=`which awk 2> /dev/null`
-if test "-$WGET-" = "--" || test "-$BZIP2-" = "--" || test "-$TAR-" = "--" \
-  || test "-$GAWK-" = "--"
-then
-  echo You must install wget, tar, gawk and bzip2 to use apt-cyg.
+if [ "$WGET" = "" -a "$TAR" = "" -a "$GAWK" = "" ]; then
+  echo You must install wget, tar and gawk to use apt-cyg.
   exit 1
 fi
 
