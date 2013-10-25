@@ -47,6 +47,7 @@ function usage()
   echo "  \"apt-cyg describe <patterns>\" to describe packages matching patterns"
   echo "  \"apt-cyg packageof <commands or files>\" to locate parent packages"
   echo "Options:"
+  echo "  --charch <arch>    : change archetecture (must appear first)"
   echo "  --mirror, -m <url> : set mirror"
   echo "  --cache, -c <dir>  : set cache"
   echo "  --file, -f <file>  : read package names from file"
@@ -65,17 +66,17 @@ function version()
   echo "Copyright (c) 2005-9 Stephen Jungels.  Released under the GPL."
 }
 
+function current_cygarch ()
+{
+  arch | sed -e 's/^i686$/x86/g'
+}
 
 function findworkspace()
 {
   # default working directory, mirror and architecture
 
   mirror=ftp://mirror.mcs.anl.gov/pub/cygwin
-  arch=x86
-  if test `arch` == "x86_64"
-  then
-    arch=x86_64
-  fi
+  arch=`current_cygarch`
   cache=/setup
   
   # work wherever setup worked last, if possible
@@ -134,6 +135,35 @@ function checkpackages()
   fi
 }
 
+# Usage: getrootdir arch
+function getrootdir ()
+{
+  case "$1" in
+    x86)
+      cygpath -u "$(cat /proc/registry32/HKEY_LOCAL_MACHINE/SOFTWARE/Cygwin/setup/rootdir)" ;;
+    x86_64)
+      cygpath -u "$(cat /proc/registry64/HKEY_LOCAL_MACHINE/SOFTWARE/Cygwin/setup/rootdir)" ;;
+    *)
+      echo "Error: unknown arch $1" >&2 ;;
+  esac
+}
+
+# Usage: charch arch apt-cyg_parms ...
+function charch ()
+{
+  local rootdir
+  if [ "`current_cygarch`" != "$1" ]; then
+    echo -e "\e[32;1mcharch to:\e[30;0m $1"
+    rootdir="`getrootdir "$1"`"
+    shift
+    chroot "$rootdir" "$rootdir/bin/bash" -lc \
+      'cd "$1"; shift ; "$0" "$@"' \
+      "$(which "$0" | xargs cygpath -aml | xargs cygpath -u)" \
+      "$(cygpath -aml "`pwd`" | xargs cygpath -u)" \
+      "$@"
+    exit $?
+  fi
+}
 
 # process options
 
@@ -144,10 +174,20 @@ dofile=0
 command=""
 filepackages=""
 packages=""
+nargs=$#
 
 while test $# -gt 0
 do
   case "$1" in
+
+    --charch)
+      if [ "$#" -lt "$nargs" ]; then
+        echo "Error: $1 $2 option must appear first." >&2
+        exit 1
+      fi
+      charch "$2" "$@"
+      shift ; shift
+    ;;
 
     --mirror|-m)
       echo "$2" > /etc/setup/last-mirror
