@@ -31,7 +31,9 @@ Let think a case that you want to install the x86 package when you are working u
 In this case, You must only append a --charch option to the first parameter of apt-cyg.
 For example:
 
-  # apt-cyg --charch x86 install lv
+  # apt-cyg --charch x86 install chere
+
+As of 2013-10-26, chere package is provided for only the repository for x86.
 
 Remarks:
 Of course, you must install both environments of x86_64 and x86, beforehand.
