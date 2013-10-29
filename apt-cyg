@@ -420,8 +420,7 @@ case "$command" in
     
     # recursively install required packages
     
-    echo > /tmp/awk.$$ '/^requires: / {s=gensub("(requires: )?([^ ]+) ?", "\\2 ", "g", $0); print s}'
-    requires=`cat "release/$pkg/desc" | awk -f /tmp/awk.$$`
+    requires=`grep "^requires: " "release/$pkg/desc" | sed -re 's/^requires: *(.*[^ ]) */\1/g' -e 's/ +/ /g'`
     
     warn=0
     if ! test "-$requires-" = "--"
