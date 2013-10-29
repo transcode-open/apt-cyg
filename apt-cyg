@@ -159,7 +159,7 @@ function charch ()
     chroot "$rootdir" "$rootdir/bin/bash" -lc \
       'cd "$1"; shift ; "$0" "$@"' \
       "$(which "$0" | xargs cygpath -aml | xargs cygpath -u)" \
-      "$(cygpath -aml "`pwd`" | xargs cygpath -u)" \
+      "$(pwd        | xargs cygpath -aml | xargs cygpath -u)" \
       "$@"
     exit $?
   fi
