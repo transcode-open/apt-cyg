@@ -48,6 +48,7 @@ function usage()
   echo "  \"apt-cyg packageof <commands or files>\" to locate parent packages"
   echo "Options:"
   echo "  --charch <arch>    : change archetecture (must appear first)"
+  echo "  --use-setuprc      : set cache and mirror with /etc/setup/setup.rc"
   echo "  --mirror, -m <url> : set mirror"
   echo "  --cache, -c <dir>  : set cache"
   echo "  --file, -f <file>  : read package names from file"
@@ -187,6 +188,12 @@ do
       fi
       charch "$2" "$@"
       shift ; shift
+    ;;
+
+    --use-setuprc)
+      apt-cyg -c "$(grep -A1 last-cache  /etc/setup/setup.rc | tail -n1 | sed -r 's/^\s*|\s*$//g')" > /dev/null
+      apt-cyg -m "$(grep -A1 last-mirror /etc/setup/setup.rc | tail -n1 | sed -r 's/^\s*|\s*$//g')" > /dev/null
+      shift
     ;;
 
     --mirror|-m)
