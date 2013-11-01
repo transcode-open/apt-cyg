@@ -49,6 +49,7 @@ function usage()
   echo "Options:"
   echo "  --charch <arch>    : change archetecture (must appear first)"
   echo "  --use-setuprc      : set cache and mirror with /etc/setup/setup.rc"
+  echo "  --ignore-case,-i   : ignore case distinctions for <patterns>"
   echo "  --mirror, -m <url> : set mirror"
   echo "  --cache, -c <dir>  : set cache"
   echo "  --file, -f <file>  : read package names from file"
@@ -175,6 +176,7 @@ dofile=0
 command=""
 filepackages=""
 packages=""
+ignore_case=""
 nargs=$#
 
 while test $# -gt 0
@@ -193,6 +195,11 @@ do
     --use-setuprc)
       apt-cyg -c "$(grep -A1 last-cache  /etc/setup/setup.rc | tail -n1 | sed -r 's/^\s*|\s*$//g')" > /dev/null
       apt-cyg -m "$(grep -A1 last-mirror /etc/setup/setup.rc | tail -n1 | sed -r 's/^\s*|\s*$//g')" > /dev/null
+      shift
+    ;;
+
+    --ignore-case|-i)
+      ignore_case="$1"
       shift
     ;;
 
@@ -299,10 +306,10 @@ case "$command" in
     do
       echo ""
       echo Searching for installed packages matching $pkg:
-      awk '/[^ ]+ [^ ]+ 0/ {if ($1 ~ query) print $1}' query="$pkg" /etc/setup/installed.db
+      awk '/[^ ]+ [^ ]+ 0/ {if ($1 ~ query) print $1}' query="$pkg" IGNORECASE="$ignore_case" /etc/setup/installed.db
       echo ""
       echo Searching for installable packages matching $pkg:
-      cat setup.ini | awk -v query="$pkg" \
+      cat setup.ini | awk -v query="$pkg" -v IGNORECASE="$ignore_case" \
         'BEGIN{RS="\n\n@ "; FS="\n"; ORS="\n"} {if ($1 ~ query) {print $1}}'
     done
 
@@ -317,7 +324,7 @@ case "$command" in
     for pkg in $packages
     do
       echo ""
-      cat setup.ini | awk -v query="$pkg" \
+      cat setup.ini | awk -v query="$pkg" -v IGNORECASE="$ignore_case" \
         'BEGIN{RS="\n\n@ "; FS="\n"; ORS="\n"} {if ($1 ~ query) {print $0 "\n"}}'
     done
 
