@@ -50,6 +50,7 @@ function usage()
   echo "  --charch <arch>    : change archetecture (must appear first)"
   echo "  --use-setuprc      : set cache and mirror with /etc/setup/setup.rc"
   echo "  --ignore-case,-i   : ignore case distinctions for <patterns>"
+  echo "  --force-remove     : force remove"
   echo "  --mirror, -m <url> : set mirror"
   echo "  --cache, -c <dir>  : set cache"
   echo "  --file, -f <file>  : read package names from file"
@@ -177,6 +178,7 @@ command=""
 filepackages=""
 packages=""
 ignore_case=""
+force_remove=""
 nargs=$#
 
 while test $# -gt 0
@@ -200,6 +202,11 @@ do
 
     --ignore-case|-i)
       ignore_case="$1"
+      shift
+    ;;
+
+    --force-remove)
+      force_remove=1
       shift
     ;;
 
@@ -501,7 +508,7 @@ case "$command" in
       fi
     done
 
-    if ! test -e "/etc/setup/$pkg.lst.gz"
+    if test ! -e "/etc/setup/$pkg.lst.gz" -a "$force_remove" = ""
     then
       echo Package manifest missing, cannot remove $pkg.  Exiting
       exit 1
