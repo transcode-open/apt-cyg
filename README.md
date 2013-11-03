@@ -29,9 +29,10 @@ Revision
 ------------
 
 2013-11-3
-add option '--x64' for release 'x86_64', default is for 'x86'
-support *.xz package
-add command 'reinstall'
+
+* add option '--x64' for release 'x86_64', default is for 'x86'
+* support *.xz package
+* add command 'reinstall'
 
 Contributing
 ------------
