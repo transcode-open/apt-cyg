@@ -29,12 +29,13 @@
 
 WGET=`which wget 2> /dev/null`
 BZIP2=`which bzip2 2> /dev/null`
+XZ=`which xz 2> /dev/null`
 TAR=`which tar 2> /dev/null`
 GAWK=`which awk 2> /dev/null`
 if test "-$WGET-" = "--" || test "-$BZIP2-" = "--" || test "-$TAR-" = "--" \
-  || test "-$GAWK-" = "--"
+  || test "-$GAWK-" = "--" || test "-$XZ-" = "--"
 then
-  echo You must install wget, tar, gawk and bzip2 to use apt-cyg.
+  echo You must install wget, tar, gawk, xz and bzip2 to use apt-cyg.
   exit 1
 fi
 
@@ -44,6 +45,7 @@ function usage()
   echo apt-cyg: Installs and removes Cygwin packages.
   echo "  \"apt-cyg install <package names>\" to install packages"
   echo "  \"apt-cyg remove <package names>\" to remove packages"
+  echo "  \"apt-cyg reinstall <package names>\" to reinstall packages"
   echo "  \"apt-cyg update\" to update setup.ini"
   echo "  \"apt-cyg show\" to show installed packages"
   echo "  \"apt-cyg find <patterns>\" to find packages matching patterns"
@@ -54,6 +56,7 @@ function usage()
   echo "  --cache, -c <dir>  : set cache"
   echo "  --file, -f <file>  : read package names from file"
   echo "  --noupdate, -u     : don't update setup.ini from mirror"
+  echo "  --x86_64, -64      : for 64-bit"
   echo "  --help"
   echo "  --version"
 }
@@ -73,7 +76,9 @@ function findworkspace()
 {
   # default working directory and mirror
   
-  mirror=ftp://mirror.mcs.anl.gov/pub/cygwin
+  mirror=http://mirrors.163.com/cygwin/
+  #mirror=http://mirrors.ustc.edu.cn/cygwin/
+  #mirror=ftp://mirror.mcs.anl.gov/pub/cygwin
   cache=/setup
   
   # work wherever setup worked last, if possible
@@ -88,12 +93,13 @@ function findworkspace()
   then
     mirror="`head -1 /etc/setup/last-mirror`"
   fi
+  
   mirrordir="`echo "$mirror" | sed -e "s/:/%3a/g" -e "s:/:%2f:g"`"
   
   echo Working directory is $cache
   echo Mirror is $mirror
-  mkdir -p "$cache/$mirrordir"
-  cd "$cache/$mirrordir"
+  mkdir -p "$cache/$mirrordir/$arch"
+  cd "$cache/$mirrordir/$arch"
 }
 
 
@@ -103,14 +109,14 @@ function getsetup()
   then
     touch setup.ini
     mv setup.ini setup.ini-save
-    wget -N $mirror/setup.bz2
+    wget -N $mirror/$arch/setup.bz2
     if test -e setup.bz2 && test $? -eq 0
     then
       bunzip2 setup.bz2
       mv setup setup.ini
       echo Updated setup.ini
     else
-      wget -N $mirror/setup.ini
+      wget -N $mirror/$arch/setup.ini
       if test -e setup.ini && test $? -eq 0
       then
         echo Updated setup.ini
@@ -133,6 +139,16 @@ function checkpackages()
 }
 
 
+function clearsetup()
+{
+  rm "/etc/setup/$1.lst.gz"
+  rm -f /etc/postinstall/$1.sh.done
+  cat /etc/setup/installed.db | awk > /tmp/awk.$$ -v pkg="$1" '{if (pkg != $1) print $0}'
+  mv /etc/setup/installed.db /etc/setup/installed.db-save
+  mv /tmp/awk.$$ /etc/setup/installed.db
+}
+
+
 # process options
 
 noscripts=0
@@ -142,6 +158,7 @@ dofile=0
 command=""
 filepackages=""
 packages=""
+arch=x86
 
 while test $# -gt 0
 do
@@ -167,6 +184,11 @@ do
       shift
     ;;
 
+    --x86_64|-64)
+      arch=x86_64
+      shift
+    ;;
+
     --help)
       usage
       exit 0
@@ -189,7 +211,7 @@ do
       shift
     ;;
 
-    update|show|find|describe|packageof|install|remove)
+    update|show|find|describe|packageof|install|remove|reinstall)
       if test "-$command-" = "--"
       then
         command=$1
@@ -299,7 +321,7 @@ case "$command" in
   ;;
 
 
-  install)
+  install|reinstall)
 
     checkpackages
     findworkspace
@@ -311,8 +333,13 @@ case "$command" in
     already=`grep -c "^$pkg " /etc/setup/installed.db`
     if test $already -ge 1
     then
-      echo Package $pkg is already installed, skipping
-      continue
+      if test "-$command-" = "-reinstall-"
+      then
+        clearsetup $pkg
+      else
+        echo Package $pkg is already installed, skipping
+        continue
+      fi
     fi
     echo ""
     echo Installing $pkg
@@ -358,7 +385,13 @@ case "$command" in
     fi
     
     echo "Unpacking..."
-    cat $file | bunzip2 | tar > "/etc/setup/$pkg.lst" xvf - -C /
+    if test "-${file##*.}-" = "-xz-"
+    then
+        cat $file | xz -d | tar > "/etc/setup/$pkg.lst" xvf - -C /
+    else
+        cat $file | bunzip2 | tar > "/etc/setup/$pkg.lst" xvf - -C /
+    fi
+
     gzip -f "/etc/setup/$pkg.lst"
     cd ../..
     
@@ -387,8 +420,13 @@ case "$command" in
         already=`grep -c "^$package " /etc/setup/installed.db`
         if test $already -ge 1
         then
-          echo Package $package is already installed, skipping
-          continue
+          if test "-$command-" = "-reinstall-"
+          then
+            clearsetup $package
+          else
+            echo Package $package is already installed, skipping
+            continue
+          fi
         fi
         apt-cyg --noscripts install $package
         if ! test $? = 0 ; then warn=1; fi
@@ -432,7 +470,7 @@ case "$command" in
       continue
     fi
 
-    dontremove="cygwin coreutils gawk bzip2 tar wget bash"
+    dontremove="cygwin coreutils gawk bzip2 tar xz wget bash"
     for req in $dontremove
     do
       if test "-$pkg-" = "-$req-"
@@ -458,11 +496,7 @@ case "$command" in
     fi
 
     cat "/etc/setup/$pkg.lst.gz" | gzip -d | awk '/[^\/]$/ {print "rm -f \"/" $0 "\""}' | sh
-    rm "/etc/setup/$pkg.lst.gz"
-    rm -f /etc/postinstall/$pkg.sh.done
-    cat /etc/setup/installed.db | awk > /tmp/awk.$$ -v pkg="$pkg" '{if (pkg != $1) print $0}'
-    mv /etc/setup/installed.db /etc/setup/installed.db-save
-    mv /tmp/awk.$$ /etc/setup/installed.db
+    clearsetup $pkg
     echo Package $pkg removed
 
     done
@@ -476,4 +510,3 @@ case "$command" in
   ;;
 
 esac
-
