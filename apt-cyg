@@ -520,13 +520,11 @@ case "$command" in
     if test -e "/etc/preremove/$pkg.sh"
     then
       "/etc/preremove/$pkg.sh"
-      rm "/etc/preremove/$pkg.sh"
     fi
 
     cat "/etc/setup/$pkg.lst.gz" | gzip -d | awk '/[^\/]$/ {print "rm -f \"/" $0 "\""}' | sh
-    rm "/etc/setup/$pkg.lst.gz"
-    rm -f /etc/postinstall/$pkg.sh.done
     cat /etc/setup/installed.db | awk > /tmp/awk.$$ -v pkg="$pkg" '{if (pkg != $1) print $0}'
+    rm -f "/etc/postinstall/$pkg.sh.done" "/etc/preremove/$pkg.sh" "/etc/setup/$pkg.lst.gz"
     mv /etc/setup/installed.db /etc/setup/installed.db-save
     mv /tmp/awk.$$ /etc/setup/installed.db
     echo Package $pkg removed
