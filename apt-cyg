@@ -56,7 +56,7 @@ function usage()
   echo "  --cache, -c <dir>  : set cache"
   echo "  --file, -f <file>  : read package names from file"
   echo "  --noupdate, -u     : don't update setup.ini from mirror"
-  echo "  --x64              : for 64-bit"
+  echo "  --x86_64, -64      : for 64-bit"
   echo "  --help"
   echo "  --version"
 }
@@ -94,19 +94,12 @@ function findworkspace()
     mirror="`head -1 /etc/setup/last-mirror`"
   fi
   
-  if test $x64 = 1
-  then
-    mirror=${mirror}/x86_64
-  else
-    mirror=${mirror}/x86
-  fi
-  
   mirrordir="`echo "$mirror" | sed -e "s/:/%3a/g" -e "s:/:%2f:g"`"
   
   echo Working directory is $cache
   echo Mirror is $mirror
-  mkdir -p "$cache/$mirrordir"
-  cd "$cache/$mirrordir"
+  mkdir -p "$cache/$mirrordir/$arch"
+  cd "$cache/$mirrordir/$arch"
 }
 
 
@@ -116,14 +109,14 @@ function getsetup()
   then
     touch setup.ini
     mv setup.ini setup.ini-save
-    wget -N $mirror/setup.bz2
+    wget -N $mirror/$arch/setup.bz2
     if test -e setup.bz2 && test $? -eq 0
     then
       bunzip2 setup.bz2
       mv setup setup.ini
       echo Updated setup.ini
     else
-      wget -N $mirror/setup.ini
+      wget -N $mirror/$arch/setup.ini
       if test -e setup.ini && test $? -eq 0
       then
         echo Updated setup.ini
@@ -165,7 +158,7 @@ dofile=0
 command=""
 filepackages=""
 packages=""
-x64=0
+arch=x86
 
 while test $# -gt 0
 do
@@ -191,8 +184,8 @@ do
       shift
     ;;
 
-    --x64)
-      x64=1
+    --x86_64|-64)
+      arch=x86_64
       shift
     ;;
 
