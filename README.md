@@ -44,3 +44,19 @@ Contributing
 This project has been re-published on GitHub to make contributing easier. Feel free to fork and modify this script.
 
 The [Google Code project](https://code.google.com/p/apt-cyg/) has a list of open issues.
+
+### Forks on the github
+
+Caution:
+Please do not merge forks that have incompatible licenses.
+
+Ex.) Merging to the GPL from the MIT is possible. But merging to the MIT from the GPL  is impossible.
+
+#### Official
+
+* [transcodes-open / apt-cyg](https://github.com/transcode-open/apt-cyg/network) (MIT license)
+
+#### Unofficial
+
+* [cfg / apt-cyg](https://github.com/cfg/apt-cyg/network) (GPLv2)
+* [ashumkin / apt-cyg](https://github.com/ashumkin/apt-cyg/network) (GPLv2)
