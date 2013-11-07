@@ -60,3 +60,11 @@ Ex.) Merging to the GPL from the MIT is possible. But merging to the MIT from th
 
 * [cfg / apt-cyg](https://github.com/cfg/apt-cyg/network) (GPLv2)
 * [ashumkin / apt-cyg](https://github.com/ashumkin/apt-cyg/network) (GPLv2)
+
+Known Problem
+------------
+### Check setup (cygcheck -c) can not detect .tar.xz packages
+At cygwin 1.7.25, cygcheck is hardcoded for .tar.gz and .tar.bz2.
+So check setup (cygcheck -c) can not detect .tar.xz packages.
+This bug was already fixed with [src/winsup/utils/dump_setup.cc#rev1.28](http://cygwin.com/cgi-bin/cvsweb.cgi/src/winsup/utils/dump_setup.cc?cvsroot=src#rev1.28).
+Please wait a release of cygwin 1.7.26.
