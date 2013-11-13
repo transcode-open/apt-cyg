@@ -35,6 +35,7 @@ if [ "$WGET" = "" -a "$TAR" = "" -a "$GAWK" = "" ]; then
   exit 1
 fi
 
+WGET=wget
 
 function usage()
 {
@@ -109,14 +110,14 @@ function getsetup()
   then
     touch setup.ini
     mv setup.ini setup.ini-save
-    wget -N $mirror/$arch/setup.bz2
+    $WGET -N $mirror/$arch/setup.bz2
     if test -e setup.bz2 && test $? -eq 0
     then
       bunzip2 setup.bz2
       mv setup setup.ini
       echo Updated setup.ini
     else
-      wget -N $mirror/$arch/setup.ini
+      $WGET -N $mirror/$arch/setup.ini
       if test -e setup.ini && test $? -eq 0
       then
         echo Updated setup.ini
@@ -227,6 +228,11 @@ do
 
     --noupdate|-u)
       noupdate=1
+      shift
+    ;;
+
+    --ipv4|-4)
+      WGET="$WGET --prefer-family=IPv4"
       shift
     ;;
 
@@ -409,7 +415,7 @@ case "$command" in
 
     file=`basename $install`
     cd "release/$pkg"
-    wget -nc $mirror/$install
+    $WGET -nc $mirror/$install
     
     # check the md5
     digest=`cat "desc" | awk '/^install: / { print $4; exit }'` 
