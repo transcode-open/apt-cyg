@@ -54,6 +54,7 @@ function usage()
   echo "  --cache, -c <dir>  : set cache"
   echo "  --file, -f <file>  : read package names from file"
   echo "  --noupdate, -u     : don't update setup.ini from mirror"
+  echo "  --ipv4, -4         : wget prefer ipv4"
   echo "  --help"
   echo "  --version"
 }
