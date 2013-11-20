@@ -29,12 +29,13 @@
 
 WGET=`which wget 2> /dev/null`
 BZIP2=`which bzip2 2> /dev/null`
+XZ=`which xz 2> /dev/null`
 TAR=`which tar 2> /dev/null`
 GAWK=`which awk 2> /dev/null`
 if test "-$WGET-" = "--" || test "-$BZIP2-" = "--" || test "-$TAR-" = "--" \
-  || test "-$GAWK-" = "--"
+  || test "-$GAWK-" = "--" || test "-$XZ-" = "--"
 then
-  echo You must install wget, tar, gawk and bzip2 to use apt-cyg.
+  echo You must install wget, tar, gawk, xz and bzip2 to use apt-cyg.
   exit 1
 fi
 
@@ -363,7 +364,14 @@ case "$command" in
     fi
     
     echo "Unpacking..."
-    cat $file | bunzip2 | tar > "/etc/setup/$pkg.lst" xvf - -C /
+
+    if test "-${file##*.}-" = "-xz-"
+    then
+        cat $file | xz -d | tar > "/etc/setup/$pkg.lst" xvf - -C /
+    else
+        cat $file | bunzip2 | tar > "/etc/setup/$pkg.lst" xvf - -C /
+    fi
+
     gzip -f "/etc/setup/$pkg.lst"
     cd ../..
     
@@ -437,7 +445,7 @@ case "$command" in
       continue
     fi
 
-    dontremove="cygwin coreutils gawk bzip2 tar wget bash"
+    dontremove="cygwin coreutils gawk bzip2 tar xz wget bash"
     for req in $dontremove
     do
       if test "-$pkg-" = "-$req-"
