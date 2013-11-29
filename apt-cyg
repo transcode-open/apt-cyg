@@ -367,7 +367,7 @@ case "$command" in
     fi
     
     echo "Unpacking..."
-    cat $file | bunzip2 | tar > "/etc/setup/$pkg.lst" xvf - -C /
+    tar > "/etc/setup/$pkg.lst" xvf "$file" -C /
     gzip -f "/etc/setup/$pkg.lst"
     cd ../..
     
