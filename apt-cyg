@@ -499,7 +499,7 @@ case "$command" in
       continue
     fi
 
-    dontremove="cygwin coreutils gawk bzip2 tar wget bash"
+    dontremove="cygwin coreutils gawk bzip2 tar xz wget bash"
     for req in $dontremove
     do
       if test "-$pkg-" = "-$req-"
