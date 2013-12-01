@@ -30,7 +30,7 @@
 WGET="`which wget 2> /dev/null`"
 TAR="`which tar 2> /dev/null`"
 GAWK="`which awk 2> /dev/null`"
-if [ "$WGET" = "" -a "$TAR" = "" -a "$GAWK" = "" ]; then
+if [ "$WGET" = "" -o "$TAR" = "" -o "$GAWK" = "" ]; then
   echo You must install wget, tar and gawk to use apt-cyg.
   exit 1
 fi
