@@ -25,11 +25,21 @@
 # THE SOFTWARE.
 # 
 
+# ./cygwin.pub
+# ------------
+# pub   1024D/676041BA 2008-06-13
+# uid                  Cygwin <cygwin@cygwin.com>
+# sub   1024g/A1DB7B5C 2008-06-13
+CYGWIN_PKEY_URL_LATEST="https://sourceware.org/cgi-bin/cvsweb.cgi/~checkout~/setup/cygwin.pub?cvsroot=cygwin-apps"
+CYGWIN_PKEY_URL="https://sourceware.org/cgi-bin/cvsweb.cgi/~checkout~/setup/cygwin.pub?rev=2.1&cvsroot=cygwin-apps"
+CYGWIN_PKEY_MD5="8fe5366fc82289578ab9b6e3c9f1bff9"
+
 # this script requires some packages
 
 WGET="`which wget 2> /dev/null`"
 TAR="`which tar 2> /dev/null`"
 GAWK="`which awk 2> /dev/null`"
+GPGV="`which gpgv 2> /dev/null`"
 if [ "$WGET" = "" -o "$TAR" = "" -o "$GAWK" = "" ]; then
   echo You must install wget, tar and gawk to use apt-cyg.
   exit 1
@@ -50,6 +60,8 @@ function usage()
   echo "  --use-setuprc      : set cache and mirror with /etc/setup/setup.rc"
   echo "  --ignore-case,-i   : ignore case distinctions for <patterns>"
   echo "  --force-remove     : force remove"
+  echo "  --force-update-pkey: force update public key of cygwin"
+  echo "  --no-verify, -X    : Don't verify setup.ini signatures"
   echo "  --mirror, -m <url> : set mirror"
   echo "  --cache, -c <dir>  : set cache"
   echo "  --file, -f <file>  : read package names from file"
@@ -100,6 +112,8 @@ function findworkspace()
   echo Mirror is $mirror
   mkdir -p "$cache/$mirrordir/$arch"
   cd "$cache/$mirrordir/$arch"
+  
+  update_cygwin_pkey
 }
 
 
@@ -109,16 +123,16 @@ function getsetup()
   then
     touch setup.ini
     mv setup.ini setup.ini-save
-    "${WGET[@]}" -N $mirror/$arch/setup.bz2
-    if test -e setup.bz2 && test $? -eq 0
-    then
+    "${WGET[@]}" -N "$mirror/$arch/setup.bz2" "$mirror/$arch/setup.bz2.sig"
+    if [[ -e setup.bz2 && -e setup.bz2.sig && $? -eq 0 ]]; then
+      [[ "$no_verify" == "" ]] && verify_signatures setup.bz2.sig
       bunzip2 setup.bz2
       mv setup setup.ini
       echo Updated setup.ini
     else
-      "${WGET[@]}" -N $mirror/$arch/setup.ini
-      if test -e setup.ini && test $? -eq 0
-      then
+      "${WGET[@]}" -N "$mirror/$arch/setup.ini" "$mirror/$arch/setup.ini.sig"
+      if [[ -e setup.ini && -e setup.ini.sig && $? -eq 0 ]]; then
+        [[ "$no_verify" == "" ]] && verify_signatures setup.ini.sig
         echo Updated setup.ini
       else
         mv setup.ini-save setup.ini
@@ -168,6 +182,38 @@ function charch ()
   fi
 }
 
+function update_cygwin_pkey ()
+{
+  pkey_latest="$cache/cygwin_latest.pub"
+  pkey="$cache/cygwin.pub"
+  [[ "$force_update_pkey" != "" || ! -e "$pkey_latest" ]] && "${WGET[@]}" "$CYGWIN_PKEY_URL_LATEST" -O "$pkey_latest"
+  [[ "$force_update_pkey" != "" || ! -e "$pkey"        ]] && "${WGET[@]}" "$CYGWIN_PKEY_URL"        -O "$pkey"
+  check_cygwin_pkey
+}
+
+function check_cygwin_pkey ()
+{
+  if ! echo "$CYGWIN_PKEY_MD5 *$pkey" | md5sum -c; then
+    echo "Warning: Maybe CSV repository of cygwin has been cracked !!!"
+    exit 1
+  fi
+  if ! echo "$CYGWIN_PKEY_MD5 *$pkey_latest" | md5sum -c; then
+    echo "Warning: Maybe public key of cygwin has been updated."
+  fi
+}
+
+# Usage: verify_signatures files ...
+function verify_signatures ()
+{
+  while [[ $# -gt 0 ]]; do
+    if ! "$GPGV" --keyring "$pkey" "$1"; then
+      echo "Error: BAD signature: $1"
+      exit 1
+    fi
+    shift
+  done
+}
+
 # process options
 
 noscripts=0
@@ -179,6 +225,8 @@ filepackages=""
 packages=""
 ignore_case=""
 force_remove=""
+force_update_pkey=""
+no_verify=""
 nargs=$#
 
 while test $# -gt 0
@@ -207,6 +255,16 @@ do
 
     --force-remove)
       force_remove=1
+      shift
+    ;;
+
+    --force-update-pkey)
+      force_update_pkey=1
+      shift
+    ;;
+
+    --no-verify|-X)
+      no_verify=1
       shift
     ;;
 
@@ -277,6 +335,10 @@ do
   esac
 done
 
+if [[ "$GPGV" == "" && "$no_verify" == "" ]]; then
+  echo "Error: GnuPG is not installed. Prease install gnupg package or use -X option."
+  exit 1
+fi
 
 if test $dofile = 1
 then
