@@ -34,6 +34,8 @@ CYGWIN_PKEY_URL_LATEST="https://sourceware.org/cgi-bin/cvsweb.cgi/~checkout~/set
 CYGWIN_PKEY_URL="https://sourceware.org/cgi-bin/cvsweb.cgi/~checkout~/setup/cygwin.pub?rev=2.1&cvsroot=cygwin-apps"
 CYGWIN_PKEY_MD5="8fe5366fc82289578ab9b6e3c9f1bff9"
 
+CYGWINPORTS_PKEY_URL="http://cygwinports.org/ports.gpg"
+CYGWINPORTS_PKEY_MD5="4c7904807340411f48f7519173cd600d"
 # this script requires some packages
 
 WGET="`which wget 2> /dev/null`"
@@ -116,7 +118,6 @@ function findworkspace()
   update_cygwin_pkey
 }
 
-
 function getsetup() 
 {
   if test "$noscripts" == "0" -a "$noupdate" == "0"
@@ -142,6 +143,29 @@ function getsetup()
   fi
 }
 
+setup_release_name()
+{
+  release_name="`cat setup.ini | awk '/release:/ {print $2}'`"
+  case "$release_name" in
+    cygwin)
+      PKEY_URL_LATEST="$CYGWIN_PKEY_URL_LATEST"
+      PKEY_URL="$CYGWIN_PKEY_URL"
+      PKEY_MD5="$CYGWIN_PKEY_MD5"
+      pkey_latest="$cache/cygwin_latest.pub"
+      pkey="$cache/cygwin.pub"
+    ;;
+    cygwinports)
+      PKEY_URL_LATEST="$CYGWINPORTS_PKEY_URL"
+      PKEY_URL="$CYGWINPORTS_PKEY_URL"
+      PKEY_MD5="$CYGWINPORTS_PKEY_MD5"
+      pkey_latest="$cache/ports.gpg"
+      pkey="$cache/ports.gpg"
+    ;;
+    *)
+      echo "Error: unknown release name $release_name"
+      exit 1
+    esac
+}
 
 function checkpackages()
 {
@@ -184,20 +208,19 @@ function charch ()
 
 function update_cygwin_pkey ()
 {
-  pkey_latest="$cache/cygwin_latest.pub"
-  pkey="$cache/cygwin.pub"
-  [[ "$force_update_pkey" != "" || ! -e "$pkey_latest" ]] && "${WGET[@]}" "$CYGWIN_PKEY_URL_LATEST" -O "$pkey_latest"
-  [[ "$force_update_pkey" != "" || ! -e "$pkey"        ]] && "${WGET[@]}" "$CYGWIN_PKEY_URL"        -O "$pkey"
+  setup_release_name
+  [[ "$force_update_pkey" != "" || ! -e "$pkey_latest" ]] && "${WGET[@]}" "$PKEY_URL_LATEST" -O "$pkey_latest"
+  [[ "$force_update_pkey" != "" || ! -e "$pkey"        ]] && "${WGET[@]}" "$PKEY_URL"        -O "$pkey"
   check_cygwin_pkey
 }
 
 function check_cygwin_pkey ()
 {
-  if ! echo "$CYGWIN_PKEY_MD5 *$pkey" | md5sum -c; then
+  if ! echo "$PKEY_MD5 *$pkey" | md5sum -c; then
     echo "Warning: Maybe CSV repository of cygwin has been cracked !!!"
     exit 1
   fi
-  if ! echo "$CYGWIN_PKEY_MD5 *$pkey_latest" | md5sum -c; then
+  if ! echo "$PKEY_MD5 *$pkey_latest" | md5sum -c; then
     echo "Warning: Maybe public key of cygwin has been updated."
   fi
 }
