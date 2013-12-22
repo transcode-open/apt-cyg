@@ -198,6 +198,7 @@ function charch ()
 
 function init_gnupg ()
 {
+  [ -z "$GPG" ] && return
   export GNUPGHOME="$cache/apt-cyg/.gnupg"
   echo $GNUPGHOME
   if ! [ -d "$GNUPGHOME" ]; then
@@ -227,6 +228,7 @@ function wget_and_check_md5sum ()
 
 function fetch_trustedkeys ()
 {
+  [ -z "$GPG" ] && return
   local FILE="$(mktemp)"
   local FILE_LATEST="$(mktemp)"
   for i in "${TRUSTEDKEYS[@]}"; do
@@ -302,6 +304,7 @@ function verify_signatures ()
 # Usage: apt-cyg-key-add pkey ...
 function apt-cyg-key-add ()
 {
+  [ -z "$GPG" ] && { echo "Error: GnuPG is not installed. Prease install gnupg package"; exit 1; }
   local pkeys
   for pkey; do
     pkeys+=( "$(cygpath -a "$pkey" )" )
@@ -315,6 +318,7 @@ function apt-cyg-key-add ()
 # Usage: apt-cyg-key-add keyid ...
 function apt-cyg-key-del ()
 {
+  [ -z "$GPG" ] && { echo "Error: GnuPG is not installed. Prease install gnupg package"; exit 1; }
   findworkspace
   for keyid; do
     "${GPG[@]}" --batch --yes --delete-key "$keyid"
@@ -323,12 +327,14 @@ function apt-cyg-key-del ()
 
 function apt-cyg-key-list ()
 {
+  [ -z "$GPG" ] && { echo "Error: GnuPG is not installed. Prease install gnupg package"; exit 1; }
   findworkspace
   "${GPG[@]}" --list-keys
 }
 
 function apt-cyg-key-finger ()
 {
+  [ -z "$GPG" ] && { echo "Error: GnuPG is not installed. Prease install gnupg package"; exit 1; }
   findworkspace
   "${GPG[@]}" --fingerprint
 }
