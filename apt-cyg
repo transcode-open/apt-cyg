@@ -25,23 +25,32 @@
 # THE SOFTWARE.
 # 
 
+TRUSTEDKEYS=( CYGWIN CYGWINPORTS );
 # ./cygwin.pub
 # ------------
 # pub   1024D/676041BA 2008-06-13
 # uid                  Cygwin <cygwin@cygwin.com>
 # sub   1024g/A1DB7B5C 2008-06-13
-CYGWIN_PKEY_URL_LATEST="https://sourceware.org/cgi-bin/cvsweb.cgi/~checkout~/setup/cygwin.pub?cvsroot=cygwin-apps"
-CYGWIN_PKEY_URL="https://sourceware.org/cgi-bin/cvsweb.cgi/~checkout~/setup/cygwin.pub?rev=2.1&cvsroot=cygwin-apps"
-CYGWIN_PKEY_MD5="8fe5366fc82289578ab9b6e3c9f1bff9"
+TRUSTEDKEY_CYGWIN_MD5="8fe5366fc82289578ab9b6e3c9f1bff9"
+TRUSTEDKEY_CYGWIN_FPR="1169DF9F22734F743AA59232A9A262FF676041BA"
+TRUSTEDKEY_CYGWIN_URL="https://sourceware.org/cgi-bin/cvsweb.cgi/~checkout~/setup/cygwin.pub?rev=2.1&cvsroot=cygwin-apps"
+TRUSTEDKEY_CYGWIN_URL_LATEST="https://sourceware.org/cgi-bin/cvsweb.cgi/~checkout~/setup/cygwin.pub?cvsroot=cygwin-apps"
+# ./ports.gpg
+# -----------
+# pub   1024D/66EE1F94 2008-10-27
+# uid                  Yaakov Selkowitz (Cygwin Ports) <yselkowitz@users.sourceforge.net>
+# sub   4096g/7D66B0D2 2008-10-27
+TRUSTEDKEY_CYGWINPORTS_MD5="4c7904807340411f48f7519173cd600d"
+TRUSTEDKEY_CYGWINPORTS_FPR="45600BB98CA878AA97A70119FF20AF9A66EE1F94"
+TRUSTEDKEY_CYGWINPORTS_URL_LATEST="http://cygwinports.org/ports.gpg"
 
-CYGWINPORTS_PKEY_URL="http://cygwinports.org/ports.gpg"
-CYGWINPORTS_PKEY_MD5="4c7904807340411f48f7519173cd600d"
 # this script requires some packages
 
 WGET="`which wget 2> /dev/null`"
 TAR="`which tar 2> /dev/null`"
 GAWK="`which awk 2> /dev/null`"
 GPGV="`which gpgv 2> /dev/null`"
+GPG="`which gpg 2> /dev/null`"
 if [ "$WGET" = "" -o "$TAR" = "" -o "$GAWK" = "" ]; then
   echo You must install wget, tar and gawk to use apt-cyg.
   exit 1
@@ -57,18 +66,22 @@ function usage()
   echo "  \"apt-cyg find <patterns>\" to find packages matching patterns"
   echo "  \"apt-cyg describe <patterns>\" to describe packages matching patterns"
   echo "  \"apt-cyg packageof <commands or files>\" to locate parent packages"
+  echo "  \"apt-cyg key-add <files> ...\" to add keys contained in <files>"
+  echo "  \"apt-cyg key-del <keyids> ...\" to remove keys <keyids>"
+  echo "  \"apt-cyg key-list\" to list  keys"
+  echo "  \"apt-cyg key-finger\" to list fingerprints"
   echo "Options:"
-  echo "  --charch <arch>    : change archetecture (must appear first)"
-  echo "  --use-setuprc      : set cache and mirror with /etc/setup/setup.rc"
-  echo "  --ignore-case,-i   : ignore case distinctions for <patterns>"
-  echo "  --force-remove     : force remove"
-  echo "  --force-update-pkey: force update public key of cygwin"
-  echo "  --no-verify, -X    : Don't verify setup.ini signatures"
-  echo "  --mirror, -m <url> : set mirror"
-  echo "  --cache, -c <dir>  : set cache"
-  echo "  --file, -f <file>  : read package names from file"
-  echo "  --noupdate, -u     : don't update setup.ini from mirror"
-  echo "  --ipv4, -4         : wget prefer ipv4"
+  echo "  --charch <arch>          : change archetecture (must appear first)"
+  echo "  --use-setuprc            : set cache and mirror with /etc/setup/setup.rc"
+  echo "  --ignore-case,-i         : ignore case distinctions for <patterns>"
+  echo "  --force-remove           : force remove"
+  echo "  --force-fetch-trustedkeys: force fetch tristedkeys"
+  echo "  --no-verify, -X          : Don't verify setup.ini signatures"
+  echo "  --mirror, -m <url>       : set mirror"
+  echo "  --cache, -c <dir>        : set cache"
+  echo "  --file, -f <file>        : read package names from file"
+  echo "  --noupdate, -u           : don't update setup.ini from mirror"
+  echo "  --ipv4, -4               : wget prefer ipv4"
   echo "  --help"
   echo "  --version"
 }
@@ -115,7 +128,8 @@ function findworkspace()
   mkdir -p "$cache/$mirrordir/$arch"
   cd "$cache/$mirrordir/$arch"
   
-  update_cygwin_pkey
+  init_gnupg
+  fetch_trustedkeys
 }
 
 function getsetup() 
@@ -141,30 +155,6 @@ function getsetup()
       fi
     fi
   fi
-}
-
-setup_release_name()
-{
-  release_name="`cat setup.ini | awk '/release:/ {print $2}'`"
-  case "$release_name" in
-    cygwin)
-      PKEY_URL_LATEST="$CYGWIN_PKEY_URL_LATEST"
-      PKEY_URL="$CYGWIN_PKEY_URL"
-      PKEY_MD5="$CYGWIN_PKEY_MD5"
-      pkey_latest="$cache/cygwin_latest.pub"
-      pkey="$cache/cygwin.pub"
-    ;;
-    cygwinports)
-      PKEY_URL_LATEST="$CYGWINPORTS_PKEY_URL"
-      PKEY_URL="$CYGWINPORTS_PKEY_URL"
-      PKEY_MD5="$CYGWINPORTS_PKEY_MD5"
-      pkey_latest="$cache/ports.gpg"
-      pkey="$cache/ports.gpg"
-    ;;
-    *)
-      echo "Error: unknown release name $release_name"
-      exit 1
-    esac
 }
 
 function checkpackages()
@@ -206,35 +196,141 @@ function charch ()
   fi
 }
 
-function update_cygwin_pkey ()
+function init_gnupg ()
 {
-  setup_release_name
-  [[ "$force_update_pkey" != "" || ! -e "$pkey_latest" ]] && "${WGET[@]}" "$PKEY_URL_LATEST" -O "$pkey_latest"
-  [[ "$force_update_pkey" != "" || ! -e "$pkey"        ]] && "${WGET[@]}" "$PKEY_URL"        -O "$pkey"
-  check_cygwin_pkey
+  export GNUPGHOME="$cache/apt-cyg/.gnupg"
+  echo $GNUPGHOME
+  if ! [ -d "$GNUPGHOME" ]; then
+    mkdir -p "$GNUPGHOME"
+    chmod 700 "$GNUPGHOME"
+  fi
+  GPG_KEYRING=( --keyring pubring.gpg )
 }
 
-function check_cygwin_pkey ()
+# Usage: check_md5sum label hash url file
+function wget_and_check_md5sum ()
 {
-  if ! echo "$PKEY_MD5 *$pkey" | md5sum -c; then
-    echo "Warning: Maybe CSV repository of cygwin has been cracked !!!"
-    exit 1
+  local LABEL="$1"
+  local MD5="$2"
+  local URL="$3"
+  local FILE="$4"
+  if ! "${WGET[@]}" "$URL" -O "$FILE"; then
+    echo "$LABEL: FAILED: Could not download $URL."
+    return 1
   fi
-  if ! echo "$PKEY_MD5 *$pkey_latest" | md5sum -c; then
-    echo "Warning: Maybe public key of cygwin has been updated."
+  if ! echo "$MD5 *$FILE" | md5sum -c >& /dev/null; then
+    echo "$LABEL: FAILED: MD5 hash is not match."
+    return 2
   fi
+  echo "$LABEL: OK"
+}
+
+function fetch_trustedkeys ()
+{
+  local FILE="$(mktemp)"
+  local FILE_LATEST="$(mktemp)"
+  for i in "${TRUSTEDKEYS[@]}"; do
+    local LABEL="TRUSTEDKEY_${i}"
+    local MD5="$(eval echo "\$${LABEL}_MD5")"
+    local FPR="$(eval echo "\$${LABEL}_FPR")"
+    local URL="$(eval echo "\$${LABEL}_URL")"
+    local URL_LATEST="$(eval echo "\$${LABEL}_URL_LATEST")"
+    local CASE=""
+    if [[ -z "$force_fetch_trustedkeys" ]] && "${GPG[@]}" --fingerprint --with-colons | grep -q "$FPR"; then
+      continue
+    fi
+    if [ -n "$URL" ]; then
+      wget_and_check_md5sum "$LABEL" "$MD5" "$URL" "$FILE"
+      CASE+="$?"
+    else
+      CASE+="-"
+    fi
+    if [ -n "$URL_LATEST" ]; then
+      wget_and_check_md5sum "$LABEL" "$MD5" "$URL_LATEST" "$FILE_LATEST"
+      CASE+="$?"
+    else
+      CASE+="-"
+    fi
+    case "$CASE" in
+      00|01|0-)
+        "${GPG[@]}" --import "$FILE"
+      ;;
+      02)
+        echo "Warning: ${LABEL} has been updated."
+        "${GPG[@]}" --import "$FILE"
+      ;;
+      -0)
+        "${GPG[@]}" --import "$FILE_LATEST"
+      ;;
+      10|20)
+        echo "Error: ${LABEL} has miss configuration."
+        exit 1
+      ;;
+      11|1-|-1)
+        echo "Error: Could not download ${LABEL}."
+        exit 1
+      ;;
+      12|-2)
+        echo "Error: ${LABEL} has been updated, maybe. But sometimes it may has been cracked. Be careful !!!"
+        exit 1
+      ;;
+      21|22|2-)
+        echo "Error: ${LABEL} has been cracked, maybe"
+        exit 1
+      ;;
+      --)
+        echo "Error: ${LABEL} has no URL."
+        exit 1
+      ;;
+    esac
+  done
+  rm "$FILE" "$FILE_LATEST"
 }
 
 # Usage: verify_signatures files ...
 function verify_signatures ()
 {
   while [[ $# -gt 0 ]]; do
-    if ! "$GPGV" --keyring "$pkey" "$1"; then
+    if ! "${GPGV[@]}" "${GPG_KEYRING[@]}" "$1"; then
       echo "Error: BAD signature: $1"
       exit 1
     fi
     shift
   done
+}
+
+# Usage: apt-cyg-key-add pkey ...
+function apt-cyg-key-add ()
+{
+  local pkeys
+  for pkey; do
+    pkeys+=( "$(cygpath -a "$pkey" )" )
+  done
+  findworkspace
+  for pkey in "${pkeys[@]}"; do
+    "${GPG[@]}" --import "$pkey"
+  done
+}
+
+# Usage: apt-cyg-key-add keyid ...
+function apt-cyg-key-del ()
+{
+  findworkspace
+  for keyid; do
+    "${GPG[@]}" --batch --yes --delete-key "$keyid"
+  done
+}
+
+function apt-cyg-key-list ()
+{
+  findworkspace
+  "${GPG[@]}" --list-keys
+}
+
+function apt-cyg-key-finger ()
+{
+  findworkspace
+  "${GPG[@]}" --fingerprint
 }
 
 # process options
@@ -248,7 +344,7 @@ filepackages=""
 packages=""
 ignore_case=""
 force_remove=""
-force_update_pkey=""
+force_fetch_trustedkeys=""
 no_verify=""
 nargs=$#
 
@@ -281,8 +377,8 @@ do
       shift
     ;;
 
-    --force-update-pkey)
-      force_update_pkey=1
+    --force-fetch-trustedkeys)
+      force_fetch_trustedkeys=1
       shift
     ;;
 
@@ -338,7 +434,7 @@ do
       shift
     ;;
 
-    update|show|find|describe|packageof|install|remove)
+    update|show|find|describe|packageof|install|remove|key-add|key-del|key-finger|key-list)
       if test "-$command-" = "--"
       then
         command=$1
@@ -620,9 +716,11 @@ case "$command" in
   ;;
 
   *)
-
-    usage
-
+    if type "apt-cyg-$command" >/dev/null; then
+      "apt-cyg-$command" $packages
+    else
+      usage
+    fi
   ;;
 
 esac
