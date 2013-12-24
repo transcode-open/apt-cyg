@@ -504,10 +504,10 @@ case "$command" in
     for pkg in $packages
     do
       echo ""
-      echo Searching for installed packages matching $pkg:
+      echo "Searching for installed packages matching $pkg:"
       awk '/[^ ]+ [^ ]+ 0/ {if ($1 ~ query) print $1}' query="$pkg" IGNORECASE="$ignore_case" /etc/setup/installed.db
       echo ""
-      echo Searching for installable packages matching $pkg:
+      echo "Searching for installable packages matching $pkg:"
       cat setup.ini | awk -v query="$pkg" -v IGNORECASE="$ignore_case" \
         'BEGIN{RS="\n\n@ "; FS="\n"; ORS="\n"} {if ($1 ~ query) {print $1}}'
     done
