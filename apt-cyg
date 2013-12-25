@@ -723,7 +723,7 @@ case "$command" in
   ;;
 
   *)
-    if type "apt-cyg-$command" >/dev/null; then
+    if type "apt-cyg-$command" >& /dev/null; then
       "apt-cyg-$command" $packages
     else
       usage
