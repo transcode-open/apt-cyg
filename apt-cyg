@@ -199,11 +199,12 @@ function charch ()
 function init_gnupg ()
 {
   [ -z "$GPG" ] && return
-  export GNUPGHOME="$cache/apt-cyg/.gnupg"
-  echo $GNUPGHOME
+  export GNUPGHOME="$cache/.apt-cyg"
   if ! [ -d "$GNUPGHOME" ]; then
-    mkdir -p "$GNUPGHOME"
-    chmod 700 "$GNUPGHOME"
+    if ! { mkdir -p "$GNUPGHOME" && chmod 700 "$GNUPGHOME"; } then
+      echo -e "\e[31;1mError:\e[30;0m cannot initialize directory $GNUPGHOME"
+      exit 1
+    fi
   fi
   GPG_KEYRING=( --keyring pubring.gpg )
 }
