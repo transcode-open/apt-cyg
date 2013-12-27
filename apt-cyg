@@ -116,12 +116,14 @@ function findworkspace()
     tmp="`head -1 /etc/setup/last-cache`"
     cache="`cygpath -au "$tmp"`"
   fi
+  cache="${cache%/}"
   
   if test -e /etc/setup/last-mirror
   then
     mirror="`head -1 /etc/setup/last-mirror`"
   fi
-  mirrordir="`echo "$mirror" | sed -e "s/:/%3a/g" -e "s:/:%2f:g"`"
+  mirror="${mirror%/}"
+  mirrordir="`echo "$mirror/" | sed -e "s/:/%3a/g" -e "s:/:%2f:g"`"
   
   echo Working directory is $cache
   echo Mirror is $mirror
@@ -395,7 +397,7 @@ do
     ;;
 
     --mirror|-m)
-      echo "$2" > /etc/setup/last-mirror
+      echo "${2%/}/" > /etc/setup/last-mirror
       shift ; shift
     ;;
 
