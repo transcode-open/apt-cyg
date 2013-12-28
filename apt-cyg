@@ -66,6 +66,7 @@ function usage()
   echo "  \"apt-cyg find <patterns>\" to find packages matching patterns"
   echo "  \"apt-cyg describe <patterns>\" to describe packages matching patterns"
   echo "  \"apt-cyg packageof <commands or files>\" to locate parent packages"
+  echo "  \"apt-cyg pathof <cache|mirror|mirrordir|cache/mirrordir>\" to show path"
   echo "  \"apt-cyg key-add <files> ...\" to add keys contained in <files>"
   echo "  \"apt-cyg key-del <keyids> ...\" to remove keys <keyids>"
   echo "  \"apt-cyg key-list\" to list  keys"
@@ -342,6 +343,23 @@ function apt-cyg-key-finger ()
   "${GPG[@]}" --fingerprint
 }
 
+function apt-cyg-pathof ()
+{
+  findworkspace >& /dev/null
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      cache)            echo "$cache" ;;
+      mirror)           echo "$mirror" ;;
+      mirrordir)        echo "$mirrordir" ;;
+      cache/mirrordir)  echo "$cache/$mirrordir" ;;
+      *)
+        echo -e "\e[31;1mError: in function $FUNCNAME: \e[30;0m unknown parameter '$1'."
+        exit 1
+    esac
+    shift
+  done
+}
+
 # process options
 
 noscripts=0
@@ -443,7 +461,7 @@ do
       shift
     ;;
 
-    update|show|find|describe|packageof|install|remove|key-add|key-del|key-finger|key-list)
+    update|show|find|describe|packageof|install|remove|key-add|key-del|key-finger|key-list|pathof)
       if test "-$command-" = "--"
       then
         command=$1

@@ -9,7 +9,8 @@ apt-cyg is a command-line installer for [Cygwin](http://cygwin.com/) which coope
 * "apt-cyg show" to show installed packages
 * "apt-cyg find <pattern(s)>" to find packages matching patterns
 * "apt-cyg describe <pattern(s)>" to describe packages matching patterns
-* "apt-cyg packageof <commands or files>" to locate parent packages 
+* "apt-cyg packageof <commands or files>" to locate parent packages
+* "apt-cyg pathof <cache|mirror|mirrordir|cache/mirrordir>" to show path"
 * "apt-cyg key-add <files> ..." to add keys contained in <files>
 * "apt-cyg key-del <keyids> ..." to remove keys <keyids>
 * "apt-cyg key-list" to list keys
