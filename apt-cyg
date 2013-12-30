@@ -363,10 +363,8 @@ function apt-cyg-pathof ()
 
 noscripts=0
 noupdate=0
-file=""
-dofile=0
+OPT_FILES=()
 command=""
-filepackages=""
 packages=()
 ignore_case=""
 force_remove=""
@@ -451,8 +449,7 @@ do
     --file|-f)
       if ! test "-$2-" = "--"
       then
-        file="$2"
-        dofile=1
+        OPT_FILES+=( "$2" )
         shift
       else
         echo 1>&2 No file name provided, ignoring $1
@@ -485,16 +482,14 @@ if [[ "$GPGV" == "" && "$no_verify" == "" ]]; then
   exit 1
 fi
 
-if test $dofile = 1
-then
+for file in "${OPT_FILES[@]}"; do
   if test -f "$file"
   then
-    filepackages="$filepackages `cat "$file" | awk '{printf "%s ", $0}'`"
+    readarray -t -O ${#packages[@]} packages < "$file"
   else
     echo File $file not found, skipping
   fi
-  packages+=( $filepackages )
-fi
+done
 
 
 case "$command" in
