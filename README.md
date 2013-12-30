@@ -35,7 +35,6 @@ New features
 ### True multi-architecture support
 
 Let think a case that you want to install the x86 package when you are working under the x86_64 environment.
-In this case, You must only append a --charch option to the first parameter of apt-cyg.
 For example:
 
     # apt-cyg --charch x86 install chere

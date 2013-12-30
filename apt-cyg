@@ -72,7 +72,7 @@ function usage()
   echo "  \"apt-cyg key-list\" to list  keys"
   echo "  \"apt-cyg key-finger\" to list fingerprints"
   echo "Options:"
-  echo "  --charch <arch>          : change archetecture (must appear first)"
+  echo "  --charch <arch>          : change archetecture"
   echo "  --use-setuprc            : set cache and mirror with /etc/setup/setup.rc"
   echo "  --ignore-case,-i         : ignore case distinctions for <patterns>"
   echo "  --force-remove           : force remove"
@@ -370,18 +370,14 @@ ignore_case=""
 force_remove=""
 force_fetch_trustedkeys=""
 no_verify=""
-nargs=$#
+INITIAL_ARGS=( "$@" )
 
 while test $# -gt 0
 do
   case "$1" in
 
     --charch)
-      if [ "$#" -lt "$nargs" ]; then
-        echo "Error: $1 $2 option must appear first." >&2
-        exit 1
-      fi
-      charch "$2" "$@"
+      charch "$2" "${INITIAL_ARGS[@]}"
       shift ; shift
     ;;
 
