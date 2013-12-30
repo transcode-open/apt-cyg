@@ -162,8 +162,7 @@ function getsetup()
 
 function checkpackages()
 {
-  if test "-$packages-" = "--"
-  then
+  if [ ${#packages[@]} -eq 0 ]; then
     echo Nothing to do, exiting
     exit 0
   fi
@@ -368,7 +367,7 @@ file=""
 dofile=0
 command=""
 filepackages=""
-packages=""
+packages=()
 ignore_case=""
 force_remove=""
 force_fetch_trustedkeys=""
@@ -466,14 +465,14 @@ do
       then
         command=$1
       else
-        packages="$packages $1"
+        packages+=( "$1" )
       fi
       shift
 
     ;;
 
     *)
-      packages="$packages $1"
+      packages+=( "$1" )
       shift
 
     ;;
@@ -494,7 +493,7 @@ then
   else
     echo File $file not found, skipping
   fi
-  packages="$packages $filepackages"
+  packages+=( $filepackages )
 fi
 
 
@@ -522,7 +521,7 @@ case "$command" in
     findworkspace
     getsetup
 
-    for pkg in $packages
+    for pkg in "${packages[@]}"
     do
       echo ""
       echo "Searching for installed packages matching $pkg:"
@@ -541,7 +540,7 @@ case "$command" in
     checkpackages
     findworkspace
     getsetup
-    for pkg in $packages
+    for pkg in "${packages[@]}"
     do
       echo ""
       cat setup.ini | awk -v query="$pkg" -v IGNORECASE="$ignore_case" \
@@ -554,7 +553,7 @@ case "$command" in
   packageof)
 
     checkpackages
-    for pkg in $packages
+    for pkg in "${packages[@]}"
     do
       key=`which "$pkg" 2>/dev/null | sed "s:^/::"`
       if test "-$key-" = "--"
@@ -581,7 +580,7 @@ case "$command" in
     findworkspace
     getsetup
 
-    for pkg in $packages
+    for pkg in "${packages[@]}"
     do
 
     already=`grep -c "^$pkg " /etc/setup/installed.db`
@@ -697,7 +696,7 @@ case "$command" in
   remove)
 
     checkpackages
-    for pkg in $packages
+    for pkg in "${packages[@]}"
     do
 
     already=`grep -c "^$pkg " /etc/setup/installed.db`
@@ -744,7 +743,7 @@ case "$command" in
 
   *)
     if type "apt-cyg-$command" >& /dev/null; then
-      "apt-cyg-$command" $packages
+      "apt-cyg-$command" "${packages[@]}"
     else
       usage
     fi
