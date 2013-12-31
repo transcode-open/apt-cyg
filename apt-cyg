@@ -162,7 +162,7 @@ function getsetup()
 
 function checkpackages()
 {
-  if [ ${#packages[@]} -eq 0 ]; then
+  if [ $# -eq 0 ]; then
     echo Nothing to do, exiting
     exit 0
   fi
@@ -359,18 +359,23 @@ function apt-cyg-pathof ()
   done
 }
 
+function apt-cyg-help ()
+{
+  usage
+}
+
 # process options
 
 noscripts=0
 noupdate=0
 OPT_FILES=()
-command=""
-packages=()
+SUBCOMMAND=""
 ignore_case=""
 force_remove=""
 force_fetch_trustedkeys=""
 no_verify=""
 INITIAL_ARGS=( "$@" )
+ARGS=()
 
 while test $# -gt 0
 do
@@ -453,19 +458,12 @@ do
       shift
     ;;
 
-    update|show|find|describe|packageof|install|remove|key-add|key-del|key-finger|key-list|pathof)
-      if test "-$command-" = "--"
-      then
-        command=$1
-      else
-        packages+=( "$1" )
-      fi
-      shift
-
-    ;;
-
     *)
-      packages+=( "$1" )
+      if [ -z "$SUBCOMMAND" ]; then
+        SUBCOMMAND="$1"
+      else
+        ARGS+=( "$1" )
+      fi
       shift
 
     ;;
@@ -481,39 +479,40 @@ fi
 for file in "${OPT_FILES[@]}"; do
   if test -f "$file"
   then
-    readarray -t -O ${#packages[@]} packages < "$file"
+    readarray -t -O ${#ARGS[@]} ARGS < "$file"
   else
     echo File $file not found, skipping
   fi
 done
 
 
-case "$command" in
 
-  update)
+function apt-cyg-update ()
+{
 
     findworkspace
     getsetup
 
-  ;;
+}
 
 
-  show)
+function apt-cyg-show ()
+{
 
     echo 1>&2 The following packages are installed:
     cat /etc/setup/installed.db | awk '/[^ ]+ [^ ]+ 0/ {print $1}'
 
-  ;;
+}
 
 
-  find)
+function apt-cyg-find ()
+{
 
-    checkpackages
+    checkpackages "$@"
     findworkspace
     getsetup
 
-    for pkg in "${packages[@]}"
-    do
+    for pkg do
       echo ""
       echo "Searching for installed packages matching $pkg:"
       awk '/[^ ]+ [^ ]+ 0/ {if ($1 ~ query) print $1}' query="$pkg" IGNORECASE="$ignore_case" /etc/setup/installed.db
@@ -523,29 +522,29 @@ case "$command" in
         'BEGIN{RS="\n\n@ "; FS="\n"; ORS="\n"} {if ($1 ~ query) {print $1}}'
     done
 
-  ;;
+}
 
 
-  describe)
+function apt-cyg-describe ()
+{
 
-    checkpackages
+    checkpackages "$@"
     findworkspace
     getsetup
-    for pkg in "${packages[@]}"
-    do
+    for pkg do
       echo ""
       cat setup.ini | awk -v query="$pkg" -v IGNORECASE="$ignore_case" \
         'BEGIN{RS="\n\n@ "; FS="\n"; ORS="\n"} {if ($1 ~ query) {print $0 "\n"}}'
     done
 
-  ;;
+}
 
 
-  packageof)
+function apt-cyg-packageof ()
+{
 
-    checkpackages
-    for pkg in "${packages[@]}"
-    do
+    checkpackages "$@"
+    for pkg do
       key=`which "$pkg" 2>/dev/null | sed "s:^/::"`
       if test "-$key-" = "--"
       then
@@ -562,17 +561,17 @@ case "$command" in
       done
     done
 
-  ;;
+}
 
 
-  install)
+function apt-cyg-install ()
+{
 
-    checkpackages
+    checkpackages "$@"
     findworkspace
     getsetup
 
-    for pkg in "${packages[@]}"
-    do
+    for pkg do
 
     already=`grep -c "^$pkg " /etc/setup/installed.db`
     if test $already -ge 1
@@ -681,14 +680,14 @@ case "$command" in
 
     done
 
-  ;;
+}
 
 
-  remove)
+function apt-cyg-remove()
+{
 
-    checkpackages
-    for pkg in "${packages[@]}"
-    do
+    checkpackages "$@"
+    for pkg do
 
     already=`grep -c "^$pkg " /etc/setup/installed.db`
     if test $already = 0
@@ -730,15 +729,20 @@ case "$command" in
 
     done
 
-  ;;
+}
 
-  *)
-    if type "apt-cyg-$command" >& /dev/null; then
-      "apt-cyg-$command" "${packages[@]}"
+function invoke_subcommand ()
+{
+    local SUBCOMMAND="${@:1:1}"
+    local ARGS=( "${@:2}" )
+    local ACTION="apt-cyg-${SUBCOMMAND:-help}"
+    if type "$ACTION" >& /dev/null; then
+      "$ACTION" "${ARGS[@]}"
     else
-      usage
+      echo -e "\e[31;1mError: \e[30;0m unknown subcommand '$SUBCOMMAND'."
+      exit 1
     fi
-  ;;
+}
 
-esac
+invoke_subcommand "$SUBCOMMAND" "${ARGS[@]}"
 
