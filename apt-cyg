@@ -232,6 +232,7 @@ function wget_and_check_md5sum ()
 function fetch_trustedkeys ()
 {
   [ -z "$GPG" ] && return
+  local i
   local FILE="$(mktemp)"
   local FILE_LATEST="$(mktemp)"
   for i in "${TRUSTEDKEYS[@]}"; do
@@ -322,6 +323,7 @@ function apt-cyg-key-add ()
 function apt-cyg-key-del ()
 {
   [ -z "$GPG" ] && { echo "Error: GnuPG is not installed. Prease install gnupg package"; exit 1; }
+  local keyid
   findworkspace
   for keyid; do
     "${GPG[@]}" --batch --yes --delete-key "$keyid"
@@ -507,6 +509,7 @@ function apt-cyg-show ()
 
 function apt-cyg-find ()
 {
+    local pkg
 
     checkpackages "$@"
     findworkspace
@@ -527,6 +530,7 @@ function apt-cyg-find ()
 
 function apt-cyg-describe ()
 {
+    local pkg
 
     checkpackages "$@"
     findworkspace
@@ -542,20 +546,22 @@ function apt-cyg-describe ()
 
 function apt-cyg-packageof ()
 {
+    local pkg
+    local manifest
 
     checkpackages "$@"
     for pkg do
-      key=`which "$pkg" 2>/dev/null | sed "s:^/::"`
+      local key=`which "$pkg" 2>/dev/null | sed "s:^/::"`
       if test "-$key-" = "--"
       then
         key="$pkg"
       fi
       for manifest in /etc/setup/*.lst.gz
       do
-        found=`cat $manifest | gzip -d | grep -c "$key"`
+        local found=`cat $manifest | gzip -d | grep -c "$key"`
         if test $found -gt 0
         then
-          package=`echo $manifest | sed -e "s:/etc/setup/::" -e "s/.lst.gz//"`
+          local package=`echo $manifest | sed -e "s:/etc/setup/::" -e "s/.lst.gz//"`
           echo Found $key in the package $package
         fi
       done
@@ -566,6 +572,8 @@ function apt-cyg-packageof ()
 
 function apt-cyg-install ()
 {
+    local pkg
+    local script
 
     checkpackages "$@"
     findworkspace
@@ -589,7 +597,7 @@ function apt-cyg-install ()
       'BEGIN{RS="\n\n@ "; FS="\n"} {if ($1 == package) {desc = $0; px++}} \
        END {if (px == 1 && desc != "") print desc; else print "Package not found"}' 
     
-    desc=`cat "release/$pkg/desc"`
+    local desc=`cat "release/$pkg/desc"`
     if test "-$desc-" = "-Package not found-"
     then
       echo Package $pkg not found or ambiguous name, exiting
@@ -601,7 +609,7 @@ function apt-cyg-install ()
     # download and unpack the bz2 file
 
     # pick the latest version, which comes first
-    install=`cat "release/$pkg/desc" | awk '/^install: / { print $2; exit }'` 
+    local install=`cat "release/$pkg/desc" | awk '/^install: / { print $2; exit }'` 
 
     if test "-$install-" = "--"
     then
@@ -609,13 +617,13 @@ function apt-cyg-install ()
       exit 1
     fi
 
-    file=`basename $install`
+    local file=`basename $install`
     cd "release/$pkg"
     "${WGET[@]}" -nc $mirror/$install
     
     # check the md5
-    digest=`cat "desc" | awk '/^install: / { print $4; exit }'` 
-    digactual=`md5sum $file | awk '{print $1}'`
+    local digest=`cat "desc" | awk '/^install: / { print $4; exit }'` 
+    local digactual=`md5sum $file | awk '{print $1}'`
     if ! test $digest = $digactual
     then
       echo MD5 sum did not match, exiting
@@ -639,7 +647,7 @@ function apt-cyg-install ()
     
     # recursively install required packages
     
-    requires=`grep "^requires: " "release/$pkg/desc" | sed -re 's/^requires: *(.*[^ ]) */\1/g' -e 's/ +/ /g'`
+    local requires=`grep "^requires: " "release/$pkg/desc" | sed -re 's/^requires: *(.*[^ ]) */\1/g' -e 's/ +/ /g'`
     
     warn=0
     if ! test "-$requires-" = "--"
@@ -648,7 +656,7 @@ function apt-cyg-install ()
       echo $requires
       for package in $requires
       do
-        already=`grep -c "^$package " /etc/setup/installed.db`
+        local already=`grep -c "^$package " /etc/setup/installed.db`
         if test $already -ge 1
         then
           echo Package $package is already installed, skipping
@@ -665,7 +673,7 @@ function apt-cyg-install ()
     
     # run all postinstall scripts
     
-    pis=`ls /etc/postinstall/*.sh 2>/dev/null | wc -l`
+    local pis=`ls /etc/postinstall/*.sh 2>/dev/null | wc -l`
     if test $pis -gt 0 && ! test $noscripts -eq 1
     then
       echo Running postinstall scripts
@@ -685,18 +693,20 @@ function apt-cyg-install ()
 
 function apt-cyg-remove()
 {
+    local pkg
+    local req
 
     checkpackages "$@"
     for pkg do
 
-    already=`grep -c "^$pkg " /etc/setup/installed.db`
+    local already=`grep -c "^$pkg " /etc/setup/installed.db`
     if test $already = 0
     then
       echo Package $pkg is not installed, skipping
       continue
     fi
 
-    dontremove="cygwin coreutils gawk bzip2 tar xz wget bash"
+    local dontremove="cygwin coreutils gawk bzip2 tar xz wget bash"
     for req in $dontremove
     do
       if test "-$pkg-" = "-$req-"
