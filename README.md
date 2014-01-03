@@ -3,16 +3,16 @@ apt-cyg
 
 apt-cyg is a command-line installer for [Cygwin](http://cygwin.com/) which cooperates with Cygwin Setup and uses the same repository. The syntax is similar to apt-get. Usage examples:
 
-* "apt-cyg install <package names>" to install packages
-* "apt-cyg remove <package names>" to remove packages
+* "apt-cyg install &lt;package names&gt;" to install packages
+* "apt-cyg remove &lt;package names&gt;" to remove packages
 * "apt-cyg update" to update setup.ini
 * "apt-cyg show" to show installed packages
-* "apt-cyg find <pattern(s)>" to find packages matching patterns
-* "apt-cyg describe <pattern(s)>" to describe packages matching patterns
-* "apt-cyg packageof <commands or files>" to locate parent packages
-* "apt-cyg pathof <cache|mirror|mirrordir|cache/mirrordir>" to show path"
-* "apt-cyg key-add <files> ..." to add keys contained in <files>
-* "apt-cyg key-del <keyids> ..." to remove keys <keyids>
+* "apt-cyg find &lt;pattern(s)&gt;" to find packages matching patterns
+* "apt-cyg describe &lt;pattern(s)&gt;" to describe packages matching patterns
+* "apt-cyg packageof &lt;commands or files&gt;" to locate parent packages
+* "apt-cyg pathof &lt;cache|mirror|mirrordir|cache/mirrordir&gt;" to show path"
+* "apt-cyg key-add &lt;files&gt; ..." to add keys contained in &lt;files&gt;
+* "apt-cyg key-del &lt;keyids&gt; ..." to remove keys &lt;keyids&gt;
 * "apt-cyg key-list" to list keys
 * "apt-cyg key-finger" to list fingerprints
 
