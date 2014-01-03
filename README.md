@@ -16,6 +16,20 @@ apt-cyg is a command-line installer for [Cygwin](http://cygwin.com/) which coope
 * "apt-cyg key-list" to list keys
 * "apt-cyg key-finger" to list fingerprints
 
+Requirements
+-----------
+
+apt-cyg requires the cygwin default environment and optional packages below.
+
+* wget,ca-certificates,gnupg
+
+In 32bit version of cygwin, wget requires additional setting for ca-certificates package.
+Choose one of below.
+
+    ln -s /usr/ssl /etc/
+
+    echo "ca-directory = /usr/ssl/certs" >> ~/.wgetrc
+
 Quick start
 -----------
 
