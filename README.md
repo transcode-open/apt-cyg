@@ -23,16 +23,22 @@ apt-cyg requires the cygwin default environment and optional packages below.
 
 * wget,ca-certificates,gnupg
 
-In 32bit version of cygwin, wget requires additional setting for ca-certificates package.
-Choose one of below.
+In 32bit version of cygwin, wget requires an additional setting for ca-certificates package.
+Choose one of below settings.
 
-1. Create symbolic link for the default ca-directory of wget. 
-
+    # 1. Create symbolic link for the default ca-directory of wget. 
     ln -s /usr/ssl /etc/
-
-2. Set ca-directory paramete in '.wgetrc'. 
-
+    
+    # or
+    # 2. Set ca-directory paramete in '/etc/wgetrc'. 
+    echo "ca-directory = /usr/ssl/certs" >> /etc/wgetrc
+    
+    # or
+    # 3. Set ca-directory paramete in '~/.wgetrc'. 
     echo "ca-directory = /usr/ssl/certs" >> ~/.wgetrc
+
+Remarks:
+Above additional settings for wget is not required for 64bit version of cygwin.
 
 Quick start
 -----------
