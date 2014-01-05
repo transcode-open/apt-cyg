@@ -114,8 +114,7 @@ function findworkspace()
   
   if test -e /etc/setup/last-cache
   then
-    tmp="`head -1 /etc/setup/last-cache`"
-    cache="`cygpath -au "$tmp"`"
+    cache="$(cygpath -au "$(head -1 /etc/setup/last-cache)")"
   fi
   cache="${cache%/}"
   
@@ -581,7 +580,7 @@ function apt-cyg-install ()
 
     for pkg do
 
-    already=`grep -c "^$pkg " /etc/setup/installed.db`
+    local already=`grep -c "^$pkg " /etc/setup/installed.db`
     if test $already -ge 1
     then
       echo Package $pkg is already installed, skipping
@@ -649,7 +648,7 @@ function apt-cyg-install ()
     
     local requires=`grep "^requires: " "release/$pkg/desc" | sed -re 's/^requires: *(.*[^ ]) */\1/g' -e 's/ +/ /g'`
     
-    warn=0
+    local warn=0
     if ! test "-$requires-" = "--"
     then
       echo Package $pkg requires the following packages, installing:
