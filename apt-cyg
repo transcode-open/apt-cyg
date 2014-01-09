@@ -69,14 +69,14 @@ function usage()
   echo "  \"apt-cyg pathof <cache|mirror|mirrordir|cache/mirrordir>\" to show path"
   echo "  \"apt-cyg key-add <files> ...\" to add keys contained in <files>"
   echo "  \"apt-cyg key-del <keyids> ...\" to remove keys <keyids>"
-  echo "  \"apt-cyg key-list\" to list  keys"
+  echo "  \"apt-cyg key-list\" to list keys"
   echo "  \"apt-cyg key-finger\" to list fingerprints"
   echo "Options:"
   echo "  --charch <arch>          : change archetecture"
   echo "  --use-setuprc            : set cache and mirror with /etc/setup/setup.rc"
   echo "  --ignore-case,-i         : ignore case distinctions for <patterns>"
   echo "  --force-remove           : force remove"
-  echo "  --force-fetch-trustedkeys: force fetch tristedkeys"
+  echo "  --force-fetch-trustedkeys: force fetch trustedkeys"
   echo "  --no-verify, -X          : Don't verify setup.ini signatures"
   echo "  --mirror, -m <url>       : set mirror"
   echo "  --cache, -c <dir>        : set cache"
@@ -210,6 +210,40 @@ function init_gnupg ()
   GPG_KEYRING=( --keyring pubring.gpg )
 }
 
+# Usage: ask_user "question?" (optional recognition of YES_TO_ALL=true auto yes)
+ask_user () 
+{
+  while true; do
+    [ "$2" ] && { local pmt="$2";local def=; }
+    [ "$2" ] || { local pmt="y/n";local def=; }
+    $YES_TO_ALL && { local RPY=Y;local def=Y; }
+    [ -z "$def" ] && { echo -ne "$1 ";read -p "[$pmt] " RPY; }
+    [ -z "$RPY" ] && local RPY=$def; 
+    case "$RPY" in
+      Y*|y*) return 0 ;; 
+      N*|n*) return 1 ;;
+         1*) return 0 ;;
+         2*) return 1 ;;
+    esac
+  done
+}
+
+# Usage: wget_return_case_md5sum returncode
+wget_return_case_md5sum ()
+{
+  case "$1" in
+    1) echo "$LABEL: FAILED: Could not download $URL."; return 1 ;;
+    5) echo "$LABEL: WARNING: The SSL certificate is invalid $URL."
+       ask_user "Continue regardless of invalid SSL certificate?" || return 1
+       "${WGET[@]}" --no-check-certificate "$URL" -O "$FILE"
+       return 0
+    ;;
+    8) echo "$LABEL: FAILED: 404 Not Found $URL." return 1 ;;
+    0) return 0 ;;
+    *) echo "Error: FATAL: wget returned unkown value"; return 1 ;;
+  esac
+}
+
 # Usage: check_md5sum label hash url file
 function wget_and_check_md5sum ()
 {
@@ -217,10 +251,8 @@ function wget_and_check_md5sum ()
   local MD5="$2"
   local URL="$3"
   local FILE="$4"
-  if ! "${WGET[@]}" "$URL" -O "$FILE"; then
-    echo "$LABEL: FAILED: Could not download $URL."
-    return 1
-  fi
+  "${WGET[@]}" "$URL" -O "$FILE"
+  wget_return_case_md5sum "$?" || return 1
   if ! echo "$MD5 *$FILE" | md5sum -c >& /dev/null; then
     echo "$LABEL: FAILED: MD5 hash is not match."
     return 2
