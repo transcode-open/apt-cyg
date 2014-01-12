@@ -72,8 +72,7 @@ function version()
 function findworkspace()
 {
   # default working directory and mirror
-  system_arch=`uname -a | awk '{print $(NF-1)}'`
-  mirror=ftp://mirror.mcs.anl.gov/pub/cygwin/${system_arch}
+  mirror=ftp://mirror.mcs.anl.gov/pub/cygwin
   cache=/setup
   
   # work wherever setup worked last, if possible
@@ -88,29 +87,32 @@ function findworkspace()
   then
     mirror="`head -1 /etc/setup/last-mirror`"
   fi
-  mirrordir="`echo "$mirror" | sed -e "s/:/%3a/g" -e "s:/:%2f:g"`"
-  
+  # compact with setup.exe
+  mirrordir="`echo "$mirror/" | sed -e "s/:/%3a/g" -e "s:/:%2f:g"`"
+  system_arch=`uname -a | awk '{print $(NF-1)}'`
   echo Working directory is $cache
   echo Mirror is $mirror
-  mkdir -p "$cache/$mirrordir"
-  cd "$cache/$mirrordir"
+  echo SystemArch is $system_arch
+  mkdir -p "$cache/$mirrordir/$system_arch"
+  cd "$cache/$mirrordir/$system_arch"
 }
 
 
 function getsetup() 
 {
+  local mirror_site=$mirror/$system_arch
   if test "$noscripts" == "0" -a "$noupdate" == "0"
   then
     touch setup.ini
     mv setup.ini setup.ini-save
-    wget -N $mirror/setup.bz2
+    wget -N $mirror_site/setup.bz2
     if test -e setup.bz2 && test $? -eq 0
     then
       bunzip2 setup.bz2
       mv setup setup.ini
       echo Updated setup.ini
     else
-      wget -N $mirror/setup.ini
+      wget -N $mirror_site/setup.ini
       if test -e setup.ini && test $? -eq 0
       then
         echo Updated setup.ini
