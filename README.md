@@ -116,6 +116,22 @@ Todo
 
 Known Problem
 ------------
+### 2014-01-15: Signature check failed at cygwinports x86_64.
+Oops, setup.bz2 is newer than setup.bz2.sig.
+
+    $ date
+    Wed Jan 15 01:30:19 JST 2014
+    $ w3m -dump ftp://ftp.cygwinports.org/pub/cygwinports/x86_64/
+    Index of ftp://ftp.cygwinports.org/pub/cygwinports/x86_64/
+    
+    [Upper Directory]
+    md5.sum. . . . . . . Jan 10 14:24    184
+    release/ . . . . . . Jan 10 18:00
+    setup.bz2. . . . . . Jan 10 13:59   579K
+    setup.bz2.sig. . . . Dec  6 11:28     72
+    setup.ini. . . . . . Dec  6 11:28  3.20M
+    setup.ini.sig. . . . Dec  6 11:28     72
+
 ### FIXED: Check setup (cygcheck -c) can not detect .tar.xz packages
 At cygwin 1.7.25, cygcheck is hardcoded for .tar.gz and .tar.bz2.
 So check setup (cygcheck -c) can not detect .tar.xz packages.
