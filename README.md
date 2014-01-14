@@ -118,6 +118,7 @@ Known Problem
 ------------
 ### 2014-01-15: Signature check failed at cygwinports x86_64.
 Oops, setup.bz2 is newer than setup.bz2.sig.
+And it seems to be corrupted.
 
     $ date
     Wed Jan 15 01:30:19 JST 2014
@@ -131,6 +132,14 @@ Oops, setup.bz2 is newer than setup.bz2.sig.
     setup.bz2.sig. . . . Dec  6 11:28     72
     setup.ini. . . . . . Dec  6 11:28  3.20M
     setup.ini.sig. . . . Dec  6 11:28     72
+    
+    $ wget -q -O - ftp://ftp.cygwinports.org/pub/cygwinports/x86_64/setup.bz2 | bzip2 -tvv
+      (stdin):
+        [1: huff+mtf rt+rld]
+        [2: huff+mtf data integrity (CRC) error in data
+    
+    You can use the `bzip2recover' program to attempt to recover
+    data from undamaged sections of corrupted files.
 
 ### FIXED: Check setup (cygcheck -c) can not detect .tar.xz packages
 At cygwin 1.7.25, cygcheck is hardcoded for .tar.gz and .tar.bz2.
