@@ -116,6 +116,20 @@ Todo
 
 Known Problem
 ------------
+### 2014-01-17: ca-certificates package is not setup correct at x86_64 with Windows 8.
+
+After clean installing with setup-x86_64, there are something wrong about ca-certificate package as below:
+
+    $ ls -lnG \
+         /cygdrive/c/cygwin/etc/pki/ca-trust/extracted/openssl/ca-bundle.trust.crt \
+         /cygdrive/c/cygwin64/etc/pki/ca-trust/extracted/openssl/ca-bundle.trust.crt
+    -r--r--r-- 1 1001 314336 Jan 17 18:17 /cygdrive/c/cygwin/etc/pki/ca-trust/extracted/openssl/ca-bundle.trust.crt
+    -rw-r--r-- 1 1001      0 Oct 16 12:35 /cygdrive/c/cygwin64/etc/pki/ca-trust/extracted/openssl/ca-bundle.trust.crt
+
+The x86 environment seems no problem except that need an additional setting for wget and ca-certificate. Hmm,,,    
+
+It seems that /usr/bin/update-ca-trust is failed at x86_64.
+
 ### 2014-01-15: Signature check failed at cygwinports x86_64.
 Oops, setup.bz2 is newer than setup.bz2.sig.
 And it seems to be corrupted.
