@@ -125,10 +125,22 @@ After clean installing with setup-x86_64, there are something wrong about ca-cer
          /cygdrive/c/cygwin64/etc/pki/ca-trust/extracted/openssl/ca-bundle.trust.crt
     -r--r--r-- 1 1001 314336 Jan 17 18:17 /cygdrive/c/cygwin/etc/pki/ca-trust/extracted/openssl/ca-bundle.trust.crt
     -rw-r--r-- 1 1001      0 Oct 16 12:35 /cygdrive/c/cygwin64/etc/pki/ca-trust/extracted/openssl/ca-bundle.trust.crt
+    $ ls -lnG \
+         /cygdrive/c/cygwin/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
+         /cygdrive/c/cygwin64/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+    -r--r--r-- 1 1001 232342 Jan 17 18:17 /cygdrive/c/cygwin/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+    -rw-r--r-- 1 1001      0 Oct 16 12:35 /cygdrive/c/cygwin64/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
 
 The x86 environment seems no problem except that need an additional setting for wget and ca-certificate. Hmm,,,    
 
 It seems that /usr/bin/update-ca-trust is failed at x86_64.
+
+It's ad hoc, but effective way to fix it, is to copy files from cygwin32 to cygwin64, as below:
+
+    cp -a /cygdrive/c/cygwin/etc/pki/ca-trust/extracted/openssl/ca-bundle.trust.crt \
+          /cygdrive/c/cygwin64/etc/pki/ca-trust/extracted/openssl/ca-bundle.trust.crt
+    cp -a /cygdrive/c/cygwin/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
+          /cygdrive/c/cygwin64/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
 
 ### 2014-01-15: Signature check failed at cygwinports x86_64.
 Oops, setup.bz2 is newer than setup.bz2.sig.
