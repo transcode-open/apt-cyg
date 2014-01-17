@@ -39,6 +39,9 @@ Choose one of below settings.
 
 Remarks:
 Above additional settings for wget is not required for 64bit version of cygwin.
+But, as of 2014-01-17, perhaps ca-certificates package makes fail of certification in 64bit version of cygwin with Windows 8. See below:
+
+* Known Problem / [2014-01-17: ca-certificates package is not setup correct at x86_64 with Windows 8.](#20140117-ca-certificates)
 
 Quick start
 -----------
@@ -116,7 +119,7 @@ Todo
 
 Known Problem
 ------------
-### 2014-01-17: ca-certificates package is not setup correct at x86_64 with Windows 8.
+### <a name="20140117-ca-certificates"> 2014-01-17: ca-certificates package is not setup correct at x86_64 with Windows 8.
 
 After clean installing with setup-x86_64, there are something wrong about ca-certificate package as below:
 
