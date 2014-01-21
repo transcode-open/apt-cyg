@@ -78,6 +78,7 @@ function usage()
   echo "  --force-remove           : force remove"
   echo "  --force-fetch-trustedkeys: force fetch trustedkeys"
   echo "  --no-verify, -X          : Don't verify setup.ini signatures"
+  echo "  --no-check-certificate   : Don't validate the server's certificate"
   echo "  --mirror, -m <url>       : set mirror"
   echo "  --cache, -c <dir>        : set cache"
   echo "  --file, -f <file>        : read package names from file"
@@ -443,6 +444,11 @@ do
 
     --no-verify|-X)
       no_verify=1
+      shift
+    ;;
+
+    --no-check-certificate)
+      WGET+=( "--no-check-certificate" )
       shift
     ;;
 
