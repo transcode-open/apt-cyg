@@ -66,7 +66,8 @@ function usage()
   echo "  \"apt-cyg find <patterns>\" to find packages matching patterns"
   echo "  \"apt-cyg describe <patterns>\" to describe packages matching patterns"
   echo "  \"apt-cyg packageof <commands or files>\" to locate parent packages"
-  echo "  \"apt-cyg pathof <cache|mirror|mirrordir|cache/mirrordir>\" to show path"
+  echo "  \"apt-cyg pathof <cache|mirror|mirrordir|cache/mirrordir|setup.ini>\""
+  echo "                                                          to show path"
   echo "  \"apt-cyg key-add <files> ...\" to add keys contained in <files>"
   echo "  \"apt-cyg key-del <keyids> ...\" to remove keys <keyids>"
   echo "  \"apt-cyg key-list\" to list keys"
@@ -74,7 +75,7 @@ function usage()
   echo "Options:"
   echo "  --charch <arch>          : change archetecture"
   echo "  --use-setuprc            : set cache and mirror with /etc/setup/setup.rc"
-  echo "  --ignore-case,-i         : ignore case distinctions for <patterns>"
+  echo "  --ignore-case, -i        : ignore case distinctions for <patterns>"
   echo "  --force-remove           : force remove"
   echo "  --force-fetch-trustedkeys: force fetch trustedkeys"
   echo "  --no-verify, -X          : Don't verify setup.ini signatures"
@@ -385,6 +386,7 @@ function apt-cyg-pathof ()
       mirror)           echo "$mirror" ;;
       mirrordir)        echo "$mirrordir" ;;
       cache/mirrordir)  echo "$cache/$mirrordir" ;;
+      setup.ini)        echo "$cache/$mirrordir/$arch/setup.ini" ;;
       *)
         echo -e "\e[31;1mError: in function $FUNCNAME: \e[30;0m unknown parameter '$1'."
         exit 1
