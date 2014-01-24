@@ -41,7 +41,7 @@ Remarks:
 Above additional settings for wget is not required for 64bit version of cygwin.
 But, as of 2014-01-17, perhaps ca-certificates package makes fail of certification in 64bit version of cygwin with Windows 8. See below:
 
-* Known Problem / [2014-01-17: ca-certificates package is not setup correct at x86_64 with Windows 8.](#20140117-ca-certificates)
+* Known Problem / [2014-01-17: ca-certificates package is not setup correct at x86_64 with Windows 8.](#2014-01-17-ca-certificates-package-is-not-setup-correct-at-x86_64-with-windows-8)
 
 Quick start
 -----------
@@ -119,7 +119,7 @@ Todo
 
 Known Problem
 ------------
-### <a name="20140117-ca-certificates"> 2014-01-17: ca-certificates package is not setup correct at x86_64 with Windows 8.
+### 2014-01-17: ca-certificates package is not setup correct at x86_64 with Windows 8.
 
 After clean installing with setup-x86_64, there are something wrong about ca-certificate package as below:
 
@@ -145,6 +145,14 @@ It's ad hoc, but effective way to fix it, is to copy files from cygwin32 to cygw
     cp -a /cygdrive/c/cygwin/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
           /cygdrive/c/cygwin64/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
 
+This problem is fixed at 2014-01-24.
+version 0.18.7-1 of p11-kit, p11-kit-trust and libp11-kit0 did not work at the cygwin64 under the Windows 8.
+If you face the above problem, please upgrade these three packages from version 0.18.7-1 to version 0.18.7-2.
+
+For more details, see a thread of below:
+
+* Cygwin mailing list / cygwin / [Re: Is there someone who have a same problem ?](http://cygwin.com/ml/cygwin/2014-01/msg00368.html)
+
 ### 2014-01-15: Signature check failed at cygwinports x86_64.
 Oops, setup.bz2 is newer than setup.bz2.sig.
 And it seems to be corrupted.
@@ -169,6 +177,8 @@ And it seems to be corrupted.
     
     You can use the `bzip2recover' program to attempt to recover
     data from undamaged sections of corrupted files.
+
+As of 2014-01-24, above problem is recovered at least.
 
 ### FIXED: Check setup (cygcheck -c) can not detect .tar.xz packages
 At cygwin 1.7.25, cygcheck is hardcoded for .tar.gz and .tar.bz2.
