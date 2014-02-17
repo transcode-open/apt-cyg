@@ -1,6 +1,6 @@
-
 #!/bin/bash
-
+# vim: set ts=2 sw=2 tw=0 et :
+#
 # apt-cyg: install tool for cygwin similar to debian apt-get
 # 
 # Copyright (C) 2005-9, Stephen Jungels
@@ -18,7 +18,6 @@
 # (http://www.fsf.org/licensing/licenses/gpl.html)
 
 # this script requires some packages
-
 WGET=`which wget 2> /dev/null`
 BZIP2=`which bzip2 2> /dev/null`
 TAR=`which tar 2> /dev/null`
@@ -30,6 +29,7 @@ then
   exit 1
 fi
 
+[ `uname -m` == 'x86_64' ] && ARCH='x86_64' || ARCH='x86'
 
 function usage()
 {
@@ -54,7 +54,7 @@ function usage()
 
 function version()
 {
-  echo "apt-cyg version 0.57"
+  echo "apt-cyg version 0.58"
   echo "Written by Stephen Jungels"
   echo ""
   echo "Copyright (c) 2005-9 Stephen Jungels.  Released under the GPL."
@@ -64,7 +64,6 @@ function version()
 function findworkspace()
 {
   # default working directory and mirror
-  
   mirror=ftp://mirror.mcs.anl.gov/pub/cygwin
   cache=/setup
   
@@ -95,14 +94,14 @@ function getsetup()
   then
     touch setup.ini
     mv setup.ini setup.ini-save
-    wget -N $mirror/setup.bz2
+    wget -N $mirror/$ARCH/setup.bz2
     if test -e setup.bz2 && test $? -eq 0
     then
       bunzip2 setup.bz2
       mv setup setup.ini
       echo Updated setup.ini
     else
-      wget -N $mirror/setup.ini
+      wget -N $mirror/$ARCH/setup.ini
       if test -e setup.ini && test $? -eq 0
       then
         echo Updated setup.ini
@@ -126,7 +125,6 @@ function checkpackages()
 
 
 # process options
-
 noscripts=0
 noupdate=0
 file=""
