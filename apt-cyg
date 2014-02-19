@@ -68,7 +68,6 @@ function findworkspace()
   cache=/setup
   
   # work wherever setup worked last, if possible
-  
   if test -e /etc/setup/last-cache
   then
     tmp="`head -1 /etc/setup/last-cache`"
