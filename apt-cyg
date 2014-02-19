@@ -63,7 +63,7 @@ function usage()
 
 function version()
 {
-  echo "apt-cyg version 0.57"
+  echo "apt-cyg version 0.59"
   echo "Written by Stephen Jungels"
   echo ""
   echo "Copyright (c) 2005-9 Stephen Jungels.  Released under the GPL."
@@ -73,8 +73,7 @@ function version()
 function findworkspace()
 {
   # default working directory and mirror
-  
-  mirror=ftp://mirror.mcs.anl.gov/pub/cygwin
+  mirror=http://mirrors.kernel.org/sourceware/cygwin
   cache=/setup
   
   # work wherever setup worked last, if possible
