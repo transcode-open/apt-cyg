@@ -35,4 +35,5 @@ Changelog
 ---------
 
 [2013-10-23] added multiarch support, autor: https://github.com/aguynamedryan/apt-cyg
+
 [2013-10-23] added xz archives support, autor: ernierasta
