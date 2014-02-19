@@ -90,15 +90,6 @@ function findworkspace()
 
 function getsetup() 
 {
-
-  ARCH=`uname -m | grep _64`
-  if test "-$ARCH-" = "--"
-  then
-    arch="x86"
-  else
-    arch="x86_64"
-  fi
-
   if test "$noscripts" == "0" -a "$noupdate" == "0"
   then
     touch setup.ini
