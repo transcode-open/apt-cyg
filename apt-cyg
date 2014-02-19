@@ -22,10 +22,11 @@ WGET=`which wget 2> /dev/null`
 BZIP2=`which bzip2 2> /dev/null`
 TAR=`which tar 2> /dev/null`
 GAWK=`which awk 2> /dev/null`
+XZ=`which xz 2> /dev/null`
 if test "-$WGET-" = "--" || test "-$BZIP2-" = "--" || test "-$TAR-" = "--" \
-  || test "-$GAWK-" = "--"
+  || test "-$GAWK-" = "--" || test "-$XZ-" = "--"
 then
-  echo You must install wget, tar, gawk and bzip2 to use apt-cyg.
+  echo You must install wget, tar, gawk, xz and bzip2 to use apt-cyg.
   exit 1
 fi
 
@@ -331,7 +332,7 @@ case "$command" in
     fi
     echo Found package $pkg
 
-    # download and unpack the bz2 file
+    # download and unpack the bz2 or xz file
 
     # pick the latest version, which comes first
     install=`cat "release/$pkg/desc" | awk '/^install: / { print $2; exit }'` 
@@ -356,7 +357,12 @@ case "$command" in
     fi
     
     echo "Unpacking..."
-    cat $file | bunzip2 | tar > "/etc/setup/$pkg.lst" xvf - -C /
+    #determine file type
+    if [ "${file##*.}" == "xz" ]; then
+      cat $file | tar > "/etc/setup/$pkg.lst" xvJf - -C /
+    else
+      cat $file | bunzip2 | tar > "/etc/setup/$pkg.lst" xvf - -C /
+    fi
     gzip -f "/etc/setup/$pkg.lst"
     cd ../..
     
