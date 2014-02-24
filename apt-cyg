@@ -119,14 +119,12 @@ function findworkspace()
   
   # work wherever setup worked last, if possible
   
-  if test -e /etc/setup/last-cache
-  then
+  if [ -e /etc/setup/last-cache ]; then
     cache="$(cygpath -au "$(head -1 /etc/setup/last-cache)")"
   fi
   cache="${cache%/}"
   
-  if test -e /etc/setup/last-mirror
-  then
+  if [ -e /etc/setup/last-mirror ]; then
     mirror="$(head -1 /etc/setup/last-mirror)"
   fi
   mirror="${mirror%/}"
@@ -143,20 +141,19 @@ function findworkspace()
 
 function getsetup() 
 {
-  if test "$noscripts" == "0" -a "$noupdate" == "0"
-  then
+  if [ "$noscripts" == "0" -a "$noupdate" == "0" ]; then
     touch setup.ini
     mv setup.ini setup.ini-save
     "${WGET[@]}" -N "$mirror/$arch/setup.bz2" "$mirror/$arch/setup.bz2.sig"
-    if [[ -e setup.bz2 && -e setup.bz2.sig && $? -eq 0 ]]; then
-      [[ "$no_verify" == "" ]] && verify_signatures setup.bz2.sig
+    if [ -e setup.bz2 -a -e setup.bz2.sig -a $? -eq 0 ]; then
+      [ -z "$no_verify" ] && verify_signatures setup.bz2.sig
       bunzip2 setup.bz2
       mv setup setup.ini
       echo Updated setup.ini
     else
       "${WGET[@]}" -N "$mirror/$arch/setup.ini" "$mirror/$arch/setup.ini.sig"
-      if [[ -e setup.ini && -e setup.ini.sig && $? -eq 0 ]]; then
-        [[ "$no_verify" == "" ]] && verify_signatures setup.ini.sig
+      if [ -e setup.ini -a  -e setup.ini.sig -a $? -eq 0 ]; then
+        [ -z "$no_verify" ] && verify_signatures setup.ini.sig
         echo Updated setup.ini
       else
         mv setup.ini-save setup.ini
@@ -208,7 +205,7 @@ function init_gnupg ()
 {
   [ -z "$GPG" ] && return
   export GNUPGHOME="$cache/.apt-cyg"
-  if ! [ -d "$GNUPGHOME" ]; then
+  if [ ! -d "$GNUPGHOME" ]; then
     if ! { mkdir -p "$GNUPGHOME" && chmod 700 "$GNUPGHOME"; } then
       echo -e "\e[31;1mError:\e[30;0m cannot initialize directory $GNUPGHOME"
       exit 1
@@ -218,16 +215,16 @@ function init_gnupg ()
 }
 
 # Usage: ask_user "question?" (optional recognition of YES_TO_ALL=true auto yes)
-ask_user () 
+function ask_user () 
 {
   while true; do
-    [ "$2" ] && { local pmt="$2";local def=; }
-    [ "$2" ] || { local pmt="y/n";local def=; }
+    [ -n "$2" ] && { local pmt="$2"; local def=; }
+    [ -n "$2" ] || { local pmt="y/n";local def=; }
     $YES_TO_ALL && { local RPY=Y;local def=Y; }
     [ -z "$def" ] && { echo -ne "$1 ";read -p "[$pmt] " RPY; }
-    [ -z "$RPY" ] && local RPY=$def; 
+    [ -z "$RPY" ] && { local RPY=$def; }
     case "$RPY" in
-      Y*|y*) return 0 ;; 
+      Y*|y*) return 0 ;;
       N*|n*) return 1 ;;
          1*) return 0 ;;
          2*) return 1 ;;
@@ -236,7 +233,7 @@ ask_user ()
 }
 
 # Usage: wget_return_case_md5sum returncode
-wget_return_case_md5sum ()
+function wget_return_case_md5sum ()
 {
   case "$1" in
     1) echo "$LABEL: FAILED: Could not download $URL."; return 1 ;;
@@ -260,7 +257,7 @@ function wget_and_check_md5sum ()
   local FILE="$4"
   "${WGET[@]}" "$URL" -O "$FILE"
   wget_return_case_md5sum "$?" || return 1
-  if ! echo "$MD5 *$FILE" | md5sum -c >& /dev/null; then
+  if ! { echo "$MD5 *$FILE" | md5sum -c >& /dev/null; } then
     echo "$LABEL: FAILED: MD5 hash is not match."
     return 2
   fi
@@ -280,7 +277,7 @@ function fetch_trustedkeys ()
     local URL="$(eval echo "\$${LABEL}_URL")"
     local URL_LATEST="$(eval echo "\$${LABEL}_URL_LATEST")"
     local CASE=""
-    if [[ -z "$force_fetch_trustedkeys" ]] && "${GPG[@]}" --fingerprint --with-colons | grep -q "$FPR"; then
+    if [ -z "$force_fetch_trustedkeys" ] && { "${GPG[@]}" --fingerprint --with-colons | grep -q "$FPR"; } then
       continue
     fi
     if [ -n "$URL" ]; then
@@ -334,7 +331,7 @@ function fetch_trustedkeys ()
 # Usage: verify_signatures files ...
 function verify_signatures ()
 {
-  while [[ $# -gt 0 ]]; do
+  while [ $# -gt 0 ]; do
     if ! "${GPGV[@]}" "${GPG_KEYRING[@]}" "$1"; then
       echo "Error: BAD signature: $1"
       exit 1
@@ -419,8 +416,7 @@ YES_TO_ALL=false
 INITIAL_ARGS=( "$@" )
 ARGS=()
 
-while test $# -gt 0
-do
+while [ $# -gt 0 ]; do
   case "$1" in
 
     --charch)
@@ -495,8 +491,7 @@ do
     ;;
 
     --file|-f)
-      if ! test "-$2-" = "--"
-      then
+      if [ -n "$2" ]; then
         OPT_FILES+=( "$2" )
         shift
       else
@@ -518,14 +513,13 @@ do
   esac
 done
 
-if [[ "$GPGV" == "" && "$no_verify" == "" ]]; then
+if [ -z "$GPGV" -a -z "$no_verify" ]; then
   echo "Error: GnuPG is not installed. Prease install gnupg package or use -X option."
   exit 1
 fi
 
 for file in "${OPT_FILES[@]}"; do
-  if test -f "$file"
-  then
+  if [ -f "$file" ]; then
     readarray -t -O ${#ARGS[@]} ARGS < "$file"
   else
     echo File $file not found, skipping
@@ -599,15 +593,12 @@ function apt-cyg-packageof ()
     checkpackages "$@"
     for pkg do
       local key="$(which "$pkg" 2>/dev/null | sed "s:^/::")"
-      if test "-$key-" = "--"
-      then
+      if [ -z "$key" ]; then
         key="$pkg"
       fi
-      for manifest in /etc/setup/*.lst.gz
-      do
+      for manifest in /etc/setup/*.lst.gz; do
         local found="$(gzip -cd "$manifest" | grep -c "$key")"
-        if test $found -gt 0
-        then
+        if [ $found -gt 0 ]; then
           local package="$(echo $manifest | sed -e "s:/etc/setup/::" -e "s/.lst.gz//")"
           echo Found $key in the package $package
         fi
@@ -629,8 +620,7 @@ function apt-cyg-install ()
     for pkg do
 
     local already="$(grep -c "^$pkg " /etc/setup/installed.db)"
-    if test $already -ge 1
-    then
+    if [ $already -ge 1 ]; then
       echo Package $pkg is already installed, skipping
       continue
     fi
@@ -645,8 +635,7 @@ function apt-cyg-install ()
        END {if (px == 1 && desc != "") print desc; else print "Package not found"}' \
        setup.ini
     local desc="$(< "release/$pkg/desc")"
-    if test "-$desc-" = "-Package not found-"
-    then
+    if [ "$desc" = "Package not found" ]; then
       echo Package $pkg not found or ambiguous name, exiting
       rm -r "release/$pkg"
       exit 1
@@ -658,8 +647,7 @@ function apt-cyg-install ()
     # pick the latest version, which comes first
     local install="$(awk '/^install: / { print $2; exit }' "release/$pkg/desc")"
 
-    if test "-$install-" = "--"
-    then
+    if [ -z "$install" ]; then
       echo "Could not find \"install\" in package description: obsolete package?"
       exit 1
     fi
@@ -671,8 +659,7 @@ function apt-cyg-install ()
     # check the md5
     local digest="$(awk '/^install: / { print $4; exit }' "desc")"
     local digactual="$(md5sum $file | awk '{print $1}')"
-    if ! test $digest = $digactual
-    then
+    if [ "$digest" != "$digactual" ]; then
       echo MD5 sum did not match, exiting
       exit 1
     fi
@@ -698,35 +685,29 @@ function apt-cyg-install ()
     local requires="$(grep "^requires: " "release/$pkg/desc" | sed -re 's/^requires: *(.*[^ ]) */\1/g' -e 's/ +/ /g')"
     
     local warn=0
-    if ! test "-$requires-" = "--"
-    then
+    if [ -z "$requires" ]; then
       echo Package $pkg requires the following packages, installing:
       echo $requires
-      for package in $requires
-      do
+      for package in $requires; do
         local already="$(grep -c "^$package " /etc/setup/installed.db)"
-        if test $already -ge 1
-        then
+        if [ $already -ge 1 ]; then
           echo Package $package is already installed, skipping
           continue
         fi
         apt-cyg --noscripts install $package
-        if ! test $? = 0 ; then warn=1; fi
+        if [ $? -ne 0 ]; then warn=1; fi
       done
     fi
-    if ! test $warn = 0
-    then
+    if [ $warn -nq 0 ]; then
       echo "Warning: some required packages did not install, continuing"
     fi
     
     # run all postinstall scripts
     
     local pis="$(ls /etc/postinstall/*.sh 2>/dev/null | wc -l)"
-    if test $pis -gt 0 && ! test $noscripts -eq 1
-    then
+    if [ $pis -gt 0 -a "$noscripts" -ne 1 ]; then
       echo Running postinstall scripts
-      for script in /etc/postinstall/*.sh
-      do
+      for script in /etc/postinstall/*.sh; do
         $script
         mv $script $script.done
       done
@@ -748,24 +729,20 @@ function apt-cyg-remove()
     for pkg do
 
     local already="$(grep -c "^$pkg " /etc/setup/installed.db)"
-    if test $already = 0
-    then
+    if [ $already -eq 0 ]; then
       echo Package $pkg is not installed, skipping
       continue
     fi
 
     local dontremove="cygwin coreutils gawk bzip2 tar xz wget bash"
-    for req in $dontremove
-    do
-      if test "-$pkg-" = "-$req-"
-      then
+    for req in $dontremove; do
+      if [ "$pkg" = "$req" ]; then
         echo apt-cyg cannot remove package $pkg, exiting
         exit 1
       fi
     done
 
-    if test ! -e "/etc/setup/$pkg.lst.gz" -a "$force_remove" = ""
-    then
+    if [ ! -e "/etc/setup/$pkg.lst.gz" -a "$force_remove" = "" ]; then
       echo Package manifest missing, cannot remove $pkg.  Exiting
       exit 1
     fi
@@ -773,8 +750,7 @@ function apt-cyg-remove()
 
     # run preremove scripts
 
-    if test -e "/etc/preremove/$pkg.sh"
-    then
+    if [ -e "/etc/preremove/$pkg.sh" ]; then
       "/etc/preremove/$pkg.sh"
     fi
 
