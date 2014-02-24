@@ -51,7 +51,7 @@ TAR="$(  which tar  2>/dev/null )"
 GAWK="$( which awk  2>/dev/null )"
 GPGV="$( which gpgv 2>/dev/null )"
 GPG="$(  which gpg  2>/dev/null )"
-if [ "$WGET" = "" -o "$TAR" = "" -o "$GAWK" = "" ]; then
+if [ -z "$WGET" -o -z "$TAR" -o -z "$GAWK" ]; then
   echo You must install wget, tar and gawk to use apt-cyg.
   exit 1
 fi
@@ -141,7 +141,7 @@ function findworkspace()
 
 function getsetup() 
 {
-  if [ "$noscripts" == "0" -a "$noupdate" == "0" ]; then
+  if [ $noscripts -eq 0 -a $noupdate -eq 0 ]; then
     touch setup.ini
     mv setup.ini setup.ini-save
     "${WGET[@]}" -N "$mirror/$arch/setup.bz2" "$mirror/$arch/setup.bz2.sig"
@@ -215,7 +215,7 @@ function init_gnupg ()
 }
 
 # Usage: ask_user "question?" (optional recognition of YES_TO_ALL=true auto yes)
-function ask_user () 
+function ask_user ()
 {
   while true; do
     [ -n "$2" ] && { local pmt="$2"; local def=; }
@@ -705,7 +705,7 @@ function apt-cyg-install ()
     # run all postinstall scripts
     
     local pis="$(ls /etc/postinstall/*.sh 2>/dev/null | wc -l)"
-    if [ $pis -gt 0 -a "$noscripts" -ne 1 ]; then
+    if [ $pis -gt 0 -a $noscripts -ne 1 ]; then
       echo Running postinstall scripts
       for script in /etc/postinstall/*.sh; do
         $script
@@ -742,7 +742,7 @@ function apt-cyg-remove()
       fi
     done
 
-    if [ ! -e "/etc/setup/$pkg.lst.gz" -a "$force_remove" = "" ]; then
+    if [ ! -e "/etc/setup/$pkg.lst.gz" -a -z "$force_remove" ]; then
       echo Package manifest missing, cannot remove $pkg.  Exiting
       exit 1
     fi
