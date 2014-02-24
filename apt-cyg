@@ -46,11 +46,11 @@ TRUSTEDKEY_CYGWINPORTS_URL_LATEST="http://cygwinports.org/ports.gpg"
 
 # this script requires some packages
 
-WGET="`which wget 2> /dev/null`"
-TAR="`which tar 2> /dev/null`"
-GAWK="`which awk 2> /dev/null`"
-GPGV="`which gpgv 2> /dev/null`"
-GPG="`which gpg 2> /dev/null`"
+WGET="$( which wget 2>/dev/null )"
+TAR="$(  which tar  2>/dev/null )"
+GAWK="$( which awk  2>/dev/null )"
+GPGV="$( which gpgv 2>/dev/null )"
+GPG="$(  which gpg  2>/dev/null )"
 if [ "$WGET" = "" -o "$TAR" = "" -o "$GAWK" = "" ]; then
   echo You must install wget, tar and gawk to use apt-cyg.
   exit 1
@@ -104,12 +104,17 @@ function current_cygarch ()
   arch | sed -e 's/^i686$/x86/g'
 }
 
+function mirror_to_mirrordir ()
+{
+  echo "$1" | sed -e "s/:/%3a/g" -e "s:/:%2f:g"
+}
+
 function findworkspace()
 {
   # default working directory, mirror and architecture
 
   mirror=ftp://mirror.mcs.anl.gov/pub/cygwin
-  arch=`current_cygarch`
+  arch="$(current_cygarch)"
   cache=/setup
   
   # work wherever setup worked last, if possible
@@ -122,10 +127,10 @@ function findworkspace()
   
   if test -e /etc/setup/last-mirror
   then
-    mirror="`head -1 /etc/setup/last-mirror`"
+    mirror="$(head -1 /etc/setup/last-mirror)"
   fi
   mirror="${mirror%/}"
-  mirrordir="`echo "$mirror/" | sed -e "s/:/%3a/g" -e "s:/:%2f:g"`"
+  mirrordir="$(mirror_to_mirrordir "$mirror/")"
   
   echo Working directory is $cache
   echo Mirror is $mirror
@@ -174,9 +179,9 @@ function getrootdir ()
 {
   case "$1" in
     x86)
-      cygpath -u "$(cat /proc/registry32/HKEY_LOCAL_MACHINE/SOFTWARE/Cygwin/setup/rootdir)" ;;
+      cygpath -u "$(< /proc/registry32/HKEY_LOCAL_MACHINE/SOFTWARE/Cygwin/setup/rootdir)" ;;
     x86_64)
-      cygpath -u "$(cat /proc/registry64/HKEY_LOCAL_MACHINE/SOFTWARE/Cygwin/setup/rootdir)" ;;
+      cygpath -u "$(< /proc/registry64/HKEY_LOCAL_MACHINE/SOFTWARE/Cygwin/setup/rootdir)" ;;
     *)
       echo "Error: unknown arch $1" >&2 ;;
   esac
@@ -186,9 +191,9 @@ function getrootdir ()
 function charch ()
 {
   local rootdir
-  if [ "`current_cygarch`" != "$1" ]; then
+  if [ "$(current_cygarch)" != "$1" ]; then
     echo -e "\e[32;1mcharch to:\e[30;0m $1"
-    rootdir="`getrootdir "$1"`"
+    rootdir="$(getrootdir "$1")"
     shift
     chroot "$rootdir" "$rootdir/bin/bash" -lc \
       'cd "$1"; shift ; "$0" "$@"' \
@@ -542,7 +547,7 @@ function apt-cyg-show ()
 {
 
     echo 1>&2 The following packages are installed:
-    cat /etc/setup/installed.db | awk '/[^ ]+ [^ ]+ 0/ {print $1}'
+    awk '/[^ ]+ [^ ]+ 0/ {print $1}' /etc/setup/installed.db
 
 }
 
@@ -561,8 +566,9 @@ function apt-cyg-find ()
       awk '/[^ ]+ [^ ]+ 0/ {if ($1 ~ query) print $1}' query="$pkg" IGNORECASE="$ignore_case" /etc/setup/installed.db
       echo ""
       echo "Searching for installable packages matching $pkg:"
-      cat setup.ini | awk -v query="$pkg" -v IGNORECASE="$ignore_case" \
-        'BEGIN{RS="\n\n@ "; FS="\n"; ORS="\n"} {if ($1 ~ query) {print $1}}'
+      awk -v query="$pkg" -v IGNORECASE="$ignore_case" \
+        'BEGIN{RS="\n\n@ "; FS="\n"; ORS="\n"} {if ($1 ~ query) {print $1}}' \
+        setup.ini
     done
 
 }
@@ -577,8 +583,9 @@ function apt-cyg-describe ()
     getsetup
     for pkg do
       echo ""
-      cat setup.ini | awk -v query="$pkg" -v IGNORECASE="$ignore_case" \
-        'BEGIN{RS="\n\n@ "; FS="\n"; ORS="\n"} {if ($1 ~ query) {print $0 "\n"}}'
+      awk -v query="$pkg" -v IGNORECASE="$ignore_case" \
+        'BEGIN{RS="\n\n@ "; FS="\n"; ORS="\n"} {if ($1 ~ query) {print $0 "\n"}}' \
+        setup.ini
     done
 
 }
@@ -591,17 +598,17 @@ function apt-cyg-packageof ()
 
     checkpackages "$@"
     for pkg do
-      local key=`which "$pkg" 2>/dev/null | sed "s:^/::"`
+      local key="$(which "$pkg" 2>/dev/null | sed "s:^/::")"
       if test "-$key-" = "--"
       then
         key="$pkg"
       fi
       for manifest in /etc/setup/*.lst.gz
       do
-        local found=`cat $manifest | gzip -d | grep -c "$key"`
+        local found="$(gzip -cd "$manifest" | grep -c "$key")"
         if test $found -gt 0
         then
-          local package=`echo $manifest | sed -e "s:/etc/setup/::" -e "s/.lst.gz//"`
+          local package="$(echo $manifest | sed -e "s:/etc/setup/::" -e "s/.lst.gz//")"
           echo Found $key in the package $package
         fi
       done
@@ -621,7 +628,7 @@ function apt-cyg-install ()
 
     for pkg do
 
-    local already=`grep -c "^$pkg " /etc/setup/installed.db`
+    local already="$(grep -c "^$pkg " /etc/setup/installed.db)"
     if test $already -ge 1
     then
       echo Package $pkg is already installed, skipping
@@ -633,11 +640,11 @@ function apt-cyg-install ()
     # look for package and save desc file
 
     mkdir -p "release/$pkg"
-    cat setup.ini | awk > "release/$pkg/desc" -v package="$pkg" \
+    awk > "release/$pkg/desc" -v package="$pkg" \
       'BEGIN{RS="\n\n@ "; FS="\n"} {if ($1 == package) {desc = $0; px++}} \
-       END {if (px == 1 && desc != "") print desc; else print "Package not found"}' 
-    
-    local desc=`cat "release/$pkg/desc"`
+       END {if (px == 1 && desc != "") print desc; else print "Package not found"}' \
+       setup.ini
+    local desc="$(< "release/$pkg/desc")"
     if test "-$desc-" = "-Package not found-"
     then
       echo Package $pkg not found or ambiguous name, exiting
@@ -649,7 +656,7 @@ function apt-cyg-install ()
     # download and unpack the bz2 file
 
     # pick the latest version, which comes first
-    local install=`cat "release/$pkg/desc" | awk '/^install: / { print $2; exit }'` 
+    local install="$(awk '/^install: / { print $2; exit }' "release/$pkg/desc")"
 
     if test "-$install-" = "--"
     then
@@ -657,13 +664,13 @@ function apt-cyg-install ()
       exit 1
     fi
 
-    local file=`basename $install`
+    local file="$(basename "$install")"
     cd "release/$pkg"
     "${WGET[@]}" -nc $mirror/$install
     
     # check the md5
-    local digest=`cat "desc" | awk '/^install: / { print $4; exit }'` 
-    local digactual=`md5sum $file | awk '{print $1}'`
+    local digest="$(awk '/^install: / { print $4; exit }' "desc")"
+    local digactual="$(md5sum $file | awk '{print $1}')"
     if ! test $digest = $digactual
     then
       echo MD5 sum did not match, exiting
@@ -678,16 +685,17 @@ function apt-cyg-install ()
     
     # update the package database
     
-    cat /etc/setup/installed.db | awk > /tmp/awk.$$ -v pkg="$pkg" -v bz=$file \
+    awk > /tmp/awk.$$ -v pkg="$pkg" -v bz=$file \
       '{if (ins != 1 && pkg < $1) {print pkg " " bz " 0"; ins=1}; print $0} \
-       END{if (ins != 1) print pkg " " bz " 0"}'
+      END{if (ins != 1) print pkg " " bz " 0"}' \
+      /etc/setup/installed.db
     mv /etc/setup/installed.db /etc/setup/installed.db-save
     mv /tmp/awk.$$ /etc/setup/installed.db
     
     
     # recursively install required packages
     
-    local requires=`grep "^requires: " "release/$pkg/desc" | sed -re 's/^requires: *(.*[^ ]) */\1/g' -e 's/ +/ /g'`
+    local requires="$(grep "^requires: " "release/$pkg/desc" | sed -re 's/^requires: *(.*[^ ]) */\1/g' -e 's/ +/ /g')"
     
     local warn=0
     if ! test "-$requires-" = "--"
@@ -696,7 +704,7 @@ function apt-cyg-install ()
       echo $requires
       for package in $requires
       do
-        local already=`grep -c "^$package " /etc/setup/installed.db`
+        local already="$(grep -c "^$package " /etc/setup/installed.db)"
         if test $already -ge 1
         then
           echo Package $package is already installed, skipping
@@ -713,7 +721,7 @@ function apt-cyg-install ()
     
     # run all postinstall scripts
     
-    local pis=`ls /etc/postinstall/*.sh 2>/dev/null | wc -l`
+    local pis="$(ls /etc/postinstall/*.sh 2>/dev/null | wc -l)"
     if test $pis -gt 0 && ! test $noscripts -eq 1
     then
       echo Running postinstall scripts
@@ -739,7 +747,7 @@ function apt-cyg-remove()
     checkpackages "$@"
     for pkg do
 
-    local already=`grep -c "^$pkg " /etc/setup/installed.db`
+    local already="$(grep -c "^$pkg " /etc/setup/installed.db)"
     if test $already = 0
     then
       echo Package $pkg is not installed, skipping
@@ -770,8 +778,8 @@ function apt-cyg-remove()
       "/etc/preremove/$pkg.sh"
     fi
 
-    cat "/etc/setup/$pkg.lst.gz" | gzip -d | awk '/[^\/]$/ {print "rm -f \"/" $0 "\""}' | sh
-    cat /etc/setup/installed.db | awk > /tmp/awk.$$ -v pkg="$pkg" '{if (pkg != $1) print $0}'
+    gzip -cd "/etc/setup/$pkg.lst.gz" | awk '/[^\/]$/ {print "rm -f \"/" $0 "\""}' | sh
+    awk > /tmp/awk.$$ -v pkg="$pkg" '{if (pkg != $1) print $0}' /etc/setup/installed.db
     rm -f "/etc/postinstall/$pkg.sh.done" "/etc/preremove/$pkg.sh" "/etc/setup/$pkg.lst.gz"
     mv /etc/setup/installed.db /etc/setup/installed.db-save
     mv /tmp/awk.$$ /etc/setup/installed.db
