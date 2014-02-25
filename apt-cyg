@@ -698,7 +698,7 @@ function apt-cyg-install ()
         if [ $? -ne 0 ]; then warn=1; fi
       done
     fi
-    if [ $warn -nq 0 ]; then
+    if [ $warn -ne 0 ]; then
       echo "Warning: some required packages did not install, continuing"
     fi
     
