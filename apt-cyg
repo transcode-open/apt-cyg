@@ -26,8 +26,7 @@
 # 
 
 # this script requires some packages
-
-WGET=`which wget 2> /dev/null`
+WGET=`type -t wget`
 BZIP2=`which bzip2 2> /dev/null`
 TAR=`which tar 2> /dev/null`
 GAWK=`which awk 2> /dev/null`
