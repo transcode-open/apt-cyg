@@ -139,28 +139,71 @@ function findworkspace()
   fetch_trustedkeys
 }
 
-function getsetup() 
+function download_and_varify ()
 {
-  if [ $noscripts -eq 0 -a $noupdate -eq 0 ]; then
-    touch setup.ini
-    mv setup.ini setup.ini-save
-    "${WGET[@]}" -N "$mirror/$arch/setup.bz2" "$mirror/$arch/setup.bz2.sig"
-    if [ -e setup.bz2 -a -e setup.bz2.sig -a $? -eq 0 ]; then
-      [ -z "$no_verify" ] && verify_signatures setup.bz2.sig
-      bunzip2 setup.bz2
-      mv setup setup.ini
-      echo Updated setup.ini
-    else
-      "${WGET[@]}" -N "$mirror/$arch/setup.ini" "$mirror/$arch/setup.ini.sig"
-      if [ -e setup.ini -a  -e setup.ini.sig -a $? -eq 0 ]; then
-        [ -z "$no_verify" ] && verify_signatures setup.ini.sig
-        echo Updated setup.ini
-      else
-        mv setup.ini-save setup.ini
-        echo -e "\e[31;1mError:\e[30;0m updating setup.ini, reverting"
-      fi
-    fi
+  "${WGET[@]}" -N "$1" || return 1
+  [ -e "${1##*/}" ] || return 1
+  if [ -z "$no_verify" ]; then
+    "${WGET[@]}" -N "${1}.sig" || return 1
+    [ -e "${1##*/}.sig" ] && verify_signatures "${1##*/}.sig" || { rm -f "${1##*/}" "${1##*/}.sig"; return 1; }
   fi
+  return
+}
+
+function files_backup ()
+{
+  locale file
+  for file; do
+    [ -e "${file}~" ] && mv    "${file}~" "${file}"
+    [ -e "${file}"  ] && cp -a "${file}"  "${file}~"
+  done
+}
+
+function files_restore ()
+{
+  locale file
+  for file; do
+    [ -e "${file}"  ] && rm    "${file}"
+    [ -e "${file}~" ] && mv    "${file}~" "${file}"
+  done
+}
+
+function files_backup_clean ()
+{
+  locale file
+  for file; do
+    [ -e "${file}~" ] && rm    "${file}~"
+  done
+}
+
+function setupini_download ()
+{
+  local BASEDIR="$cache/$mirrordir/$arch"
+  mkdir -p "$BASEDIR" || { echo -e "\e[31;1mError:\e[30;0m mkdir \"$BASEDIR\" failed."; exit 1; }
+  
+  [ $noscripts -ne 0 -o $noupdate -ne 0 ] && return
+  
+  pushd "$BASEDIR"
+  files_backup setup.ini setup.ini.sig setup.bz2 setup.bz2.sig
+  
+  while true; do
+    download_and_varify "$mirror/$arch/setup.bz2" && { bunzip2 -k setup.bz2 && mv setup setup.ini || rm -f setup.bz2; }
+    download_and_varify "$mirror/$arch/setup.ini" || break
+    
+    files_backup_clean setup.ini setup.ini.sig setup.bz2 setup.bz2.sig
+    popd
+    echo "Updated setup.ini"
+    return
+  done
+  files_restore setup.ini setup.ini.sig setup.bz2 setup.bz2.sig
+  popd
+  echo -e "\e[31;1mError:\e[30;0m updating setup.ini, reverting."
+  return 1
+}
+
+function getsetup ()
+{
+  setupini_download || return 1
 }
 
 function checkpackages()
@@ -334,7 +377,7 @@ function verify_signatures ()
   while [ $# -gt 0 ]; do
     if ! "${GPGV[@]}" "${GPG_KEYRING[@]}" "$1"; then
       echo -e "\e[31;1mError:\e[30;0m BAD signature: $1"
-      exit 1
+      return 1
     fi
     shift
   done
