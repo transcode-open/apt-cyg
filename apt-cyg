@@ -291,7 +291,7 @@ function wget_return_case_md5sum ()
   esac
 }
 
-# Usage: check_md5sum label hash url file
+# Usage: wget_and_check_md5sum label hash url file
 function wget_and_check_md5sum ()
 {
   local LABEL="$1"
