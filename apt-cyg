@@ -157,7 +157,7 @@ function getsetup()
         echo Updated setup.ini
       else
         mv setup.ini-save setup.ini
-        echo Error updating setup.ini, reverting
+        echo -e "\e[31;1mError:\e[30;0m updating setup.ini, reverting"
       fi
     fi
   fi
@@ -180,7 +180,7 @@ function getrootdir ()
     x86_64)
       cygpath -u "$(< /proc/registry64/HKEY_LOCAL_MACHINE/SOFTWARE/Cygwin/setup/rootdir)" ;;
     *)
-      echo "Error: unknown arch $1" >&2 ;;
+      echo -e "\e[31;1mError:\e[30;0m unknown arch $1" >&2 ;;
   esac
 }
 
@@ -244,7 +244,7 @@ function wget_return_case_md5sum ()
     ;;
     8) echo "$LABEL: FAILED: 404 Not Found $URL." return 1 ;;
     0) return 0 ;;
-    *) echo "Error: FATAL: wget returned unkown value"; return 1 ;;
+    *) echo -e "\e[31;1mError:\e[30;0m FATAL: wget returned unkown value"; return 1 ;;
   esac
 }
 
@@ -304,23 +304,23 @@ function fetch_trustedkeys ()
         "${GPG[@]}" --import "$FILE_LATEST"
       ;;
       10|20)
-        echo "Error: ${LABEL} has miss configuration."
+        echo -e "\e[31;1mError:\e[30;0m ${LABEL} has miss configuration."
         exit 1
       ;;
       11|1-|-1)
-        echo "Error: Could not download ${LABEL}."
+        echo -e "\e[31;1mError:\e[30;0m Could not download ${LABEL}."
         exit 1
       ;;
       12|-2)
-        echo "Error: ${LABEL} has been updated, maybe. But sometimes it may has been cracked. Be careful !!!"
+        echo -e "\e[31;1mError:\e[30;0m ${LABEL} has been updated, maybe. But sometimes it may has been cracked. Be careful !!!"
         exit 1
       ;;
       21|22|2-)
-        echo "Error: ${LABEL} has been cracked, maybe"
+        echo -e "\e[31;1mError:\e[30;0m ${LABEL} has been cracked, maybe"
         exit 1
       ;;
       --)
-        echo "Error: ${LABEL} has no URL."
+        echo -e "\e[31;1mError:\e[30;0m ${LABEL} has no URL."
         exit 1
       ;;
     esac
@@ -333,7 +333,7 @@ function verify_signatures ()
 {
   while [ $# -gt 0 ]; do
     if ! "${GPGV[@]}" "${GPG_KEYRING[@]}" "$1"; then
-      echo "Error: BAD signature: $1"
+      echo -e "\e[31;1mError:\e[30;0m BAD signature: $1"
       exit 1
     fi
     shift
@@ -343,7 +343,7 @@ function verify_signatures ()
 # Usage: apt-cyg-key-add pkey ...
 function apt-cyg-key-add ()
 {
-  [ -z "$GPG" ] && { echo "Error: GnuPG is not installed. Prease install gnupg package"; exit 1; }
+  [ -z "$GPG" ] && { echo -e "\e[31;1mError:\e[30;0m GnuPG is not installed. Prease install gnupg package"; exit 1; }
   local pkeys
   for pkey; do
     pkeys+=( "$(cygpath -a "$pkey" )" )
@@ -357,7 +357,7 @@ function apt-cyg-key-add ()
 # Usage: apt-cyg-key-add keyid ...
 function apt-cyg-key-del ()
 {
-  [ -z "$GPG" ] && { echo "Error: GnuPG is not installed. Prease install gnupg package"; exit 1; }
+  [ -z "$GPG" ] && { echo -e "\e[31;1mError:\e[30;0m GnuPG is not installed. Prease install gnupg package"; exit 1; }
   local keyid
   findworkspace
   for keyid; do
@@ -367,14 +367,14 @@ function apt-cyg-key-del ()
 
 function apt-cyg-key-list ()
 {
-  [ -z "$GPG" ] && { echo "Error: GnuPG is not installed. Prease install gnupg package"; exit 1; }
+  [ -z "$GPG" ] && { echo -e "\e[31;1mError:\e[30;0m GnuPG is not installed. Prease install gnupg package"; exit 1; }
   findworkspace
   "${GPG[@]}" --list-keys
 }
 
 function apt-cyg-key-finger ()
 {
-  [ -z "$GPG" ] && { echo "Error: GnuPG is not installed. Prease install gnupg package"; exit 1; }
+  [ -z "$GPG" ] && { echo -e "\e[31;1mError:\e[30;0m GnuPG is not installed. Prease install gnupg package"; exit 1; }
   findworkspace
   "${GPG[@]}" --fingerprint
 }
@@ -390,7 +390,7 @@ function apt-cyg-pathof ()
       cache/mirrordir)  echo "$cache/$mirrordir" ;;
       setup.ini)        echo "$cache/$mirrordir/$arch/setup.ini" ;;
       *)
-        echo -e "\e[31;1mError: in function $FUNCNAME: \e[30;0m unknown parameter '$1'."
+        echo -e "\e[31;1mError:\e[30;0m in function $FUNCNAME: unknown parameter: $1"
         exit 1
     esac
     shift
@@ -514,7 +514,7 @@ while [ $# -gt 0 ]; do
 done
 
 if [ -z "$GPGV" -a -z "$no_verify" ]; then
-  echo "Error: GnuPG is not installed. Prease install gnupg package or use -X option."
+  echo -e "\e[31;1mError:\e[30;0m GnuPG is not installed. Prease install gnupg package or use -X option."
   exit 1
 fi
 
@@ -773,7 +773,7 @@ function invoke_subcommand ()
     if type "$ACTION" >& /dev/null; then
       "$ACTION" "${ARGS[@]}"
     else
-      echo -e "\e[31;1mError: \e[30;0m unknown subcommand '$SUBCOMMAND'."
+      echo -e "\e[31;1mError:\e[30;0m unknown subcommand: $SUBCOMMAND"
       exit 1
     fi
 }
