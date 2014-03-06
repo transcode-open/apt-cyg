@@ -31,8 +31,8 @@ BZIP2=`which bzip2 2> /dev/null`
 TAR=`which tar 2> /dev/null`
 GAWK=`which awk 2> /dev/null`
 XZ=`which xz 2> /dev/null`
-if test "-$WGET-" = "--" || test "-$BZIP2-" = "--" || test "-$TAR-" = "--" \
-  || test "-$GAWK-" = "--" || test "-$XZ-" = "--"
+if test "-$WGET-" = "--" || test "-$BZIP2-" = "--" || test "-$TAR-" = "--" ||
+   test "-$GAWK-" = "--" || test "-$XZ-" = "--"
 then
   echo You must install wget, tar, gawk, xz and bzip2 to use apt-cyg.
   exit 1
@@ -58,8 +58,6 @@ function usage()
   echo "  --version"
 }
 
-
-
 function version()
 {
   echo "apt-cyg version 0.59"
@@ -67,7 +65,6 @@ function version()
   echo ""
   echo "Copyright (c) 2005-9 Stephen Jungels.  Released under the GPL."
 }
-
 
 function findworkspace()
 {
@@ -95,7 +92,6 @@ function findworkspace()
   cd "$cache/$mirrordir"
 }
 
-
 function getsetup() 
 {
   if test "$noscripts" == "0" -a "$noupdate" == "0"
@@ -121,7 +117,6 @@ function getsetup()
   fi
 }
 
-
 function checkpackages()
 {
   if test "-$packages-" = "--"
@@ -130,7 +125,6 @@ function checkpackages()
     exit 0
   fi
 }
-
 
 # process options
 
@@ -146,14 +140,14 @@ while test $# -gt 0
 do
   case "$1" in
 
-    --mirror|-m)
+    --mirror | -m)
       echo "$2" > /etc/setup/last-mirror
-      shift ; shift
+      shift 2
     ;;
 
-    --cache|-c)
+    --cache | -c)
       cygpath -aw "$2" > /etc/setup/last-cache
-      shift ; shift
+      shift 2
     ;;
 
     --noscripts)
@@ -161,7 +155,7 @@ do
       shift
     ;;
 
-    --noupdate|-u)
+    --noupdate | -u)
       noupdate=1
       shift
     ;;
@@ -176,19 +170,19 @@ do
       exit 0
     ;;
 
-    --file|-f)
+    --file | -f)
       if ! test "-$2-" = "--"
       then
         file="$2"
         dofile=1
         shift
       else
-        echo 1>&2 No file name provided, ignoring $1
+        echo No file name provided, ignoring $1 >&2
       fi
       shift
     ;;
 
-    update|show|find|describe|packageof|install|remove)
+    update | show | find | describe | packageof | install | remove)
       if test "-$command-" = "--"
       then
         command=$1
@@ -196,18 +190,15 @@ do
         packages="$packages $1"
       fi
       shift
-
     ;;
 
     *)
       packages="$packages $1"
       shift
-
     ;;
 
   esac
 done
-
 
 if test $dofile = 1
 then
@@ -220,31 +211,22 @@ then
   packages="$packages $filepackages"
 fi
 
-
 case "$command" in
 
   update)
-
     findworkspace
     getsetup
-
   ;;
-
 
   show)
-
-    echo 1>&2 The following packages are installed:
+    echo The following packages are installed: >&2
     cat /etc/setup/installed.db | awk '/[^ ]+ [^ ]+ 0/ {print $1}'
-
   ;;
 
-
   find)
-
     checkpackages
     findworkspace
     getsetup
-
     for pkg in $packages
     do
       echo ""
@@ -252,30 +234,22 @@ case "$command" in
       awk '/[^ ]+ [^ ]+ 0/ {if ($1 ~ query) print $1}' query="$pkg" /etc/setup/installed.db
       echo ""
       echo Searching for installable packages matching $pkg:
-      cat setup.ini | awk -v query="$pkg" \
-        'BEGIN{RS="\n\n@ "; FS="\n"; ORS="\n"} {if ($1 ~ query) {print $1}}'
+      awk '$1 ~ query && $0 = $1' RS='\n\n@ ' FS='\n' query="$pkg" setup.ini
     done
-
   ;;
 
-
   describe)
-
     checkpackages
     findworkspace
     getsetup
     for pkg in $packages
     do
-      echo ""
-      cat setup.ini | awk -v query="$pkg" \
-        'BEGIN{RS="\n\n@ "; FS="\n"; ORS="\n"} {if ($1 ~ query) {print $0 "\n"}}'
+      echo
+      awk '$1 ~ query {print $0 "\n"}' RS='\n\n@ ' FS='\n' query="$pkg" setup.ini
     done
-
   ;;
 
-
   packageof)
-
     checkpackages
     for pkg in $packages
     do
@@ -294,16 +268,12 @@ case "$command" in
         fi
       done
     done
-
   ;;
 
-
   install)
-
     checkpackages
     findworkspace
     getsetup
-
     for pkg in $packages
     do
 
@@ -313,16 +283,22 @@ case "$command" in
       echo Package $pkg is already installed, skipping
       continue
     fi
-    echo ""
+    echo
     echo Installing $pkg
 
     # look for package and save desc file
 
     mkdir -p "release/$pkg"
-    cat setup.ini | awk > "release/$pkg/desc" -v package="$pkg" \
-      'BEGIN{RS="\n\n@ "; FS="\n"} {if ($1 == package) {desc = $0; px++}} \
-       END {if (px == 1 && desc != "") print desc; else print "Package not found"}' 
-    
+    awk '
+    $1 == package {
+      desc = $0
+      px++
+    }
+    END {
+      if (px == 1 && desc) print desc
+      else print "Package not found"
+    }
+    ' RS='\n\n@ ' FS='\n' package="$pkg" setup.ini > "release/$pkg/desc"
     desc=`cat "release/$pkg/desc"`
     if test "-$desc-" = "-Package not found-"
     then
@@ -346,7 +322,7 @@ case "$command" in
     file=`basename $install`
     cd "release/$pkg"
     wget -nc $mirror/$install
-    
+
     # check the md5
     digest=`cat "desc" | awk '/^install: / { print $4; exit }'` 
     digactual=`md5sum $file | awk '{print $1}'`
@@ -355,32 +331,37 @@ case "$command" in
       echo MD5 sum did not match, exiting
       exit 1
     fi
-    
+
     echo "Unpacking..."
-    #determine file type
-    if [ "${file##*.}" == "xz" ]; then
-      cat $file | tar > "/etc/setup/$pkg.lst" xvJf - -C /
+    # determine file type
+    if [ "${file##*.}" == "xz" ]
+    then
+      cat $file | tar xvJf - -C / > "/etc/setup/$pkg.lst"
     else
-      cat $file | bunzip2 | tar > "/etc/setup/$pkg.lst" xvf - -C /
+      cat $file | bunzip2 | tar xvf - -C / > "/etc/setup/$pkg.lst"
     fi
     gzip -f "/etc/setup/$pkg.lst"
     cd ../..
-    
-    
+
     # update the package database
-    
-    cat /etc/setup/installed.db | awk > /tmp/awk.$$ -v pkg="$pkg" -v bz=$file \
-      '{if (ins != 1 && pkg < $1) {print pkg " " bz " 0"; ins=1}; print $0} \
-       END{if (ins != 1) print pkg " " bz " 0"}'
+
+    awk '
+    ins != 1 && pkg < $1 {
+      printf "%s %s 0\n", pkg, bz
+      ins=1
+    }
+    1
+    END {
+      if (ins != 1) printf "%s %s 0\n", pkg, bz
+    }
+    ' pkg="$pkg" bz=$file /etc/setup/installed.db > /tmp/awk.$$
     mv /etc/setup/installed.db /etc/setup/installed.db-save
     mv /tmp/awk.$$ /etc/setup/installed.db
-    
-    
+
     # recursively install required packages
-    
-    echo > /tmp/awk.$$ '/^requires: / {s=gensub("(requires: )?([^ ]+) ?", "\\2 ", "g", $0); print s}'
+
+    echo '/^requires: / {s=gensub("(requires: )?([^ ]+) ?", "\\2 ", "g", $0); print s}' > /tmp/awk.$$
     requires=`cat "release/$pkg/desc" | awk -f /tmp/awk.$$`
-    
     warn=0
     if ! test "-$requires-" = "--"
     then
@@ -395,16 +376,16 @@ case "$command" in
           continue
         fi
         apt-cyg --noscripts install $package
-        if ! test $? = 0 ; then warn=1; fi
+        (( $? )) && warn=1
       done
     fi
     if ! test $warn = 0
     then
       echo "Warning: some required packages did not install, continuing"
     fi
-    
+
     # run all postinstall scripts
-    
+
     pis=`ls /etc/postinstall/*.sh 2>/dev/null | wc -l`
     if test $pis -gt 0 && ! test $noscripts -eq 1
     then
@@ -415,16 +396,12 @@ case "$command" in
         mv $script $script.done
       done
     fi
-    
     echo Package $pkg installed
 
     done
-
   ;;
 
-
   remove)
-
     checkpackages
     for pkg in $packages
     do
@@ -435,7 +412,6 @@ case "$command" in
       echo Package $pkg is not installed, skipping
       continue
     fi
-
     dontremove="cygwin coreutils gawk bzip2 tar wget bash"
     for req in $dontremove
     do
@@ -445,10 +421,9 @@ case "$command" in
         exit 1
       fi
     done
-
     if ! test -e "/etc/setup/$pkg.lst.gz"
     then
-      echo Package manifest missing, cannot remove $pkg.  Exiting
+      echo Package manifest missing, cannot remove $pkg. Exiting
       exit 1
     fi
     echo Removing $pkg
@@ -460,24 +435,19 @@ case "$command" in
       "/etc/preremove/$pkg.sh"
       rm "/etc/preremove/$pkg.sh"
     fi
-
     cat "/etc/setup/$pkg.lst.gz" | gzip -d | awk '/[^\/]$/ {print "rm -f \"/" $0 "\""}' | sh
     rm "/etc/setup/$pkg.lst.gz"
     rm -f /etc/postinstall/$pkg.sh.done
-    cat /etc/setup/installed.db | awk > /tmp/awk.$$ -v pkg="$pkg" '{if (pkg != $1) print $0}'
+    awk '$1 != pkg' pkg="$pkg" /etc/setup/installed.db > /tmp/awk.$$
     mv /etc/setup/installed.db /etc/setup/installed.db-save
     mv /tmp/awk.$$ /etc/setup/installed.db
     echo Package $pkg removed
 
     done
-
   ;;
 
   *)
-
     usage
-
   ;;
 
 esac
-
