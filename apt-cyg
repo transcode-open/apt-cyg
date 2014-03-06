@@ -42,20 +42,20 @@ fi
 function usage()
 {
   echo apt-cyg: Installs and removes Cygwin packages.
-  echo "  \"apt-cyg install <package names>\" to install packages"
-  echo "  \"apt-cyg remove <package names>\" to remove packages"
-  echo "  \"apt-cyg update\" to update setup.ini"
-  echo "  \"apt-cyg show\" to show installed packages"
-  echo "  \"apt-cyg find <patterns>\" to find packages matching patterns"
-  echo "  \"apt-cyg describe <patterns>\" to describe packages matching patterns"
-  echo "  \"apt-cyg packageof <commands or files>\" to locate parent packages"
-  echo "Options:"
-  echo "  --mirror, -m <url> : set mirror"
-  echo "  --cache, -c <dir>  : set cache"
-  echo "  --file, -f <file>  : read package names from file"
-  echo "  --noupdate, -u     : don't update setup.ini from mirror"
-  echo "  --help"
-  echo "  --version"
+  echo '  "apt-cyg install <package names>" to install packages'
+  echo '  "apt-cyg remove <package names>" to remove packages'
+  echo '  "apt-cyg update" to update setup.ini'
+  echo '  "apt-cyg show" to show installed packages'
+  echo '  "apt-cyg find <patterns>" to find packages matching patterns'
+  echo '  "apt-cyg describe <patterns>" to describe packages matching patterns'
+  echo '  "apt-cyg packageof <commands or files>" to locate parent packages'
+  echo 'Options:'
+  echo '  --mirror, -m <url> : set mirror'
+  echo '  --cache, -c <dir>  : set cache'
+  echo '  --file, -f <file>  : read package names from file'
+  echo '  --noupdate, -u     : don’t update setup.ini from mirror'
+  echo '  --help'
+  echo '  --version'
 }
 
 function version()
@@ -204,11 +204,11 @@ if test $dofile = 1
 then
   if test -f "$file"
   then
-    filepackages="$filepackages `cat "$file" | awk '{printf "%s ", $0}'`"
+    filepackages+=$(awk '{printf " %s", $0}' "$file")
   else
     echo File $file not found, skipping
   fi
-  packages="$packages $filepackages"
+  packages+=" $filepackages"
 fi
 
 case "$command" in
@@ -220,7 +220,7 @@ case "$command" in
 
   show)
     echo The following packages are installed: >&2
-    cat /etc/setup/installed.db | awk '/[^ ]+ [^ ]+ 0/ {print $1}'
+    awk 'NR>1 && $0=$1' /etc/setup/installed.db
   ;;
 
   find)
@@ -229,10 +229,10 @@ case "$command" in
     getsetup
     for pkg in $packages
     do
-      echo ""
+      echo
       echo Searching for installed packages matching $pkg:
-      awk '/[^ ]+ [^ ]+ 0/ {if ($1 ~ query) print $1}' query="$pkg" /etc/setup/installed.db
-      echo ""
+      awk 'NR>1 && $1~query && $0=$1' query="$pkg" /etc/setup/installed.db
+      echo
       echo Searching for installable packages matching $pkg:
       awk '$1 ~ query && $0 = $1' RS='\n\n@ ' FS='\n' query="$pkg" setup.ini
     done
@@ -260,7 +260,7 @@ case "$command" in
       fi
       for manifest in /etc/setup/*.lst.gz
       do
-        found=`cat $manifest | gzip -d | grep -c "$key"`
+        found=$(gzip -cd $manifest | grep -c "$key")
         if test $found -gt 0
         then
           package=`echo $manifest | sed -e "s:/etc/setup/::" -e "s/.lst.gz//"`
@@ -315,7 +315,7 @@ case "$command" in
 
     if test "-$install-" = "--"
     then
-      echo "Could not find \"install\" in package description: obsolete package?"
+      echo 'Could not find "install" in package description: obsolete package?'
       exit 1
     fi
 
