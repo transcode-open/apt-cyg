@@ -60,10 +60,10 @@ function usage()
 
 function version()
 {
-  echo "apt-cyg version 0.59"
-  echo "Written by Stephen Jungels"
-  echo ""
-  echo "Copyright (c) 2005-9 Stephen Jungels.  Released under the GPL."
+  echo 'apt-cyg version 0.59'
+  echo 'Written by Stephen Jungels'
+  echo
+  echo 'Copyright (c) 2005-9 Stephen Jungels.  Released under the GPL.'
 }
 
 function findworkspace()
@@ -299,7 +299,7 @@ case "$command" in
       else print "Package not found"
     }
     ' RS='\n\n@ ' FS='\n' package="$pkg" setup.ini > "release/$pkg/desc"
-    desc=`cat "release/$pkg/desc"`
+    desc=$(<"release/$pkg/desc")
     if test "-$desc-" = "-Package not found-"
     then
       echo Package $pkg not found or ambiguous name, exiting
@@ -311,7 +311,7 @@ case "$command" in
     # download and unpack the bz2 or xz file
 
     # pick the latest version, which comes first
-    install=`cat "release/$pkg/desc" | awk '/^install: / { print $2; exit }'` 
+    install=$(awk '/^install: / {print $2; exit}' "release/$pkg/desc")
 
     if test "-$install-" = "--"
     then
@@ -324,8 +324,8 @@ case "$command" in
     wget -nc $mirror/$install
 
     # check the md5
-    digest=`cat "desc" | awk '/^install: / { print $4; exit }'` 
-    digactual=`md5sum $file | awk '{print $1}'`
+    digest=$(awk '/^install: / {print $4; exit}' desc)
+    digactual=$(md5sum $file | awk NF=1)
     if ! test $digest = $digactual
     then
       echo MD5 sum did not match, exiting
@@ -333,13 +333,7 @@ case "$command" in
     fi
 
     echo "Unpacking..."
-    # determine file type
-    if [ "${file##*.}" == "xz" ]
-    then
-      cat $file | tar xvJf - -C / > "/etc/setup/$pkg.lst"
-    else
-      cat $file | bunzip2 | tar xvf - -C / > "/etc/setup/$pkg.lst"
-    fi
+    tar xvf $file -C / > "/etc/setup/$pkg.lst"
     gzip -f "/etc/setup/$pkg.lst"
     cd ../..
 
@@ -360,8 +354,12 @@ case "$command" in
 
     # recursively install required packages
 
-    echo '/^requires: / {s=gensub("(requires: )?([^ ]+) ?", "\\2 ", "g", $0); print s}' > /tmp/awk.$$
-    requires=`cat "release/$pkg/desc" | awk -f /tmp/awk.$$`
+    requires=$(awk '
+    $0 ~ rq {
+      sub(rq, "")
+      print
+    }
+    ' rq='^requires: ' "release/$pkg/desc")
     warn=0
     if ! test "-$requires-" = "--"
     then
@@ -435,7 +433,8 @@ case "$command" in
       "/etc/preremove/$pkg.sh"
       rm "/etc/preremove/$pkg.sh"
     fi
-    cat "/etc/setup/$pkg.lst.gz" | gzip -d | awk '/[^\/]$/ {print "rm -f \"/" $0 "\""}' | sh
+    gzip -cd "/etc/setup/$pkg.lst.gz" |
+      awk '/[^\/]$/ {print "rm -f \"/" $0 "\""}' | sh
     rm "/etc/setup/$pkg.lst.gz"
     rm -f /etc/postinstall/$pkg.sh.done
     awk '$1 != pkg' pkg="$pkg" /etc/setup/installed.db > /tmp/awk.$$
