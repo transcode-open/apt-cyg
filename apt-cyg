@@ -312,15 +312,21 @@ case "$command" in
 
     file=`basename $install`
     cd "release/$pkg"
-    wget -nc $mirror/$install
-
-    # check the md5
     digest=$(awk '/^install: / {print $4; exit}' desc)
-    digactual=$(md5sum $file | awk NF=1)
-    if ! test $digest = $digactual
+
+    # if already exists check the md5
+    if test -f $file && test $digest = $(md5sum $file | awk NF=1)
     then
-      echo MD5 sum did not match, exiting
-      exit 1
+      echo Already downloaded, skip
+    else
+      wget $mirror/$install
+      digactual=$(md5sum $file | awk NF=1)
+      # check the md5
+      if ! test $digest = $digactual
+      then
+        echo MD5 sum did not match, exiting
+        exit 1
+      fi
     fi
 
     echo "Unpacking..."
