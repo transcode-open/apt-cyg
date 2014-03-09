@@ -55,8 +55,8 @@ function usage()
 
 function version()
 {
-  echo 'apt-cyg version 0.59'
-  echo 'Written by Stephen Jungels'
+  echo apt-cyg version 0.59
+  echo Written by Stephen Jungels
   echo
   echo 'Copyright (c) 2005-9 Stephen Jungels.  Released under the GPL.'
 }
@@ -70,8 +70,7 @@ function findworkspace()
   # work wherever setup worked last, if possible
   if [ -e /etc/setup/last-cache ]
   then
-    tmp=$(</etc/setup/last-cache)
-    cache=$(cygpath -au "$tmp")
+    cache=$(cygpath -f /etc/setup/last-cache)
   fi
 
   if [ -e /etc/setup/last-mirror ]
@@ -120,14 +119,13 @@ function checkpackages()
 }
 
 # process options
-
+dofile=0
 noscripts=0
 noupdate=0
-file=""
-dofile=0
-command=""
-filepackages=""
-packages=""
+command=''
+file=''
+filepackages=''
+packages=''
 
 while (( $# ))
 do
@@ -166,7 +164,7 @@ do
     --file | -f)
       if (( ${#2} ))
       then
-        file="$2"
+        file=$2
         dofile=1
         shift
       else
@@ -406,8 +404,7 @@ case "$command" in
       echo Package $pkg is not installed, skipping
       continue
     fi
-    dontremove="cygwin coreutils gawk bzip2 tar wget bash"
-    for req in $dontremove
+    for req in cygwin coreutils gawk bzip2 tar wget bash
     do
       if [[ $pkg = $req ]]
       then
