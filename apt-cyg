@@ -26,18 +26,13 @@
 # 
 
 # this script requires some packages
-WGET=`type -t wget`
-BZIP2=`which bzip2 2> /dev/null`
-TAR=`which tar 2> /dev/null`
-GAWK=`which awk 2> /dev/null`
-XZ=`which xz 2> /dev/null`
-if test "-$WGET-" = "--" || test "-$BZIP2-" = "--" || test "-$TAR-" = "--" ||
-   test "-$GAWK-" = "--" || test "-$XZ-" = "--"
+if ! type awk bzip2 tar wget xz &>/dev/null
 then
   echo You must install wget, tar, gawk, xz and bzip2 to use apt-cyg.
   exit 1
 fi
 
+[ $HOSTTYPE = x86_64 ] && ARCH=x86_64 || ARCH=x86
 
 function usage()
 {
@@ -49,7 +44,7 @@ function usage()
   echo '  "apt-cyg find <patterns>" to find packages matching patterns'
   echo '  "apt-cyg describe <patterns>" to describe packages matching patterns'
   echo '  "apt-cyg packageof <commands or files>" to locate parent packages'
-  echo 'Options:'
+  echo Options:
   echo '  --mirror, -m <url> : set mirror'
   echo '  --cache, -c <dir>  : set cache'
   echo '  --file, -f <file>  : read package names from file'
