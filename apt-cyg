@@ -34,23 +34,28 @@ fi
 
 [ $HOSTTYPE = x86_64 ] && ARCH=x86_64 || ARCH=x86
 
-function usage()
-{
-  echo apt-cyg: Installs and removes Cygwin packages.
-  echo '  "apt-cyg install <package names>" to install packages'
-  echo '  "apt-cyg remove <package names>" to remove packages'
-  echo '  "apt-cyg update" to update setup.ini'
-  echo '  "apt-cyg list" to list installed packages'
-  echo '  "apt-cyg find <patterns>" to find packages matching patterns'
-  echo '  "apt-cyg show <patterns>" to show packages matching patterns'
-  echo '  "apt-cyg packageof <commands or files>" to locate parent packages'
-  echo Options:
-  echo '  --mirror, -m <url> : set mirror'
-  echo '  --cache, -c <dir>  : set cache'
-  echo '  --file, -f <file>  : read package names from file'
-  echo '  --noupdate, -u     : don’t update setup.ini from mirror'
-  echo '  --help'
-  echo '  --version'
+function usage () {
+  rw=(
+    'usage: apt-cyg [command] [options] [packages]'
+    ''
+    'Commands:'
+    '   install <packages>     install packages'
+    '   remove <packages>      remove packages'
+    '   update                 update setup.ini'
+    '   list [patterns]        list packages matching given pattern. If no'
+    '                          pattern is given, list all installed packages.'
+    '   show <patterns>        show packages matching patterns'
+    '   packageof <patterns>   search for a filename from installed packages'
+    ''
+    'Options:'
+    '   -c, --cache <dir>      set cache'
+    '   -f, --file <file>      read package names from file'
+    '   -m, --mirror <url>     set mirror'
+    '   -u, --noupdate         don’t update setup.ini from mirror'
+    '   --help'
+    '   --version'
+  )
+  printf '%s\n' "${rw[@]}"
 }
 
 function version()
@@ -173,7 +178,7 @@ do
       shift
     ;;
 
-    update | list | find | show | packageof | install | remove)
+    update | list | show | packageof | install | remove)
       if (( ${#command} ))
       then
         packages+=" $1"
@@ -210,23 +215,24 @@ case "$command" in
   ;;
 
   list)
-    echo The following packages are installed: >&2
-    awk 'NR>1 && $0=$1' /etc/setup/installed.db
-  ;;
-
-  find)
-    checkpackages
-    findworkspace
-    getsetup
-    for pkg in $packages
-    do
-      echo
-      echo Searching for installed packages matching $pkg:
-      awk 'NR>1 && $1~query && $0=$1' query="$pkg" /etc/setup/installed.db
-      echo
-      echo Searching for installable packages matching $pkg:
-      awk '$1 ~ query && $0 = $1' RS='\n\n@ ' FS='\n' query="$pkg" setup.ini
-    done
+    if (( ${#packages} ))
+    then
+      checkpackages
+      findworkspace
+      getsetup
+      for pkg in $packages
+      do
+        echo
+        echo Searching for installed packages matching $pkg:
+        awk 'NR>1 && $1~query && $0=$1' query="$pkg" /etc/setup/installed.db
+        echo
+        echo Searching for installable packages matching $pkg:
+        awk '$1 ~ query && $0 = $1' RS='\n\n@ ' FS='\n' query="$pkg" setup.ini
+      done
+    else
+      echo The following packages are installed: >&2
+      awk 'NR>1 && $0=$1' /etc/setup/installed.db
+    fi
   ;;
 
   show)
