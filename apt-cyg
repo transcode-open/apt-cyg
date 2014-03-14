@@ -40,7 +40,7 @@ function usage()
   echo '  "apt-cyg install <package names>" to install packages'
   echo '  "apt-cyg remove <package names>" to remove packages'
   echo '  "apt-cyg update" to update setup.ini'
-  echo '  "apt-cyg show" to show installed packages'
+  echo '  "apt-cyg list" to list installed packages'
   echo '  "apt-cyg find <patterns>" to find packages matching patterns'
   echo '  "apt-cyg describe <patterns>" to describe packages matching patterns'
   echo '  "apt-cyg packageof <commands or files>" to locate parent packages'
@@ -173,7 +173,7 @@ do
       shift
     ;;
 
-    update | show | find | describe | packageof | install | remove)
+    update | list | find | describe | packageof | install | remove)
       if (( ${#command} ))
       then
         packages+=" $1"
@@ -209,7 +209,7 @@ case "$command" in
     getsetup
   ;;
 
-  show)
+  list)
     echo The following packages are installed: >&2
     awk 'NR>1 && $0=$1' /etc/setup/installed.db
   ;;
@@ -245,10 +245,7 @@ case "$command" in
     for pkg in $packages
     do
       key=$(type -P "$pkg" | sed s./..)
-      if (( ! ${#key} ))
-      then
-        key=$pkg
-      fi
+      (( ${#key} )) || key=$pkg
       for manifest in /etc/setup/*.lst.gz
       do
         found=$(gzip -cd $manifest | grep -c "$key")
