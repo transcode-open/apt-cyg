@@ -42,7 +42,7 @@ function usage()
   echo '  "apt-cyg update" to update setup.ini'
   echo '  "apt-cyg list" to list installed packages'
   echo '  "apt-cyg find <patterns>" to find packages matching patterns'
-  echo '  "apt-cyg describe <patterns>" to describe packages matching patterns'
+  echo '  "apt-cyg show <patterns>" to show packages matching patterns'
   echo '  "apt-cyg packageof <commands or files>" to locate parent packages'
   echo Options:
   echo '  --mirror, -m <url> : set mirror'
@@ -173,7 +173,7 @@ do
       shift
     ;;
 
-    update | list | find | describe | packageof | install | remove)
+    update | list | find | show | packageof | install | remove)
       if (( ${#command} ))
       then
         packages+=" $1"
@@ -229,7 +229,7 @@ case "$command" in
     done
   ;;
 
-  describe)
+  show)
     checkpackages
     findworkspace
     getsetup
