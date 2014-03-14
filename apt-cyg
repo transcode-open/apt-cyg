@@ -39,19 +39,19 @@ function usage () {
     'usage: apt-cyg [command] [options] [packages]'
     ''
     'Commands:'
-    '   install <packages>     install packages'
-    '   remove <packages>      remove packages'
-    '   update                 update setup.ini'
-    '   list [patterns]        list packages matching given pattern. If no'
-    '                          pattern is given, list all installed packages.'
-    '   show <patterns>        show packages matching patterns'
-    '   packageof <patterns>   search for a filename from installed packages'
+    '   install <packages>   install packages'
+    '   remove <packages>    remove packages'
+    '   update               update setup.ini'
+    '   list [patterns]      list packages matching given pattern. If no'
+    '                        pattern is given, list all installed packages.'
+    '   show <patterns>      show packages matching patterns'
+    '   search <patterns>    search for a filename from installed packages'
     ''
     'Options:'
-    '   -c, --cache <dir>      set cache'
-    '   -f, --file <file>      read package names from file'
-    '   -m, --mirror <url>     set mirror'
-    '   -u, --noupdate         don’t update setup.ini from mirror'
+    '   -c, --cache <dir>    set cache'
+    '   -f, --file <file>    read package names from file'
+    '   -m, --mirror <url>   set mirror'
+    '   -u, --noupdate       don’t update setup.ini from mirror'
     '   --help'
     '   --version'
   )
@@ -178,7 +178,7 @@ do
       shift
     ;;
 
-    update | list | show | packageof | install | remove)
+    update | list | show | search | install | remove)
       if (( ${#command} ))
       then
         packages+=" $1"
@@ -246,7 +246,7 @@ case "$command" in
     done
   ;;
 
-  packageof)
+  search)
     checkpackages
     for pkg in $packages
     do
