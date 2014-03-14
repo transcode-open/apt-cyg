@@ -11,7 +11,7 @@ examples:
 * `apt-cyg list [pattern(s)]` to list packages matching given pattern. If no
   pattern is given, list all installed packages.
 * `apt-cyg show <pattern(s)>` to show packages matching patterns
-* `apt-cyg packageof <commands or files>` to locate parent packages 
+* `apt-cyg search <commands or files>` to locate parent packages
 
 Quick start
 -----------
