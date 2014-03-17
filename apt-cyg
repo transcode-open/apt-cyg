@@ -36,24 +36,25 @@ fi
 
 function usage () {
   rw=(
-    'usage: apt-cyg [command] [options] [packages]'
-    ''
-    'Commands:'
-    '   install <packages>   install packages'
-    '   remove <packages>    remove packages'
-    '   update               update setup.ini'
-    '   list [patterns]      list packages matching given pattern. If no'
-    '                        pattern is given, list all installed packages.'
-    '   show <patterns>      show packages matching patterns'
-    '   search <patterns>    search for a filename from installed packages'
-    ''
-    'Options:'
-    '   -c, --cache <dir>    set cache'
-    '   -f, --file <file>    read package names from file'
-    '   -m, --mirror <url>   set mirror'
-    '   -u, --noupdate       don’t update setup.ini from mirror'
-    '   --help'
-    '   --version'
+  'usage: apt-cyg [command] [options] [packages]'
+  ''
+  'Commands:'
+  '   install <packages>     install packages'
+  '   remove <packages>      remove packages'
+  '   update                 update setup.ini'
+  '   list [patterns]        list packages matching given pattern. If no'
+  '                          pattern is given, list all installed packages.'
+  '   show <patterns>        show packages matching patterns'
+  '   search <patterns>      search for a filename from installed packages'
+  '   searchall <patterns>   search for a filename from all available packages'
+  ''
+  'Options:'
+  '   -c, --cache <dir>      set cache'
+  '   -f, --file <file>      read package names from file'
+  '   -m, --mirror <url>     set mirror'
+  '   -u, --noupdate         don’t update setup.ini from mirror'
+  '   --help'
+  '   --version'
   )
   printf '%s\n' "${rw[@]}"
 }
@@ -178,7 +179,7 @@ do
       shift
     ;;
 
-    update | list | show | search | install | remove)
+    update | list | show | search | searchall | install | remove)
       if (( ${#command} ))
       then
         packages+=" $1"
@@ -264,6 +265,20 @@ case "$command" in
           echo Found $key in the package $package
         fi
       done
+    done
+  ;;
+
+  searchall)
+    for pkg in $packages
+    do
+      printf -v qs 'text=1&arch=%s&grep=%s' $ARCH "$pkg"
+      cd /tmp
+      wget -O matches cygwin.com/cgi-bin2/package-grep.cgi?"$qs"
+      awk '
+      ! /-src\t$/ &&
+      ! mc[$2]++ &&
+      $0=$2
+      ' FS=/ matches
     done
   ;;
 
