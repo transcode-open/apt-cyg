@@ -72,6 +72,7 @@ function usage()
   echo "  \"apt-cyg key-del <keyids> ...\" to remove keys <keyids>"
   echo "  \"apt-cyg key-list\" to list keys"
   echo "  \"apt-cyg key-finger\" to list fingerprints"
+  echo "  \"apt-cyg upgrade-self\" to upgrade apt-cyg"
   echo "Options:"
   echo "  --charch <arch>          : change archetecture"
   echo "  --use-setuprc            : set cache and mirror with /etc/setup/setup.rc"
@@ -439,6 +440,19 @@ function apt-cyg-pathof ()
     shift
   done
 }
+
+function apt-cyg-upgrade-self ()
+{
+  local basedir="$(dirname "$(readlink -f "$(which "$0")")")"
+  if [ ! -d "$basedir/.git" ]; then
+    echo -e "\e[31;1mError:\e[30;0m apt-get is not under the git version control."
+    exit 1
+  fi
+  pushd "$basedir"
+  git pull -v
+  popd
+}
+
 
 function apt-cyg-help ()
 {
