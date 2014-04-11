@@ -728,7 +728,7 @@ function apt-cyg-install ()
     local requires="$(grep "^requires: " "release/$pkg/desc" | sed -re 's/^requires: *(.*[^ ]) */\1/g' -e 's/ +/ /g')"
     
     local warn=0
-    if [ -z "$requires" ]; then
+    if [ -n "$requires" ]; then
       echo Package $pkg requires the following packages, installing:
       echo $requires
       for package in $requires; do
