@@ -92,8 +92,8 @@ function findworkspace()
 
   echo Working directory is $cache
   echo Mirror is $mirror
-  mkdir -p "$cache/$mirrordir"
-  cd "$cache/$mirrordir"
+  mkdir -p "$cache/$mirrordir/$ARCH"
+  cd "$cache/$mirrordir/$ARCH"
 }
 
 function getsetup() 
