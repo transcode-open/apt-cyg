@@ -45,6 +45,8 @@ function usage () {
   '   list [patterns]        list packages matching given pattern. If no'
   '                          pattern is given, list all installed packages.'
   '   show <patterns>        show packages matching patterns'
+  '   rdepends <patterns>    Display packages which require X to be installed,'
+  '                          AKA show reverse dependencies'
   '   search <patterns>      search for a filename from installed packages'
   '   searchall <patterns>   search for a filename from all available packages'
   ''
@@ -179,7 +181,7 @@ do
       shift
     ;;
 
-    update | list | show | search | searchall | install | remove)
+    update | list | show | rdepends | search | searchall | install | remove)
       if (( ${#command} ))
       then
         packages+=" $1"
@@ -244,6 +246,21 @@ case "$command" in
     do
       echo
       awk '$1 ~ query {print $0 "\n"}' RS='\n\n@ ' FS='\n' query="$pkg" setup.ini
+    done
+  ;;
+
+  rdepends)
+    findworkspace
+    for pkg in $packages
+    do
+      awk '
+      /^@ / {
+        pn = $2
+      }
+      $0 ~ "^requires: .*"query {
+        print pn
+      }
+      ' query="$pkg" setup.ini
     done
   ;;
 
