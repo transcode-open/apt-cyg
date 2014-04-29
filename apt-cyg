@@ -140,7 +140,7 @@ function findworkspace()
   fetch_trustedkeys
 }
 
-function download_and_varify ()
+function download_and_verify ()
 {
   "${WGET[@]}" -N "$1" || return 1
   [ -e "${1##*/}" ] || return 1
@@ -188,8 +188,8 @@ function setupini_download ()
   files_backup setup.ini setup.ini.sig setup.bz2 setup.bz2.sig
   
   while true; do
-    download_and_varify "$mirror/$arch/setup.bz2" && { bunzip2 -k setup.bz2 && mv setup setup.ini || rm -f setup.bz2; }
-    download_and_varify "$mirror/$arch/setup.ini" || break
+    download_and_verify "$mirror/$arch/setup.bz2" && { bunzip2 -k setup.bz2 && mv setup setup.ini || rm -f setup.bz2; }
+    download_and_verify "$mirror/$arch/setup.ini" || break
     
     files_backup_clean setup.ini setup.ini.sig setup.bz2 setup.bz2.sig
     popd
