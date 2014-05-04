@@ -78,6 +78,22 @@ Of course you can also avoid signature check by using --no-verify or -X options.
 Public keys of cygwin and cygwinports are already registered to trusted keys of embeded.
 If you want to use some other public keys, please use key-* subcommands.
 
+### Proxy support
+
+Use --proxy, -p option.
+This option must take a parameter from one of "auto", "inherit", "none" and URL.
+
+* "auto" will determine a proxy using a part of the [Web Proxy Autodiscovery Protocol](http://en.wikipedia.org/wiki/Web_Proxy_Autodiscovery_Protocol).
+The current implementation will look for a string of "PROXY URL" from "http://wpad/wpad.dat".
+If "wpad.dat" could not be downloaded, the proxy settings are inherited from the parent environment.
+* "inherit" will inherit the proxy settings from the parent environment.
+* "none" will not use the proxy.
+* URL can take a string like "protocol://hostname:port".
+
+For example:
+
+    # apt-cyg --proxy http://proxy.home:8080 update
+
 Contributing
 ------------
 

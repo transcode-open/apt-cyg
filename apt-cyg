@@ -81,6 +81,7 @@ function usage()
   echo "  --force-fetch-trustedkeys: force fetch trustedkeys"
   echo "  --no-verify, -X          : Don't verify setup.ini signatures"
   echo "  --no-check-certificate   : Don't validate the server's certificate"
+  echo "  --proxy, -p <auto|inherit|none|URL> : set proxy (default: auto)"
   echo "  --mirror, -m <url>       : set mirror"
   echo "  --cache, -c <dir>        : set cache"
   echo "  --file, -f <file>        : read package names from file"
@@ -453,6 +454,45 @@ function apt-cyg-upgrade-self ()
   popd
 }
 
+function proxy_auto ()
+{
+  local proxy=$("${WGET[@]}" --no-proxy -q -O - wpad/wpad.dat \
+  | grep PROXY \
+  | sed -e 's/^.*PROXY\s*\([^"]*\).*$/http:\/\/\1/g')
+  
+  [ -n "$proxy" ] && proxy_set "$proxy"
+}
+
+function proxy_set ()
+{
+  export http_proxy="$1"
+  export https_proxy="$1"
+  export ftp_proxy="$1"
+}
+
+function proxy_unset ()
+{
+  export -n http_proxy
+  export -n https_proxy
+  export -n ftp_proxy
+}
+
+function proxy_setup ()
+{
+  case "$OPT_PROXY" in
+  auto)
+    proxy_auto
+  ;;
+  inherit)
+  ;;
+  none)
+    proxy_unset
+  ;;
+  *)
+    proxy_set "$OPT_PROXY"
+  ;;
+  esac
+}
 
 function apt-cyg-help ()
 {
@@ -469,6 +509,7 @@ ignore_case=""
 force_remove=""
 force_fetch_trustedkeys=""
 no_verify=""
+OPT_PROXY="auto"
 YES_TO_ALL=false
 INITIAL_ARGS=( "$@" )
 ARGS=()
@@ -510,6 +551,11 @@ while [ $# -gt 0 ]; do
     --no-check-certificate)
       WGET+=( "--no-check-certificate" )
       shift
+    ;;
+
+    --proxy|-p)
+      OPT_PROXY="$2"
+      shift 2
     ;;
 
     --mirror|-m)
@@ -751,7 +797,7 @@ function apt-cyg-install ()
           echo Package $package is already installed, skipping
           continue
         fi
-        apt-cyg --noscripts install $package
+        apt-cyg --proxy inherit --noscripts install $package
         if [ $? -ne 0 ]; then warn=1; fi
       done
     fi
@@ -835,5 +881,6 @@ function invoke_subcommand ()
     fi
 }
 
+proxy_setup
 invoke_subcommand "$SUBCOMMAND" "${ARGS[@]}"
 
