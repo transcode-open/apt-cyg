@@ -292,6 +292,7 @@ case "$command" in
       cd /tmp
       wget -O matches cygwin.com/cgi-bin2/package-grep.cgi?"$qs"
       awk '
+      NR > 1 &&
       ! /-src\t$/ &&
       ! mc[$2]++ &&
       $0=$2
