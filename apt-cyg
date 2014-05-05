@@ -44,7 +44,8 @@ function usage () {
   '   update                 update setup.ini'
   '   list [patterns]        list packages matching given pattern. If no'
   '                          pattern is given, list all installed packages.'
-  '   show <patterns>        show packages matching patterns'
+  '   show <packages>        Displays the package records for the named'
+  '                          packages'
   '   rdepends <patterns>    Display packages which require X to be installed,'
   '                          AKA show reverse dependencies'
   '   search <patterns>      search for a filename from installed packages'
@@ -236,7 +237,16 @@ case "$command" in
     for pkg in $packages
     do
       echo
-      awk '$1 ~ query {print $0 "\n"}' RS='\n\n@ ' FS='\n' query="$pkg" setup.ini
+      awk '
+      $1 == query {
+        print
+        fd++
+      }
+      END {
+        if (! fd)
+          print "Unable to locate package " query
+      }
+      ' RS='\n\n@ ' FS='\n' query="$pkg" setup.ini
     done
   ;;
 
