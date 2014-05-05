@@ -15,6 +15,9 @@ apt-cyg is a command-line installer for [Cygwin](http://cygwin.com/) which coope
 * "apt-cyg key-del &lt;keyids&gt; ..." to remove keys &lt;keyids&gt;
 * "apt-cyg key-list" to list keys
 * "apt-cyg key-finger" to list fingerprints
+* "apt-cyg upgrade-self" to upgrade apt-cyg
+* "apt-cyg depends &lt;package names&gt;" to show forward dependency information for packages with depth.
+* "apt-cyg rdepends &lt;package names&gt;" to show reverse dependency information for packages with depth.
 
 Requirements
 -----------
