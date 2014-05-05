@@ -122,10 +122,12 @@ function getsetup()
 
 function checkpackages()
 {
-  if (( ! ${#packages} ))
+  if (( ${#packages} ))
   then
-    echo Nothing to do, exiting
-    exit
+    return 0
+  else
+    echo Nothing to do.
+    return 1
   fi
 }
 
@@ -220,7 +222,7 @@ case "$command" in
   ;;
 
   list)
-    if (( ${#packages} ))
+    if checkpackages
     then
       findworkspace
       for pkg in $packages
@@ -254,8 +256,8 @@ case "$command" in
   ;;
 
   show)
-    checkpackages
     findworkspace
+    checkpackages
     for pkg in $packages
     do
       echo
@@ -324,8 +326,8 @@ case "$command" in
   ;;
 
   install)
-    checkpackages
     findworkspace
+    checkpackages
     for pkg in $packages
     do
 
