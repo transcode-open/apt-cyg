@@ -73,6 +73,10 @@ function usage()
   echo "  \"apt-cyg key-list\" to list keys"
   echo "  \"apt-cyg key-finger\" to list fingerprints"
   echo "  \"apt-cyg upgrade-self\" to upgrade apt-cyg"
+  echo "  \"apt-cyg depends <package names>\""
+  echo "         to show forward dependency information for packages with depth."
+  echo "  \"apt-cyg rdepends <package names>\""
+  echo "         to show reverse dependency information for packages with depth."
   echo "Options:"
   echo "  --charch <arch>          : change archetecture"
   echo "  --use-setuprc            : set cache and mirror with /etc/setup/setup.rc"
@@ -562,6 +566,94 @@ function package_db-unregister ()
   
   mv "${PACKAGE_DB}" "${PACKAGE_DB}-save"
   mv "${work}"       "${PACKAGE_DB}"
+}
+
+# Usage: dep_check_single DIR ROOTPKG
+# Parameters:
+#   DIR is "depends" or "rdepends".
+#   ROOTPKG is a root package name to check dependency.
+# Return:
+#   package_name available shallow_depth deep_depth
+function dep_check_single ()
+{
+  awk \
+  '
+    function update_result(dir, rootpkg, pkg, depth, _, i) {
+      if (0 + result[rootpkg, pkg, "deep"]) {
+        result[rootpkg, pkg, "deep"] = depth;
+      } else {
+        result[rootpkg, pkg, "deep"] = result[rootpkg, pkg, "shallow"] = depth;
+        result[rootpkg, pkg, "available"] = 0 + available[pkg];
+        result[rootpkg, result[rootpkg, "n"]++] = pkg;
+        for (i = 0; i < dep[dir, pkg, "n"]; i++) {
+          update_result(dir, rootpkg, dep[dir, pkg, i], depth + 1);
+        }
+      }
+    }
+    $1 == "@" {
+      pkg = $2;
+      available[pkg] = 1;
+    }
+    $1 == "requires:" {
+      for (req = 2; req <= NF; req++) {
+        dep["rdepends", $req, dep["rdepends", $req, "n"]++] = pkg;
+        dep["depends" , pkg , dep["depends" , pkg , "n"]++] = $req;
+      }
+    }
+    END {
+      update_result(DIR, ROOTPKG, ROOTPKG, 1);
+      for(i = 0; i < result[ROOTPKG, "n"]; i++) {
+        printf("%-40s %d\t%d\t%d\n",
+          result[ROOTPKG, i],
+          result[ROOTPKG, result[ROOTPKG, i], "available"],
+          result[ROOTPKG, result[ROOTPKG, i], "shallow"],
+          result[ROOTPKG, result[ROOTPKG, i], "deep"]);
+      }
+    }
+  ' \
+  DIR="$1" ROOTPKG="$2" "$(apt-cyg-pathof "setup.ini")" | sort -nrk4
+}
+
+function dep_check ()
+{
+  local pkg
+  local dir="$1"
+  shift
+  for pkg; do
+    dep_check_single "$dir" "$pkg"
+  done | awk '
+  function min(x,y) {return x < y ? x : y}
+  function max(x,y) {return x < y ? y : x}
+  {
+    packages[$1] = pkg = $1;
+    status[pkg, "available"] = $2;
+    status[pkg, "shallow"  ] = 0 + status[pkg, "shallow"] == 0 ? $3 : min(status[pkg, "shallow"], $3);
+    status[pkg, "deep"     ] = max(0 + status[pkg, "deep"], $4);
+  }
+  END {
+    for (pkg in packages) {
+      printf("%-40s %d\t%d\t%d\n",
+        pkg,
+        status[pkg, "available"],
+        status[pkg, "shallow"],
+        status[pkg, "deep"])
+    }
+  }
+  ' | sort -nrk4
+}
+
+function apt-cyg-depends ()
+{
+  local pkg
+  printf "%-40s %s\t%s\t%s\n" "PKGNAME" "AVAIL" "SHALLOW" "DEEP"
+  dep_check depends "$@"
+}
+
+function apt-cyg-rdepends ()
+{
+  local pkg
+  printf "%-40s %s\t%s\t%s\n" "PKGNAME" "AVAIL" "SHALLOW" "DEEP"
+  dep_check rdepends "$@"
 }
 
 function apt-cyg-help ()
