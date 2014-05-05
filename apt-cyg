@@ -54,7 +54,6 @@ function usage () {
   '   -c, --cache <dir>      set cache'
   '   -f, --file <file>      read package names from file'
   '   -m, --mirror <url>     set mirror'
-  '   -u, --noupdate         don’t update setup.ini from mirror'
   '   --help'
   '   --version'
   )
@@ -98,7 +97,7 @@ function findworkspace()
 
 function getsetup() 
 {
-  (( noscripts || noupdate )) && return
+  (( noscripts )) && return
   touch setup.ini
   mv setup.ini setup.ini-save
   wget -N $mirror/$ARCH/setup.bz2
@@ -129,7 +128,6 @@ function checkpackages()
 # process options
 dofile=0
 noscripts=0
-noupdate=0
 command=''
 file=''
 filepackages=''
@@ -151,11 +149,6 @@ do
 
     --noscripts)
       noscripts=1
-      shift
-    ;;
-
-    --noupdate | -u)
-      noupdate=1
       shift
     ;;
 
@@ -222,7 +215,6 @@ case "$command" in
     then
       checkpackages
       findworkspace
-      getsetup
       for pkg in $packages
       do
         echo
@@ -241,7 +233,6 @@ case "$command" in
   show)
     checkpackages
     findworkspace
-    getsetup
     for pkg in $packages
     do
       echo
@@ -303,7 +294,6 @@ case "$command" in
   install)
     checkpackages
     findworkspace
-    getsetup
     for pkg in $packages
     do
 
