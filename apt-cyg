@@ -494,6 +494,76 @@ function proxy_setup ()
   esac
 }
 
+# PACKAGE_DB is defined at package_db.cc in the cygwin-app setup.exe
+# See blow:
+# https://www.sourceware.org/cygwin-apps/setup.html
+# https://sourceware.org/cgi-bin/cvsweb.cgi/setup/package_db.cc?cvsroot=cygwin-apps
+PACKAGE_DB="/etc/setup/installed.db"
+
+function package_db-version_check ()
+{
+  local ver2hdr="INSTALLED.DB 2"
+  
+  if head -n1 "${PACKAGE_DB}" | grep -Fqvx "${ver2hdr}"; then
+    echo -e "\e[33;1mWarning:\e[30;0m ${PACKAGE_DB} is not version 2. The first line is below:"
+    echo -e "$(head -n1 "${PACKAGE_DB}")\n" >&2
+    
+    # The previous version of apt-cyg was not treat version header correctly.
+    if grep -FHnx "${ver2hdr}" "${PACKAGE_DB}" >&2; then
+      echo -e "The above line looks like version header, but it is not the first line.\n" >&2
+    fi
+  fi
+}
+
+# Usage: package_db-is_registered PKGNAME
+function package_db-is_registered ()
+{
+  package_db-version_check
+  
+  awk '
+  $1 == PKGNAME && NF != 2 {found = 1; exit}
+  END {exit !found}
+  ' PKGNAME="$1" "${PACKAGE_DB}"
+}
+
+function package_db-list ()
+{
+  package_db-version_check
+  
+  awk 'NF == 3 {print $1}' "${PACKAGE_DB}"
+}
+
+# Usage: package_db-register PKGNAME PKGFILE
+function package_db-register ()
+{
+  local work="/tmp/apt-cyg.$$.${PACKAGE_DB##*/}"
+  
+  package_db-version_check
+  
+  awk '
+  function register() {print PKGNAME " " PKGFILE " 0"; registered = 1;}
+  !registered && PKGNAME < $1 && NF != 2 {register()}
+  {print $0}
+  END {if (!registered) register()}
+  ' PKGNAME="$1" PKGFILE="$2" "${PACKAGE_DB}" > "${work}"
+  
+  mv "${PACKAGE_DB}" "${PACKAGE_DB}-save"
+  mv "${work}"       "${PACKAGE_DB}"
+}
+
+# Usage: package_db-unregister PKGNAME
+function package_db-unregister ()
+{
+  local work="/tmp/apt-cyg.$$.${PACKAGE_DB##*/}"
+  
+  package_db-version_check
+  
+  awk '!(PKGNAME == $1 && NF != 2) {print $0}' PKGNAME="$1" "${PACKAGE_DB}" > "${work}"
+  
+  mv "${PACKAGE_DB}" "${PACKAGE_DB}-save"
+  mv "${work}"       "${PACKAGE_DB}"
+}
+
 function apt-cyg-help ()
 {
   usage
@@ -644,7 +714,7 @@ function apt-cyg-show ()
 {
 
     echo 1>&2 The following packages are installed:
-    awk '/[^ ]+ [^ ]+ 0/ {print $1}' /etc/setup/installed.db
+    package_db-list
 
 }
 
@@ -660,7 +730,7 @@ function apt-cyg-find ()
     for pkg do
       echo ""
       echo "Searching for installed packages matching $pkg:"
-      awk '/[^ ]+ [^ ]+ 0/ {if ($1 ~ query) print $1}' query="$pkg" IGNORECASE="$ignore_case" /etc/setup/installed.db
+      package_db-list | awk '$1~query{print $1}' query="$pkg" IGNORECASE="$ignore_case"
       echo ""
       echo "Searching for installable packages matching $pkg:"
       awk -v query="$pkg" -v IGNORECASE="$ignore_case" \
@@ -722,8 +792,7 @@ function apt-cyg-install ()
 
     for pkg do
 
-    local already="$(grep -c "^$pkg " /etc/setup/installed.db)"
-    if [ $already -ge 1 ]; then
+    if package_db-is_registered "$pkg"; then
       echo Package $pkg is already installed, skipping
       continue
     fi
@@ -775,12 +844,7 @@ function apt-cyg-install ()
     
     # update the package database
     
-    awk > /tmp/awk.$$ -v pkg="$pkg" -v bz=$file \
-      '{if (ins != 1 && pkg < $1) {print pkg " " bz " 0"; ins=1}; print $0} \
-      END{if (ins != 1) print pkg " " bz " 0"}' \
-      /etc/setup/installed.db
-    mv /etc/setup/installed.db /etc/setup/installed.db-save
-    mv /tmp/awk.$$ /etc/setup/installed.db
+    package_db-register "$pkg" "$file"
     
     
     # recursively install required packages
@@ -792,8 +856,7 @@ function apt-cyg-install ()
       echo Package $pkg requires the following packages, installing:
       echo $requires
       for package in $requires; do
-        local already="$(grep -c "^$package " /etc/setup/installed.db)"
-        if [ $already -ge 1 ]; then
+        if package_db-is_registered "$pkg"; then
           echo Package $package is already installed, skipping
           continue
         fi
@@ -831,8 +894,7 @@ function apt-cyg-remove()
     checkpackages "$@"
     for pkg do
 
-    local already="$(grep -c "^$pkg " /etc/setup/installed.db)"
-    if [ $already -eq 0 ]; then
+    if ! package_db-is_registered "$pkg"; then
       echo Package $pkg is not installed, skipping
       continue
     fi
@@ -858,10 +920,8 @@ function apt-cyg-remove()
     fi
 
     gzip -cd "/etc/setup/$pkg.lst.gz" | awk '/[^\/]$/ {print "rm -f \"/" $0 "\""}' | sh
-    awk > /tmp/awk.$$ -v pkg="$pkg" '{if (pkg != $1) print $0}' /etc/setup/installed.db
     rm -f "/etc/postinstall/$pkg.sh.done" "/etc/preremove/$pkg.sh" "/etc/setup/$pkg.lst.gz"
-    mv /etc/setup/installed.db /etc/setup/installed.db-save
-    mv /tmp/awk.$$ /etc/setup/installed.db
+    package_db-unregister "$pkg"
     echo Package $pkg removed
 
     done
