@@ -44,6 +44,7 @@ function usage () {
   '   update                 update setup.ini'
   '   list [patterns]        list packages matching given pattern. If no'
   '                          pattern is given, list all installed packages.'
+  '   listfiles <packages>   list files owned by packages'
   '   show <packages>        Displays the package records for the named'
   '                          packages'
   '   rdepends <patterns>    Display packages which require X to be installed,'
@@ -121,9 +122,11 @@ function getsetup()
 
 function checkpackages()
 {
-  (( ${#packages} )) && return
-  echo Nothing to do, exiting
-  exit
+  if (( ! ${#packages} ))
+  then
+    echo Nothing to do, exiting
+    exit
+  fi
 }
 
 # process options
@@ -175,7 +178,12 @@ do
       shift
     ;;
 
-    update | list | show | rdepends | search | searchall | install | remove)
+    update)
+      command=$1
+      shift
+    ;;
+
+    list | listfiles | show | rdepends | search | searchall | install | remove)
       if (( ${#command} ))
       then
         packages+=" $1"
@@ -214,7 +222,6 @@ case "$command" in
   list)
     if (( ${#packages} ))
     then
-      checkpackages
       findworkspace
       for pkg in $packages
       do
@@ -229,6 +236,21 @@ case "$command" in
       echo The following packages are installed: >&2
       awk 'NR>1 && $0=$1' /etc/setup/installed.db
     fi
+  ;;
+
+  listfiles)
+    checkpackages
+    for pkg in $packages
+    do
+      if [ -e /etc/setup/"$pkg".lst.gz ]
+      then
+        gzip -cd /etc/setup/"$pkg".lst.gz
+      else
+        echo package $pkg is not installed
+      fi
+      echo
+    done |
+    head -c-1
   ;;
 
   show)
