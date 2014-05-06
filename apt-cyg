@@ -85,7 +85,8 @@ function usage()
   echo "  --force-fetch-trustedkeys: force fetch trustedkeys"
   echo "  --no-verify, -X          : Don't verify setup.ini signatures"
   echo "  --no-check-certificate   : Don't validate the server's certificate"
-  echo "  --proxy, -p <auto|inherit|none|URL> : set proxy (default: auto)"
+  echo "  --proxy, -p <auto|inherit|none|URL> :"
+  echo "                             set proxy (default: \${APT_CYG_PROXY:-auto})"
   echo "  --mirror, -m <url>       : set mirror"
   echo "  --cache, -c <dir>        : set cache"
   echo "  --file, -f <file>        : read package names from file"
@@ -671,7 +672,7 @@ ignore_case=""
 force_remove=""
 force_fetch_trustedkeys=""
 no_verify=""
-OPT_PROXY="auto"
+OPT_PROXY=${APT_CYG_PROXY:-auto}
 YES_TO_ALL=false
 INITIAL_ARGS=( "$@" )
 ARGS=()
