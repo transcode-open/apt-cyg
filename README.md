@@ -49,6 +49,9 @@ But, as of 2014-01-17, perhaps ca-certificates package makes fail of certificati
 Quick start
 -----------
 
+The most recommended way to deploy this fork can be seen from a link below:
+* New features / [Upgrade apt-cyg](#upgrade-apt-cyg)
+
 apt-cyg is a simple script. Once you have a copy, make it executable:
 
     chmod +x /bin/apt-cyg
@@ -81,6 +84,17 @@ Of course you can also avoid signature check by using --no-verify or -X options.
 Public keys of cygwin and cygwinports are already registered to trusted keys of embeded.
 If you want to use some other public keys, please use key-* subcommands.
 
+### Upgrade apt-cyg
+
+If apt-cyg is under the git version control, this fork can upgrade itself by "upgrade-self" subcommand.
+Therefore, the most recommended way to deploy this fork is below:
+
+    git clone HTTPS_clone_URL
+    ln -s "$(realpath apt-cyg/apt-cyg)" /usr/local/bin/
+
+`HTTPS_clone_URL` is like a `https://github.com/USERNAME/apt-cyg.git`.
+It can be found from the right side menu in each fork pages on github.
+    
 ### Proxy support
 
 Use --proxy, -p option.
