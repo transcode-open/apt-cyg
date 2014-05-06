@@ -51,13 +51,13 @@ Quick start
 
 apt-cyg is a simple script. Once you have a copy, make it executable:
 
-    # chmod +x /bin/apt-cyg
+    chmod +x /bin/apt-cyg
 
 Optionally place apt-cyg in a bin/ folder on your path.
 
 Then use apt-cyg, for example:
 
-    # apt-cyg install nano
+    apt-cyg install nano
 
 New features
 ------------
@@ -67,7 +67,7 @@ New features
 Let think a case that you want to install the x86 package when you are working under the x86_64 environment.
 For example:
 
-    # apt-cyg --charch x86 install chere
+    apt-cyg --charch x86 install chere
 
 As of 2013-10-26, chere package is provided for only the repository for x86.
 
@@ -95,13 +95,13 @@ If "wpad.dat" could not be downloaded, the proxy settings are inherited from the
 
 For example:
 
-    # apt-cyg --proxy http://proxy.home:8080 update
+    apt-cyg --proxy http://proxy.home:8080 update
 
 The default parameter is "${APT\_CYG\_PROXY:-auto}".
 At the environment where is not provided the WPAD server, it makes the lag for a few seconds at startup.
 So, if you don't want to use WPAD, please define APT\_CYG\_PROXY environment variable as below:
 
-    # export APT_CYG_PROXY=none
+    export APT_CYG_PROXY=inherit
 
 Contributing
 ------------
