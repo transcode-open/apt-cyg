@@ -18,6 +18,8 @@ apt-cyg is a command-line installer for [Cygwin](http://cygwin.com/) which coope
 * "apt-cyg upgrade-self" to upgrade apt-cyg
 * "apt-cyg depends &lt;package names&gt;" to show forward dependency information for packages with depth.
 * "apt-cyg rdepends &lt;package names&gt;" to show reverse dependency information for packages with depth.
+* "apt-cyg completion-install" to install completion.
+* "apt-cyg completion-uninstall" to uninstall completion.
 
 Requirements
 -----------
@@ -117,6 +119,14 @@ So, if you don't want to use WPAD, please define APT\_CYG\_PROXY environment var
 
     export APT_CYG_PROXY=inherit
 
+### Bash completion support
+
+Bash completion script can be installed  to "/etc/bash_completion.d/apt-cyg" by `completion-install` subcommand.
+It will be automatically updated when apt-cyg is upgraded to newer version.
+If you don't want to update it automatically, execute `completion-install` subcommand in conjunction with `--completion-disable-autoupdate` option.
+
+Some other forks, [Milly / apt-cyg](https://github.com/Milly/apt-cyg) under the cfg / apt-cyg fork, [ashumkin / apt-cyg](https://github.com/ashumkin/apt-cyg) and etc, are also supported it.
+
 Contributing
 ------------
 
@@ -152,7 +162,6 @@ Todo
 ------------
 
 * Support multi mirrors: Cygwin setup can use multi mirrors. They are recorded at last-mirror section in '/etc/setup/setup.rc'. It's useful for using [Cygwinports](http://cygwinports.org/).
-* Support completion: Some other forks already supported it. For example, [Milly / apt-cyg](https://github.com/Milly/apt-cyg) under the cfg / apt-cyg fork, [ashumkin / apt-cyg](https://github.com/ashumkin/apt-cyg) and etc supported it.
 * Support upgrade: But maybe, busy resources can not be upgraded, and rebase problem will happen. Cygwin setup resolves by replacing them at next reboot.
 * Support dependency check for remove subcommand.
 

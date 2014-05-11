@@ -77,6 +77,8 @@ function usage()
   echo "         to show forward dependency information for packages with depth."
   echo "  \"apt-cyg rdepends <package names>\""
   echo "         to show reverse dependency information for packages with depth."
+  echo "  \"apt-cyg completion-install\" to install completion."
+  echo "  \"apt-cyg completion-uninstall\" to uninstall completion."
   echo "Options:"
   echo "  --charch <arch>          : change archetecture"
   echo "  --use-setuprc            : set cache and mirror with /etc/setup/setup.rc"
@@ -87,6 +89,10 @@ function usage()
   echo "  --no-check-certificate   : Don't validate the server's certificate"
   echo "  --proxy, -p <auto|inherit|none|URL> :"
   echo "                             set proxy (default: \${APT_CYG_PROXY:-auto})"
+  echo "  --completion-get-subcommand:"
+  echo "                             get subcommand (for completion internal use)"
+  echo "  --completion-disable-autoupdate:"
+  echo "                             disable completion autoupdate"
   echo "  --mirror, -m <url>       : set mirror"
   echo "  --cache, -c <dir>        : set cache"
   echo "  --file, -f <file>        : read package names from file"
@@ -657,6 +663,114 @@ function apt-cyg-rdepends ()
   dep_check rdepends "$@"
 }
 
+function apt-cyg-completion-install ()
+{
+  if [ ! -d "/etc/bash_completion.d" ]; then
+    echo -e "\e[31;1mError:\e[30;0m /etc/bash_completion.d is not exist."
+    exit 1
+  fi
+  
+  local SUBCMDS
+  local OPTIONS
+  local SCRIPTFILE="$(realpath "$(which apt-cyg)")"
+  local SCRIPTDIR="${SCRIPTNAME%/*}"
+  
+  readarray -t -O ${#SUBCMDS[@]} SUBCMDS < <(grep "^function " "$SCRIPTFILE" | awk 'match($2, /apt-cyg-([-_0-9A-Za-z]+)/,m){print m[1]}')
+  readarray -t -O ${#OPTIONS[@]} OPTIONS < <(
+    awk '
+    /^function *parse_args *\(\)/ {proc=1}
+    /^} *# *\/parse_args( |$)/     {proc=0}
+    proc && match($0, /^ *(-[^()*]+)\)/, m) {
+      split(m[1], x, "|");
+      for (i in x) print x[i];
+    }
+    ' "$SCRIPTFILE"
+  )
+cat <<-EOD > /etc/bash_completion.d/apt-cyg
+# bash completion for apt-cyg
+
+function __apt-cyg ()
+{
+  local cur prev getsubcmd subcmd
+  
+  # Auto update for completion script.
+  if [ -z "$OPT_COMPLETION_DISABLE_AUTOUPDATE" -a "$SCRIPTFILE" -nt "/etc/bash_completion.d/apt-cyg" ]; then
+    apt-cyg completion-install >/dev/null 2>&1
+    . /etc/bash_completion.d/apt-cyg
+    __apt-cyg "$@"
+    return
+  fi
+  
+  _get_comp_words_by_ref -n : cur prev
+  
+  getsubcmd=( apt-cyg --completion-get-subcommand \$(echo "\${COMP_LINE}" | sed -r -e 's/^[^ \t]+//g' -e 's/[^ \t]+\$//g') )
+  subcmd="\$( "\${getsubcmd[@]}" )"
+  
+  case "\$subcmd" in
+    install|depends|rdepends|describe|find)
+      COMPREPLY=( \$(awk '/^@ /{print \$2}' "$(apt-cyg pathof setup.ini)") )
+      ;;
+    remove)
+      COMPREPLY=( \$(apt-cyg show 2>/dev/null) )
+      ;;
+    pathof)
+      COMPREPLY=( cache mirror mirrordir cache/mirrordir setup.ini )
+      ;;
+    "")
+      COMPREPLY=( "${SUBCMDS[*]}" )
+      ;;
+  esac
+  case "\$prev" in
+    --charch)
+      COMPREPLY=( x86 x86_64 )
+      ;;
+    --cache|-c)
+      COMPREPLY=( \$(compgen -d -- "\$cur") )
+      ;;
+    --mirror|-m)
+      COMPREPLY=( \$(awk '/^[^ \t]+/{section=\$1}section=="mirrors-lst"&&match(\$0,/^[ \t]+([^;]+);/,m){print "\""m[1]"\""}' "/etc/setup/setup.rc") )
+      ;;
+    --file|-f)
+      COMPREPLY=( \$(compgen -f -- "\$cur") )
+      ;;
+    --proxy|-p)
+      COMPREPLY=( auto inherit none http:// )
+      ;;
+    *)
+      COMPREPLY+=( "${OPTIONS[*]}" )
+      ;;
+  esac
+  if [ -n "\$DEBUG_COMPLETION" ]; then
+    echo
+    echo "COMP_WORDBREAKS: \$COMP_WORDBREAKS"
+    echo "getsubcmd: '\${getsubcmd[@]}'"
+    echo "subcmd: '\${subcmd[@]}'"
+    echo "COMP_LINE: '\${COMP_LINE}'"
+    echo "cur: \$cur"
+    echo "prev: \$prev"
+    echo "COMP_WORDS: \${COMP_WORDS[@]}"
+    echo
+    echo -n "\${COMP_LINE}"
+  fi
+  COMPREPLY=( \$(compgen -W "\${COMPREPLY[*]}" -- "\$cur") )
+  __ltrim_colon_completions "\$cur"
+}
+complete -F __apt-cyg apt-cyg
+EOD
+  touch -r "$SCRIPTFILE" "/etc/bash_completion.d/apt-cyg"
+  echo "A bash completion /etc/bash_completion.d/apt-cyg is installed"
+}
+
+function apt-cyg-completion-uninstall ()
+{
+  if [ ! -f /etc/bash_completion.d/apt-cyg ]; then
+    echo -e "\e[31;1mError:\e[30;0m /etc/bash_completion.d/apt-cyg is not exist."
+    exit 1
+  fi
+  rm /etc/bash_completion.d/apt-cyg
+  echo "A bash completion /etc/bash_completion.d/apt-cyg is uninstalled"
+}
+
 function apt-cyg-help ()
 {
   usage
@@ -677,12 +791,16 @@ YES_TO_ALL=false
 INITIAL_ARGS=( "$@" )
 ARGS=()
 
+function parse_args ()
+{
+local unknown_option
+
 while [ $# -gt 0 ]; do
   case "$1" in
 
     --charch)
-      charch "$2" "${INITIAL_ARGS[@]}"
-      shift ; shift
+      OPT_CHARCH="$2"
+      shift 2 || break
     ;;
 
     --use-setuprc)
@@ -718,17 +836,27 @@ while [ $# -gt 0 ]; do
 
     --proxy|-p)
       OPT_PROXY="$2"
-      shift 2
+      shift 2 || break
+    ;;
+
+    --completion-get-subcommand)
+      OPT_COMPLETION_GET_SUBCOMMAND="$1"
+      shift
+    ;;
+
+    --completion-disable-autoupdate)
+      OPT_COMPLETION_DISABLE_AUTOUPDATE="$1"
+      shift
     ;;
 
     --mirror|-m)
-      echo "${2%/}/" > /etc/setup/last-mirror
-      shift ; shift
+      OPT_MIRROR="$2"
+      shift 2 || break
     ;;
 
     --cache|-c)
-      cygpath -aw "$2" > /etc/setup/last-cache
-      shift ; shift
+      OPT_CACHE="$2"
+      shift 2 || break
     ;;
 
     --noscripts)
@@ -757,15 +885,13 @@ while [ $# -gt 0 ]; do
     ;;
 
     --file|-f)
-      if [ -n "$2" ]; then
-        OPT_FILES+=( "$2" )
-        shift
-      else
-        echo 1>&2 No file name provided, ignoring $1
-      fi
-      shift
+      [ -n "$2" ] && OPT_FILES+=( "$2" )
+      shift 2 || break
     ;;
-
+    -*)
+      unknown_option="$1"
+      break
+    ;;
     *)
       if [ -z "$SUBCOMMAND" ]; then
         SUBCOMMAND="$1"
@@ -778,6 +904,30 @@ while [ $# -gt 0 ]; do
 
   esac
 done
+
+if [ -n "$OPT_COMPLETION_GET_SUBCOMMAND" ]; then
+  echo "$SUBCOMMAND"
+  exit
+fi
+
+if [ -n "$unknown_option" ]; then
+  echo -e "\e[31;1mError:\e[30;0m Unknown option: $unknown_option"
+  exit 1
+fi
+
+if [ $# -gt 0 ]; then
+  echo -e "\e[31;1mError:\e[30;0m Number of parameters is not enough: $@"
+  exit 1
+fi
+
+} #/parse_args
+
+parse_args "$@"
+
+[ -n "$OPT_CHARCH" ] && charch "$OPT_CHARCH" "${INITIAL_ARGS[@]}"
+
+[ "${#OPT_MIRROR[@]}" -gt 0 ] && echo "${OPT_MIRROR%/}/"             > /etc/setup/last-mirror
+[ "${#OPT_CACHE[@]}"  -gt 0 ] && echo "$(cygpath -aw "$OPT_CACHE")"  > /etc/setup/last-cache
 
 if [ -z "$GPGV" -a -z "$no_verify" ]; then
   echo -e "\e[31;1mError:\e[30;0m GnuPG is not installed. Prease install gnupg package or use -X option."
