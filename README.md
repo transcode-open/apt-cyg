@@ -123,7 +123,7 @@ So, if you don't want to use WPAD, please define APT\_CYG\_PROXY environment var
 
 Bash completion script can be installed  to "/etc/bash_completion.d/apt-cyg" by `completion-install` subcommand.
 It will be automatically updated when apt-cyg is upgraded to newer version.
-If you don't want to update it automatically, execute `completion-install` subcommand in conjunction with `--completion-disable-autoupdate` option.
+If you don't want to update it automatically, execute `completion-install` subcommand in conjunction with `--completion-disable-autoupdate` option. And `completion-uninstall` subcommand removes "/etc/bash_completion.d/apt-cyg".
 
 Some other forks, [Milly / apt-cyg](https://github.com/Milly/apt-cyg) under the cfg / apt-cyg fork, [ashumkin / apt-cyg](https://github.com/ashumkin/apt-cyg) and etc, are also supported it.
 
