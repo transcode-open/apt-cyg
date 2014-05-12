@@ -669,6 +669,10 @@ function apt-cyg-completion-install ()
     echo -e "\e[31;1mError:\e[30;0m /etc/bash_completion.d is not exist."
     exit 1
   fi
+  if ! package_db-is_registered "bash-completion"; then
+    echo -e "\e[31;1mError:\e[30;0m bash-completion is not installed."
+    exit 1
+  fi
   
   local SUBCMDS
   local OPTIONS
