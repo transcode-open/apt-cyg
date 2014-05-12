@@ -318,6 +318,9 @@ case "$command" in
       wget -O matches cygwin.com/cgi-bin2/package-grep.cgi?"$qs"
       awk '
       NR > 1 &&
+      ! /-debuginfo-/ &&
+      ! /-devel-/ &&
+      ! /-doc-/ &&
       ! /-src\t$/ &&
       ! mc[$2]++ &&
       $0=$2
