@@ -322,7 +322,7 @@ case "$command" in
     for pkg in $packages
     do
 
-    already=`grep -c "^$pkg " /etc/setup/installed.db`
+    already=$(grep -c "^$pkg " /etc/setup/installed.db)
     if (( already ))
     then
       echo Package $pkg is already installed, skipping
@@ -429,16 +429,12 @@ case "$command" in
 
     # run all postinstall scripts
 
-    pis=`ls /etc/postinstall/*.sh 2>/dev/null | wc -l`
-    if (( pis ))
-    then
-      echo Running postinstall scripts
-      for script in /etc/postinstall/*.sh
-      do
-        $script
-        mv $script $script.done
-      done
-    fi
+    find /etc/postinstall -name '*.sh' | while read script
+    do
+      echo Running $script
+      $script
+      mv $script $script.done
+    done
     echo Package $pkg installed
 
     done
@@ -449,20 +445,25 @@ case "$command" in
     for pkg in $packages
     do
 
-    already=`grep -c "^$pkg " /etc/setup/installed.db`
+    already=$(grep -c "^$pkg " /etc/setup/installed.db)
     if (( ! already ))
     then
       echo Package $pkg is not installed, skipping
       continue
     fi
-    for req in cygwin coreutils gawk bzip2 tar bash
-    do
-      if [[ $pkg = $req ]]
-      then
-        echo apt-cyg cannot remove package $pkg, exiting
-        exit 1
-      fi
-    done
+
+    cygcheck awk bash bunzip2 grep gzip mv sed tar xargs xz | awk '
+    NR>1 &&
+    /bin/ &&
+    ! fd[$NF]++ &&
+    $0 = $NF
+    ' FS='\' > /tmp/cygcheck.txt
+
+    if apt-cyg listfiles $pkg | grep -wf /tmp/cygcheck.txt
+    then
+      echo apt-cyg cannot remove package $pkg, exiting
+      exit 1
+    fi
     if [ ! -e /etc/setup/"$pkg".lst.gz ]
     then
       echo Package manifest missing, cannot remove $pkg. Exiting
