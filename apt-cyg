@@ -345,7 +345,7 @@ case "$command" in
 
     # look for package and save desc file
 
-    mkdir -p "release/$pkg"
+    mkdir -p release/"$pkg"
     awk '
     $1 == package {
       desc = $0
@@ -355,12 +355,12 @@ case "$command" in
       if (px == 1 && desc) print desc
       else print "Package not found"
     }
-    ' RS='\n\n@ ' FS='\n' package="$pkg" setup.ini > "release/$pkg/desc"
-    desc=$(<"release/$pkg/desc")
+    ' RS='\n\n@ ' FS='\n' package="$pkg" setup.ini > release/"$pkg"/desc
+    desc=$(<release/"$pkg"/desc)
     if [[ $desc = 'Package not found' ]]
     then
       echo Package $pkg not found or ambiguous name, exiting
-      rm -r "release/$pkg"
+      rm -r release/"$pkg"
       exit 1
     fi
     echo Found package $pkg
@@ -368,7 +368,7 @@ case "$command" in
     # download and unpack the bz2 or xz file
 
     # pick the latest version, which comes first
-    install=$(awk '/^install: / {print $2; exit}' "release/$pkg/desc")
+    install=$(awk '/^install: / {print $2; exit}' release/"$pkg"/desc)
 
     if (( ! ${#install} ))
     then
@@ -377,7 +377,7 @@ case "$command" in
     fi
 
     file=`basename $install`
-    cd "release/$pkg"
+    cd release/"$pkg"
     wget -nc $mirror/$install
 
     # check the md5
@@ -389,9 +389,9 @@ case "$command" in
       exit 1
     fi
 
-    echo "Unpacking..."
-    tar xvf $file -C / > "/etc/setup/$pkg.lst"
-    gzip -f "/etc/setup/$pkg.lst"
+    echo Unpacking...
+    tar xvf $file -C / > /etc/setup/"$pkg".lst
+    gzip -f /etc/setup/"$pkg".lst
     cd ../..
 
     # update the package database
@@ -416,7 +416,7 @@ case "$command" in
       sub(rq, "")
       print
     }
-    ' rq='^requires: ' "release/$pkg/desc")
+    ' rq='^requires: ' release/"$pkg"/desc)
     warn=0
     if (( ${#requires} ))
     then
@@ -467,7 +467,7 @@ case "$command" in
       echo Package $pkg is not installed, skipping
       continue
     fi
-    for req in cygwin coreutils gawk bzip2 tar wget bash
+    for req in cygwin coreutils gawk bzip2 tar bash
     do
       if [[ $pkg = $req ]]
       then
@@ -475,7 +475,7 @@ case "$command" in
         exit 1
       fi
     done
-    if [ ! -e "/etc/setup/$pkg.lst.gz" ]
+    if [ ! -e /etc/setup/"$pkg".lst.gz ]
     then
       echo Package manifest missing, cannot remove $pkg. Exiting
       exit 1
@@ -484,14 +484,13 @@ case "$command" in
 
     # run preremove scripts
 
-    if [ -e "/etc/preremove/$pkg.sh" ]
+    if [ -e /etc/preremove/"$pkg".sh ]
     then
-      "/etc/preremove/$pkg.sh"
-      rm "/etc/preremove/$pkg.sh"
+      /etc/preremove/"$pkg".sh
+      rm /etc/preremove/"$pkg".sh
     fi
-    gzip -cd "/etc/setup/$pkg.lst.gz" |
-      awk '/[^\/]$/ {print "rm -f \"/" $0 "\""}' | sh
-    rm "/etc/setup/$pkg.lst.gz"
+    gzip -cd /etc/setup/"$pkg".lst.gz | sed '\./$.d;s.^./.' | xargs rm -f
+    rm /etc/setup/"$pkg".lst.gz
     rm -f /etc/postinstall/$pkg.sh.done
     awk '$1 != pkg' pkg="$pkg" /etc/setup/installed.db > /tmp/awk.$$
     mv /etc/setup/installed.db /etc/setup/installed.db-save
