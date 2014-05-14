@@ -95,6 +95,23 @@ function findworkspace()
   echo Mirror is $mirror
   mkdir -p "$cache/$mirrordir/$ARCH"
   cd "$cache/$mirrordir/$ARCH"
+  [ -e setup.ini ] || getsetup
+}
+
+getsetup()
+{
+  touch setup.ini
+  mv setup.ini setup.ini-save
+  wget -N $mirror/$ARCH/setup.bz2
+  if [ -e setup.bz2 ]
+  then
+    bunzip2 setup.bz2
+    mv setup setup.ini
+    echo Updated setup.ini
+  else
+    echo Error updating setup.ini, reverting
+    mv setup.ini-save setup.ini
+  fi
 }
 
 function checkpackages()
@@ -189,18 +206,7 @@ case "$command" in
 
   update)
     findworkspace
-    touch setup.ini
-    mv setup.ini setup.ini-save
-    wget -N $mirror/$ARCH/setup.bz2
-    if [ -e setup.bz2 ]
-    then
-      bunzip2 setup.bz2
-      mv setup setup.ini
-      echo Updated setup.ini
-    else
-      echo Error updating setup.ini, reverting
-      mv setup.ini-save setup.ini
-    fi
+    getsetup
   ;;
 
   list)
