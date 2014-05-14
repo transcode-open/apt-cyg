@@ -457,7 +457,7 @@ case "$command" in
     /bin/ &&
     ! fd[$NF]++ &&
     $0 = $NF
-    ' FS='\' > /tmp/cygcheck.txt
+    ' FS='\\' > /tmp/cygcheck.txt
 
     if apt-cyg listfiles $pkg | grep -wf /tmp/cygcheck.txt
     then
