@@ -79,6 +79,7 @@ function usage()
   echo "         to show reverse dependency information for packages with depth."
   echo "  \"apt-cyg completion-install\" to install completion."
   echo "  \"apt-cyg completion-uninstall\" to uninstall completion."
+  echo "  \"apt-cyg mirrors-list\" to show list of mirros."
   echo "Options:"
   echo "  --charch <arch>          : change archetecture"
   echo "  --use-setuprc            : set cache and mirror with /etc/setup/setup.rc"
@@ -773,6 +774,14 @@ function apt-cyg-completion-uninstall ()
   fi
   rm /etc/bash_completion.d/apt-cyg
   echo "A bash completion /etc/bash_completion.d/apt-cyg is uninstalled"
+}
+
+function apt-cyg-mirros-list ()
+{
+  awk '
+    /^[^ \t]+/ {section = $1}
+    section=="mirrors-lst" && match($0, /^[ \t]+([^;]+);/, m) {print m[1]}
+  ' "/etc/setup/setup.rc"
 }
 
 function apt-cyg-help ()

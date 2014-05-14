@@ -20,6 +20,7 @@ apt-cyg is a command-line installer for [Cygwin](http://cygwin.com/) which coope
 * "apt-cyg rdepends &lt;package names&gt;" to show reverse dependency information for packages with depth.
 * "apt-cyg completion-install" to install completion.
 * "apt-cyg completion-uninstall" to uninstall completion.
+* "apt-cyg mirrors-list" to show list of mirrors.
 
 Requirements
 -----------
