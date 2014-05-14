@@ -97,29 +97,6 @@ function findworkspace()
   cd "$cache/$mirrordir/$ARCH"
 }
 
-function getsetup() 
-{
-  (( noscripts )) && return
-  touch setup.ini
-  mv setup.ini setup.ini-save
-  wget -N $mirror/$ARCH/setup.bz2
-  if [ -e setup.bz2 ]
-  then
-    bunzip2 setup.bz2
-    mv setup setup.ini
-    echo Updated setup.ini
-  else
-    wget -N $mirror/$ARCH/setup.ini
-    if [ -e setup.ini ]
-    then
-      echo Updated setup.ini
-    else
-      mv setup.ini-save setup.ini
-      echo Error updating setup.ini, reverting
-    fi
-  fi
-}
-
 function checkpackages()
 {
   if (( ${#packages} ))
@@ -133,7 +110,6 @@ function checkpackages()
 
 # process options
 dofile=0
-noscripts=0
 command=''
 file=''
 filepackages=''
@@ -151,11 +127,6 @@ do
     --cache | -c)
       cygpath -aw "$2" > /etc/setup/last-cache
       shift 2
-    ;;
-
-    --noscripts)
-      noscripts=1
-      shift
     ;;
 
     --help)
@@ -218,7 +189,18 @@ case "$command" in
 
   update)
     findworkspace
-    getsetup
+    touch setup.ini
+    mv setup.ini setup.ini-save
+    wget -N $mirror/$ARCH/setup.bz2
+    if [ -e setup.bz2 ]
+    then
+      bunzip2 setup.bz2
+      mv setup setup.ini
+      echo Updated setup.ini
+    else
+      echo Error updating setup.ini, reverting
+      mv setup.ini-save setup.ini
+    fi
   ;;
 
   list)
@@ -430,7 +412,7 @@ case "$command" in
           echo Package $package is already installed, skipping
           continue
         fi
-        apt-cyg --noscripts install $package
+        apt-cyg install $package
         (( $? && warn++ ))
       done
     fi
@@ -442,7 +424,7 @@ case "$command" in
     # run all postinstall scripts
 
     pis=`ls /etc/postinstall/*.sh 2>/dev/null | wc -l`
-    if (( pis && ! noscripts ))
+    if (( pis ))
     then
       echo Running postinstall scripts
       for script in /etc/postinstall/*.sh
