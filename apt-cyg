@@ -456,13 +456,16 @@ case "$command" in
     fi
 
     cygcheck awk bash bunzip2 grep gzip mv sed tar xargs xz | awk '
-    NR>1 &&
     /bin/ &&
     ! fd[$NF]++ &&
     $0 = $NF
     ' FS='\\' > /tmp/cygcheck.txt
 
-    if apt-cyg listfiles $pkg | grep -wf /tmp/cygcheck.txt
+    apt-cyg listfiles $pkg | awk '
+    $0 = $NF
+    ' FS=/ > /tmp/listfiles.txt
+
+    if grep -xf /tmp/cygcheck.txt /tmp/listfiles.txt
     then
       echo apt-cyg cannot remove package $pkg, exiting
       exit 1
