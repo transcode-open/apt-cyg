@@ -173,7 +173,14 @@ do
       shift
     ;;
 
-    list | listfiles | show | rdepends | search | searchall | install | remove)
+    install     \
+    | list      \
+    | listfiles \
+    | rdepends  \
+    | search    \
+    | searchall \
+    | remove    \
+    | show)
       if (( ${#command} ))
       then
         packages+=" $1"
