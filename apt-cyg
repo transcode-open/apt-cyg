@@ -586,9 +586,12 @@ function dep_check_single ()
 {
   awk \
   '
+    function min(x,y) {return x < y ? x : y}
+    function max(x,y) {return x < y ? y : x}
     function update_result(dir, rootpkg, pkg, depth, _, i) {
       if (0 + result[rootpkg, pkg, "deep"]) {
-        result[rootpkg, pkg, "deep"] = depth;
+        result[rootpkg, pkg, "shallow"] = min(depth, result[rootpkg, pkg, "shallow"]);
+        result[rootpkg, pkg, "deep"]    = max(depth, result[rootpkg, pkg, "deep"]);
       } else {
         result[rootpkg, pkg, "deep"] = result[rootpkg, pkg, "shallow"] = depth;
         result[rootpkg, pkg, "available"] = 0 + available[pkg];
