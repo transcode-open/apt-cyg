@@ -322,8 +322,7 @@ case "$command" in
     for pkg in $packages
     do
 
-    already=$(grep -c "^$pkg " /etc/setup/installed.db)
-    if (( already ))
+    if grep -q "^$pkg " /etc/setup/installed.db
     then
       echo Package $pkg is already installed, skipping
       continue
@@ -412,14 +411,12 @@ case "$command" in
       echo $requires
       for package in $requires
       do
-        already=`grep -c "^$package " /etc/setup/installed.db`
-        if (( already ))
+        if grep -q "^$package " /etc/setup/installed.db
         then
           echo Package $package is already installed, skipping
           continue
         fi
-        apt-cyg install $package
-        (( $? && warn++ ))
+        apt-cyg install $package || (( warn++ ))
       done
     fi
     if (( warn ))
@@ -445,8 +442,7 @@ case "$command" in
     for pkg in $packages
     do
 
-    already=$(grep -c "^$pkg " /etc/setup/installed.db)
-    if (( ! already ))
+    if ! grep -q "^$pkg " /etc/setup/installed.db
     then
       echo Package $pkg is not installed, skipping
       continue
