@@ -785,7 +785,7 @@ function apt-cyg-completion-uninstall ()
   echo "A bash completion /etc/bash_completion.d/apt-cyg is uninstalled"
 }
 
-function apt-cyg-mirros-list ()
+function apt-cyg-mirrors-list ()
 {
   awk '
     /^[^ \t]+/ {section = $1}
