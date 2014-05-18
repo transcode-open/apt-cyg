@@ -576,13 +576,25 @@ function package_db-unregister ()
   mv "${work}"       "${PACKAGE_DB}"
 }
 
-# Usage: dep_check_single DIR ROOTPKG
+# Usage: join FS fields ...
+function join ()
+{
+  local FS="$1" field="" result="" sep=""
+  shift
+  for field; do
+    result="$result$sep$field"
+    sep="$FS"
+  done
+  echo "$result"
+}
+
+# Usage: dep_check DIR ROOTPKGS ...
 # Parameters:
 #   DIR is "depends" or "rdepends".
-#   ROOTPKG is a root package name to check dependency.
+#   ROOTPKGS is root package names to check dependency.
 # Return:
 #   package_name available shallow_depth deep_depth
-function dep_check_single ()
+function dep_check ()
 {
   awk \
   '
@@ -612,27 +624,21 @@ function dep_check_single ()
       }
     }
     END {
-      update_result(DIR, ROOTPKG, ROOTPKG, 1);
-      for(i = 0; i < result[ROOTPKG, "n"]; i++) {
-        printf("%-40s %d\t%d\t%d\n",
-          result[ROOTPKG, i],
-          result[ROOTPKG, result[ROOTPKG, i], "available"],
-          result[ROOTPKG, result[ROOTPKG, i], "shallow"],
-          result[ROOTPKG, result[ROOTPKG, i], "deep"]);
+      split(ROOTPKGS, rootpkgs, "\x1c");
+      for (k in rootpkgs) {
+        update_result(DIR, rootpkgs[k], rootpkgs[k], 1);
+        for(i = 0; i < result[rootpkgs[k], "n"]; i++) {
+          printf("%-40s %d\t%d\t%d\n",
+            result[rootpkgs[k], i],
+            result[rootpkgs[k], result[rootpkgs[k], i], "available"],
+            result[rootpkgs[k], result[rootpkgs[k], i], "shallow"],
+            result[rootpkgs[k], result[rootpkgs[k], i], "deep"]);
+        }
       }
     }
   ' \
-  DIR="$1" ROOTPKG="$2" "$(apt-cyg-pathof "setup.ini")" | sort -nrk4
-}
-
-function dep_check ()
-{
-  local pkg
-  local dir="$1"
-  shift
-  for pkg; do
-    dep_check_single "$dir" "$pkg"
-  done | awk '
+  DIR="$1" ROOTPKGS="$(join "\x1c" "${@:2}")" "$(apt-cyg-pathof "setup.ini")" \
+  | awk '
   function min(x,y) {return x < y ? x : y}
   function max(x,y) {return x < y ? y : x}
   {
