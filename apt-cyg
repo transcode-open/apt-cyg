@@ -80,6 +80,7 @@ function usage()
   echo "  \"apt-cyg completion-install\" to install completion."
   echo "  \"apt-cyg completion-uninstall\" to uninstall completion."
   echo "  \"apt-cyg mirrors-list\" to show list of mirros."
+  echo "  \"apt-cyg benchmark-mirrors <url> ...\" to benchmark mirrors."
   echo "Options:"
   echo "  --charch <arch>          : change archetecture"
   echo "  --use-setuprc            : set cache and mirror with /etc/setup/setup.rc"
@@ -289,10 +290,30 @@ function ask_user ()
   done
 }
 
+# Reference:
+# https://www.gnu.org/software/wget/manual/wget.html#Exit-Status
+# Usage: wget-exitstatus EXITSTATUS
+function wget-exitstatus ()
+{
+  case $1 in
+  0) echo "No problems occurred.";;
+  1) echo "Generic error code.";;
+  2) echo "Parse error?for instance, when parsing command-line options, the '.wgetrc' or '.netrc'...";;
+  3) echo "File I/O error.";;
+  4) echo "Network failure.";;
+  5) echo "SSL verification failure.";;
+  6) echo "Username/password authentication failure.";;
+  7) echo "Protocol errors.";;
+  8) echo "Server issued an error response.";;
+  *) echo "Unknown errors.";;
+  esac
+}
+
 # Usage: wget_return_case_md5sum returncode
 function wget_return_case_md5sum ()
 {
   case "$1" in
+    0) return 0 ;;
     1) echo "$LABEL: FAILED: Could not download $URL."; return 1 ;;
     5) echo "$LABEL: WARNING: The SSL certificate is invalid $URL."
        ask_user "Continue regardless of invalid SSL certificate?" || return 1
@@ -300,7 +321,6 @@ function wget_return_case_md5sum ()
        return 0
     ;;
     8) echo "$LABEL: FAILED: 404 Not Found $URL." return 1 ;;
-    0) return 0 ;;
     *) echo -e "\e[31;1mError:\e[30;0m FATAL: wget returned unkown value"; return 1 ;;
   esac
 }
@@ -791,6 +811,20 @@ function apt-cyg-mirrors-list ()
     /^[^ \t]+/ {section = $1}
     section=="mirrors-lst" && match($0, /^[ \t]+([^;]+);/, m) {print m[1]}
   ' "/etc/setup/setup.rc"
+}
+
+function apt-cyg-benchmark-mirrors
+{
+  local mirror result exitcode
+  for mirror; do
+    result="$( { time wget -qO/dev/null -T3 -t 1 "${mirror%/}/$(current_cygarch)/setup.bz2"; } 2>&1 )"
+    exitcode=$?
+    if [ $exitcode -ne 0 ];then
+      echo -e "\e[33;1mWarning:\e[30;0m benchmark failed with wget exitcode $exitcode: $(wget-exitstatus $exitcode): $1" >&2
+      continue
+    fi
+    echo -e "$(echo "$result" | grep real | cut -f 2 | tr -d "\n")\t${mirror}"
+  done
 }
 
 function apt-cyg-help ()
