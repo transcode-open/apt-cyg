@@ -81,6 +81,8 @@ function usage()
   echo "  \"apt-cyg completion-uninstall\" to uninstall completion."
   echo "  \"apt-cyg mirrors-list\" to show list of mirros."
   echo "  \"apt-cyg benchmark-mirrors <url> ...\" to benchmark mirrors."
+  echo "  \"apt-cyg benchmark-parallel-mirrors <url> ...\" to benchmark mirrors in parallel."
+  echo "  \"apt-cyg benchmark-parallel-mirrors-list\" to benchmark mirrors-list in parallel."
   echo "Options:"
   echo "  --charch <arch>          : change archetecture"
   echo "  --use-setuprc            : set cache and mirror with /etc/setup/setup.rc"
@@ -95,6 +97,7 @@ function usage()
   echo "                             get subcommand (for completion internal use)"
   echo "  --completion-disable-autoupdate:"
   echo "                             disable completion autoupdate"
+  echo "  --max-jobs, -j <n>       : Run n jobs in parallel"
   echo "  --mirror, -m <url>       : set mirror"
   echo "  --cache, -c <dir>        : set cache"
   echo "  --file, -f <file>        : read package names from file"
@@ -827,6 +830,97 @@ function apt-cyg-benchmark-mirrors
   done
 }
 
+function apt-cyg-benchmark-parallel-mirrors
+{
+  local result="$(mktemp "${SCRIPTNAME}.$$.XXXXX")"
+  local mirror
+  for mirror; do echo $mirror; done | lesser-parallel apt-cyg-benchmark-mirrors {} | tee "$result"
+  echo Finished benchmark.
+  echo ========================================
+  echo Sorted result.
+  sort -rV "$result"
+  rm "$result"
+
+}
+
+function apt-cyg-benchmark-parallel-mirrors-list
+{
+  local mirrors
+  readarray -t mirrors < <(apt-cyg-mirrors-list)
+  apt-cyg-benchmark-parallel-mirrors "${mirrors[@]}"
+}
+
+# Lesser Parallel for Embedding
+# Copyright (c) 2014 Koichi OKADA. All rights reserved.
+# The official repository is:
+# https://github.com/kou1okada/lesser-parallel
+# This script is distributed under the MIT license.
+# http://www.opensource.org/licenses/mit-license.php
+
+LESSER_PARALLEL_MAX_JOBS=${LESSER_PARALLEL_MAX_JOBS:-8}
+
+function lesser-parallel-get-jobs-count ()
+{
+  jobs -l >/dev/null
+  jobs -l | wc -l
+}
+
+# Usage: lesser-parallel-restrict-jobs-count MAXJOBS
+function lesser-parallel-restrict-jobs-count ()
+{
+  while [ $(lesser-parallel-get-jobs-count) -ge $1 ]; do
+    sleep 0.2
+  done
+}
+
+# Usage: lesser-parallel [command [arguments]] < list_ot_arguments
+function lesser-parallel ()
+{
+  local cmd arg lines line basename ext PARALLEL_SEQ=1
+  readarray -t lines
+  for line in "${lines[@]}"; do
+    basename="$(basename "$line")"
+    ext="${basename##*.}"
+    [ "$ext" = "$basename" ] && ext=""
+    [ "$ext" != "" ] && ext=".$ext"
+    cmd=( )
+    for arg; do
+      case "$arg" in
+      "{}")
+        cmd+=( "$line" )
+        ;;
+      "{.}")
+        cmd+=( "$(basename "$line" "$ext")" )
+        ;;
+      "{/}")
+        cmd+=( "$basename" )
+        ;;
+      "{//}")
+        cmd+=( "$(dirname "$line")" )
+        ;;
+      "{/.}")
+        cmd+=( "$(basename "$basename" "$ext")" )
+        ;;
+      "{#}")
+        cmd+=( "$PARALLEL_SEQ" )
+        ;;
+      *)
+        cmd+=( "$arg" )
+        ;;
+      esac
+    done
+    
+    lesser-parallel-restrict-jobs-count $LESSER_PARALLEL_MAX_JOBS
+    
+    "${cmd[@]}" &
+    PARALLEL_SEQ=$[$PARALLEL_SEQ + 1]
+  done
+  
+  lesser-parallel-restrict-jobs-count 1
+}
+
+#/Lesser Parallel for Embedding
+
 function apt-cyg-help ()
 {
   usage
@@ -903,6 +997,11 @@ while [ $# -gt 0 ]; do
     --completion-disable-autoupdate)
       OPT_COMPLETION_DISABLE_AUTOUPDATE="$1"
       shift
+    ;;
+
+    --max-jobs|-j)
+      LESSER_PARALLEL_MAX_JOBS="$2"
+      shift 2 || break
     ;;
 
     --mirror|-m)
