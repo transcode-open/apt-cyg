@@ -84,15 +84,13 @@ function findworkspace()
 
   if [ -e /etc/setup/last-mirror ]
   then
-    mirror=$(</etc/setup/last-mirror)
+    mirror=$(sed 's./$..' /etc/setup/last-mirror)
   fi
   mirrordir=$(sed '
   s / %2f g
   s : %3a g
-  ' <<< "$mirror")
+  ' <<< "$mirror"/)
 
-  echo Working directory is $cache
-  echo Mirror is $mirror
   mkdir -p "$cache/$mirrordir/$ARCH"
   cd "$cache/$mirrordir/$ARCH"
   [ -e setup.ini ] || getsetup
@@ -116,7 +114,7 @@ getsetup()
 
 function checkpackages()
 {
-  if (( ${#packages} ))
+  if [[ $packages ]]
   then
     return 0
   else
@@ -157,7 +155,7 @@ do
     ;;
 
     --file | -f)
-      if (( ${#2} ))
+      if [[ $2 ]]
       then
         file=$2
         dofile=1
@@ -181,7 +179,7 @@ do
     | searchall \
     | remove    \
     | show)
-      if (( ${#command} ))
+      if [[ $command ]]
       then
         packages+=" $1"
       else
@@ -255,7 +253,6 @@ case "$command" in
     checkpackages
     for pkg in $packages
     do
-      echo
       awk '
       $1 == query {
         print
@@ -264,9 +261,11 @@ case "$command" in
       END {
         if (! fd)
           print "Unable to locate package " query
+        printf "\n"
       }
       ' RS='\n\n@ ' FS='\n' query="$pkg" setup.ini
-    done
+    done |
+    head -c-1
   ;;
 
   rdepends)
@@ -289,7 +288,7 @@ case "$command" in
     for pkg in $packages
     do
       key=$(type -P "$pkg" | sed s./..)
-      (( ${#key} )) || key=$pkg
+      [[ $key ]] || key=$pkg
       for manifest in /etc/setup/*.lst.gz
       do
         found=$(gzip -cd $manifest | grep -c "$key")
@@ -363,8 +362,7 @@ case "$command" in
 
     # pick the latest version, which comes first
     install=$(awk '/^install: / {print $2; exit}' release/"$pkg"/desc)
-
-    if (( ! ${#install} ))
+    if [[ ! $install ]]
     then
       echo 'Could not find "install" in package description: obsolete package?'
       exit 1
@@ -412,7 +410,7 @@ case "$command" in
     }
     ' rq='^requires: ' release/"$pkg"/desc)
     warn=0
-    if (( ${#requires} ))
+    if [[ $requires ]]
     then
       echo Package $pkg requires the following packages, installing:
       echo $requires
