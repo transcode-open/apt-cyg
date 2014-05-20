@@ -47,6 +47,7 @@ function usage () {
   '   listfiles <packages>   list files owned by packages'
   '   show <packages>        Displays the package records for the named'
   '                          packages'
+  '   depends <patterns>     performs recursive dependency listings'
   '   rdepends <patterns>    Display packages which require X to be installed,'
   '                          AKA show reverse dependencies'
   '   search <patterns>      search for a filename from installed packages'
@@ -174,6 +175,7 @@ do
     install     \
     | list      \
     | listfiles \
+    | depends   \
     | rdepends  \
     | search    \
     | searchall \
@@ -266,6 +268,41 @@ case "$command" in
       ' RS='\n\n@ ' FS='\n' query="$pkg" setup.ini
     done |
     head -c-1
+  ;;
+
+  depends)
+    findworkspace
+    checkpackages
+    for pkg in $packages
+    do
+      awk '
+      $1 == "@" {
+        k = $2
+      }
+      $1 == "requires:" {
+        a[k] = $0
+      }
+      END {
+        p[1] = query
+        d[query] = 0
+        i = 1
+        while (length(p)) {
+          key = p[length(p)]
+          depth = d[key]
+          delete p[length(p)]
+          if (!s[key]++) {
+            printf "%*s%s\n", depth, "", key
+            split(a[key], r)
+            delete r[1]
+            for (req in r) {
+              p[length(p) + 1] = r[req]
+              d[r[req]] = depth + 1
+            }
+          }
+        }
+      }
+      ' query="$pkg" setup.ini
+    done
   ;;
 
   rdepends)
