@@ -285,19 +285,17 @@ case "$command" in
       END {
         p[1] = query
         d[query] = 0
-        i = 1
         while (length(p)) {
           key = p[length(p)]
           depth = d[key]
           delete p[length(p)]
-          if (!s[key]++) {
-            printf "%*s%s\n", depth, "", key
-            split(a[key], r)
-            delete r[1]
-            for (req in r) {
-              p[length(p) + 1] = r[req]
-              d[r[req]] = depth + 1
-            }
+          if (s[key]++) continue
+          printf "%*s%s\n", depth, "", key
+          split(a[key], r)
+          delete r[1]
+          for (req in r) {
+            p[length(p) + 1] = r[req]
+            d[r[req]] = depth + 1
           }
         }
       }
