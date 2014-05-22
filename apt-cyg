@@ -145,6 +145,11 @@ do
       shift 2
     ;;
 
+    --noscripts)
+      noscripts=1
+      shift
+    ;;
+
     --help)
       usage
       exit 0
@@ -452,7 +457,7 @@ case "$command" in
           echo Package $package is already installed, skipping
           continue
         fi
-        apt-cyg install $package || (( warn++ ))
+        apt-cyg install --noscripts $package || (( warn++ ))
       done
     fi
     if (( warn ))
@@ -462,6 +467,7 @@ case "$command" in
 
     # run all postinstall scripts
 
+    (( noscripts )) && continue
     find /etc/postinstall -name '*.sh' | while read script
     do
       echo Running $script
