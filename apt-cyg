@@ -1254,7 +1254,7 @@ function apt-cyg-install ()
       echo Package $pkg requires the following packages, installing:
       echo $requires
       for package in $requires; do
-        if package_db-is_registered "$pkg"; then
+        if package_db-is_registered "$package"; then
           echo Package $package is already installed, skipping
           continue
         fi
