@@ -277,27 +277,23 @@ case "$command" in
     do
       awk '
       $1 == "@" {
-        k = $2
+        pkg = $2
       }
       $1 == "requires:" {
-        a[k] = $0
+        for (i=2; i<=NF; i++)
+          reqs[pkg][$i]
       }
       END {
-        p[1] = query
-        d[query] = 0
-        while (length(p)) {
-          key = p[length(p)]
-          depth = d[key]
-          delete p[length(p)]
-          if (s[key]++) continue
-          printf "%*s%s\n", depth, "", key
-          split(a[key], r)
-          delete r[1]
-          for (req in r) {
-            p[length(p) + 1] = r[req]
-            d[r[req]] = depth + 1
-          }
-        }
+        prtPkg(query)
+      }
+      function prtPkg(pkg) {
+        if (seen[pkg]++) return
+        printf "%*s%s\n", indent, "", pkg
+        indent++
+        if (pkg in reqs)
+          for (req in reqs[pkg])
+            prtPkg(req)
+        indent--
       }
       ' query="$pkg" setup.ini
     done
