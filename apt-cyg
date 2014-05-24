@@ -660,7 +660,7 @@ function dep_check ()
       }
     }
   ' \
-  DIR="$1" ROOTPKGS="$(join "\x1c" "${@:2}")" "$(apt-cyg-pathof "setup.ini")" \
+  DIR="$1" ROOTPKGS="$(join $'\x1c' "${@:2}")" "$(apt-cyg-pathof "setup.ini")" \
   | awk '
   function min(x,y) {return x < y ? x : y}
   function max(x,y) {return x < y ? y : x}
