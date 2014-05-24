@@ -75,7 +75,7 @@ function findworkspace()
 {
   # default working directory and mirror
   mirror=http://mirrors.kernel.org/sourceware/cygwin
-  cache=/setup
+  cache=/var/cache
   
   # work wherever setup worked last, if possible
   if [ -e /etc/setup/last-cache ]
