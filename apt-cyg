@@ -347,13 +347,13 @@ case "$command" in
       cd /tmp
       wget -O matches cygwin.com/cgi-bin2/package-grep.cgi?"$qs"
       awk '
-      NR > 1 &&
+      NR > 1          &&
       ! /-debuginfo-/ &&
-      ! /-devel-/ &&
-      ! /-doc-/ &&
-      ! /-src\t$/ &&
-      ! mc[$2]++ &&
-      $0=$2
+      ! /-devel-/     &&
+      ! /-doc-/       &&
+      ! /-src\t$/     &&
+      ! mc[$2]++      &&
+      $0 = $2
       ' FS=/ matches
     done
   ;;
@@ -375,18 +375,8 @@ case "$command" in
     # look for package and save desc file
 
     mkdir -p release/"$pkg"
-    awk '
-    $1 == package {
-      desc = $0
-      px++
-    }
-    END {
-      if (px == 1 && desc) print desc
-      else print "Package not found"
-    }
-    ' RS='\n\n@ ' FS='\n' package="$pkg" setup.ini > release/"$pkg"/desc
-    desc=$(<release/"$pkg"/desc)
-    if [[ $desc = 'Package not found' ]]
+    awk '$1 == pc' RS='\n\n@ ' FS='\n' pc=$pkg setup.ini > release/$pkg/desc
+    if [ ! -s release/$pkg/desc ]
     then
       echo Package $pkg not found or ambiguous name, exiting
       rm -r release/"$pkg"
@@ -404,7 +394,7 @@ case "$command" in
       exit 1
     fi
 
-    file=`basename $install`
+    file=$(basename $install)
     cd release/"$pkg"
     wget -nc $mirror/$install
 
@@ -426,12 +416,12 @@ case "$command" in
 
     awk '
     ins != 1 && pkg < $1 {
-      printf "%s %s 0\n", pkg, bz
-      ins=1
+      print pkg, bz, 0
+      ins = 1
     }
     1
     END {
-      if (ins != 1) printf "%s %s 0\n", pkg, bz
+      if (ins != 1) print pkg, bz, 0
     }
     ' pkg="$pkg" bz=$file /etc/setup/installed.db > /tmp/awk.$$
     mv /etc/setup/installed.db /etc/setup/installed.db-save
