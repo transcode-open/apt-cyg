@@ -72,12 +72,25 @@ apt-listfiles () {
 apt-install () {
   findworkspace
   getdb
-  local pkg file
+  local pkg file eu oe rw
   for pkg in ${packages[*]}
   do
     file=$(awk '$5 == pkg, $0 = $2' pkg=$pkg RS=%FILENAME% FS='\n' mingw64.lst)
     wget -nc $mirror/$repo/$file
     tar --str 1 -x -C / -f $file
+
+    apt-msys2 listfiles $pkg | grep '\.exe$' | while read eu
+    do
+      oe=$(sed 's-^.*/--; s-\.exe$--' <<< $eu)
+      rw=(
+        'tg=$(cygpath -m $1)'
+        'shift'
+        'cygstart ${0#/usr/local} $tg $*'
+      )
+      printf '%s\n' "${rw[@]}" > $oe
+      install $oe /usr/local/bin
+    done
+
     echo Package $pkg installed
   done
 }
