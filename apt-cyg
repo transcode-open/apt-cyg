@@ -124,6 +124,310 @@ function checkpackages()
   fi
 }
 
+apt-update () {
+  findworkspace
+  getsetup
+}
+
+apt-list () {
+  if checkpackages
+  then
+    findworkspace
+    for pkg in $packages
+    do
+      echo
+      echo Searching for installed packages matching $pkg:
+      awk 'NR>1 && $1~query && $0=$1' query="$pkg" /etc/setup/installed.db
+      echo
+      echo Searching for installable packages matching $pkg:
+      awk '$1 ~ query && $0 = $1' RS='\n\n@ ' FS='\n' query="$pkg" setup.ini
+    done
+  else
+    echo The following packages are installed: >&2
+    awk 'NR>1 && $0=$1' /etc/setup/installed.db
+  fi
+}
+
+apt-listfiles () {
+  checkpackages
+  for pkg in $packages
+  do
+    if [ -e /etc/setup/"$pkg".lst.gz ]
+    then
+      gzip -cd /etc/setup/"$pkg".lst.gz
+    else
+      echo package $pkg is not installed
+    fi
+    echo
+  done |
+  head -c-1
+}
+
+apt-show () {
+  findworkspace
+  checkpackages
+  for pkg in $packages
+  do
+    awk '
+    $1 == query {
+      print
+      fd++
+    }
+    END {
+      if (! fd)
+        print "Unable to locate package " query
+      printf "\n"
+    }
+    ' RS='\n\n@ ' FS='\n' query="$pkg" setup.ini
+  done |
+  head -c-1
+}
+
+apt-depends () {
+  findworkspace
+  checkpackages
+  for pkg in $packages
+  do
+    awk '
+    $1 == "@" {
+      pkg = $2
+    }
+    $1 == "requires:" {
+      for (i=2; i<=NF; i++)
+        reqs[pkg][$i]
+    }
+    END {
+      prtPkg(query)
+    }
+    function prtPkg(pkg) {
+      if (seen[pkg]++) return
+      printf "%*s%s\n", indent, "", pkg
+      indent++
+      if (pkg in reqs)
+        for (req in reqs[pkg])
+          prtPkg(req)
+      indent--
+    }
+    ' query="$pkg" setup.ini
+  done
+}
+
+apt-rdepends () {
+  findworkspace
+  for pkg in $packages
+  do
+    awk '
+    /^@ / {
+      pn = $2
+    }
+    $0 ~ "^requires: .*"query {
+      print pn
+    }
+    ' query="$pkg" setup.ini
+  done
+}
+
+apt-search () {
+  checkpackages
+  for pkg in $packages
+  do
+    key=$(type -P "$pkg" | sed s./..)
+    [[ $key ]] || key=$pkg
+    for manifest in /etc/setup/*.lst.gz
+    do
+      found=$(gzip -cd $manifest | grep -c "$key")
+      if (( found ))
+      then
+        package=$(sed '
+        s,/etc/setup/,,
+        s,.lst.gz,,
+        ' <<< $manifest)
+        echo Found $key in the package $package
+      fi
+    done
+  done
+}
+
+apt-searchall () {
+  for pkg in $packages
+  do
+    printf -v qs 'text=1&arch=%s&grep=%s' $ARCH "$pkg"
+    cd /tmp
+    wget -O matches cygwin.com/cgi-bin2/package-grep.cgi?"$qs"
+    awk '
+    NR > 1          &&
+    ! /-debuginfo-/ &&
+    ! /-devel-/     &&
+    ! /-doc-/       &&
+    ! /-src\t$/     &&
+    ! mc[$2]++      &&
+    $0 = $2
+    ' FS=/ matches
+  done
+}
+
+apt-install () {
+  findworkspace
+  checkpackages
+  for pkg in $packages
+  do
+
+  if grep -q "^$pkg " /etc/setup/installed.db
+  then
+    echo Package $pkg is already installed, skipping
+    continue
+  fi
+  echo
+  echo Installing $pkg
+
+  # look for package and save desc file
+
+  mkdir -p release/"$pkg"
+  awk '$1 == pc' RS='\n\n@ ' FS='\n' pc=$pkg setup.ini > release/$pkg/desc
+  if [ ! -s release/$pkg/desc ]
+  then
+    echo Package $pkg not found or ambiguous name, exiting
+    rm -r release/"$pkg"
+    exit 1
+  fi
+  echo Found package $pkg
+
+  # download and unpack the bz2 or xz file
+
+  # pick the latest version, which comes first
+  install=$(awk '/^install: / {print $2; exit}' release/"$pkg"/desc)
+  if [[ ! $install ]]
+  then
+    echo 'Could not find "install" in package description: obsolete package?'
+    exit 1
+  fi
+
+  file=$(basename $install)
+  cd release/"$pkg"
+  wget -nc $mirror/$install
+
+  # check the md5
+  digest=$(awk '/^install: / {print $4; exit}' desc)
+  digactual=$(md5sum $file | awk NF=1)
+  if [ $digest != $digactual ]
+  then
+    echo MD5 sum did not match, exiting
+    exit 1
+  fi
+
+  echo Unpacking...
+  tar xvf $file -C / > /etc/setup/"$pkg".lst
+  gzip -f /etc/setup/"$pkg".lst
+  cd ../..
+
+  # update the package database
+
+  awk '
+  ins != 1 && pkg < $1 {
+    print pkg, bz, 0
+    ins = 1
+  }
+  1
+  END {
+    if (ins != 1) print pkg, bz, 0
+  }
+  ' pkg="$pkg" bz=$file /etc/setup/installed.db > /tmp/awk.$$
+  mv /etc/setup/installed.db /etc/setup/installed.db-save
+  mv /tmp/awk.$$ /etc/setup/installed.db
+
+  # recursively install required packages
+
+  requires=$(awk '
+  $0 ~ rq {
+    sub(rq, "")
+    print
+  }
+  ' rq='^requires: ' release/"$pkg"/desc)
+  warn=0
+  if [[ $requires ]]
+  then
+    echo Package $pkg requires the following packages, installing:
+    echo $requires
+    for package in $requires
+    do
+      if grep -q "^$package " /etc/setup/installed.db
+      then
+        echo Package $package is already installed, skipping
+        continue
+      fi
+      apt-cyg install --noscripts $package || (( warn++ ))
+    done
+  fi
+  if (( warn ))
+  then
+    echo 'Warning: some required packages did not install, continuing'
+  fi
+
+  # run all postinstall scripts
+
+  (( noscripts )) && continue
+  find /etc/postinstall -name '*.sh' | while read script
+  do
+    echo Running $script
+    $script
+    mv $script $script.done
+  done
+  echo Package $pkg installed
+
+  done
+}
+
+apt-remove () {
+  checkpackages
+  for pkg in $packages
+  do
+
+  if ! grep -q "^$pkg " /etc/setup/installed.db
+  then
+    echo Package $pkg is not installed, skipping
+    continue
+  fi
+
+  cygcheck awk bash bunzip2 grep gzip mv sed tar xargs xz | awk '
+  /bin/ &&
+  ! fd[$NF]++ &&
+  $0 = $NF
+  ' FS='\\' > /tmp/cygcheck.txt
+
+  apt-cyg listfiles $pkg | awk '
+  $0 = $NF
+  ' FS=/ > /tmp/listfiles.txt
+
+  if grep -xf /tmp/cygcheck.txt /tmp/listfiles.txt
+  then
+    echo apt-cyg cannot remove package $pkg, exiting
+    exit 1
+  fi
+  if [ ! -e /etc/setup/"$pkg".lst.gz ]
+  then
+    echo Package manifest missing, cannot remove $pkg. Exiting
+    exit 1
+  fi
+  echo Removing $pkg
+
+  # run preremove scripts
+
+  if [ -e /etc/preremove/"$pkg".sh ]
+  then
+    /etc/preremove/"$pkg".sh
+    rm /etc/preremove/"$pkg".sh
+  fi
+  gzip -cd /etc/setup/"$pkg".lst.gz | sed '\./$.d;s.^./.' | xargs rm -f
+  rm /etc/setup/"$pkg".lst.gz
+  rm -f /etc/postinstall/$pkg.sh.done
+  awk '$1 != pkg' pkg="$pkg" /etc/setup/installed.db > /tmp/awk.$$
+  mv /etc/setup/installed.db /etc/setup/installed.db-save
+  mv /tmp/awk.$$ /etc/setup/installed.db
+  echo Package $pkg removed
+
+  done
+}
+
 # process options
 dofile=0
 command=''
@@ -214,314 +518,9 @@ then
   packages+=" $filepackages"
 fi
 
-case "$command" in
-
-  update)
-    findworkspace
-    getsetup
-  ;;
-
-  list)
-    if checkpackages
-    then
-      findworkspace
-      for pkg in $packages
-      do
-        echo
-        echo Searching for installed packages matching $pkg:
-        awk 'NR>1 && $1~query && $0=$1' query="$pkg" /etc/setup/installed.db
-        echo
-        echo Searching for installable packages matching $pkg:
-        awk '$1 ~ query && $0 = $1' RS='\n\n@ ' FS='\n' query="$pkg" setup.ini
-      done
-    else
-      echo The following packages are installed: >&2
-      awk 'NR>1 && $0=$1' /etc/setup/installed.db
-    fi
-  ;;
-
-  listfiles)
-    checkpackages
-    for pkg in $packages
-    do
-      if [ -e /etc/setup/"$pkg".lst.gz ]
-      then
-        gzip -cd /etc/setup/"$pkg".lst.gz
-      else
-        echo package $pkg is not installed
-      fi
-      echo
-    done |
-    head -c-1
-  ;;
-
-  show)
-    findworkspace
-    checkpackages
-    for pkg in $packages
-    do
-      awk '
-      $1 == query {
-        print
-        fd++
-      }
-      END {
-        if (! fd)
-          print "Unable to locate package " query
-        printf "\n"
-      }
-      ' RS='\n\n@ ' FS='\n' query="$pkg" setup.ini
-    done |
-    head -c-1
-  ;;
-
-  depends)
-    findworkspace
-    checkpackages
-    for pkg in $packages
-    do
-      awk '
-      $1 == "@" {
-        pkg = $2
-      }
-      $1 == "requires:" {
-        for (i=2; i<=NF; i++)
-          reqs[pkg][$i]
-      }
-      END {
-        prtPkg(query)
-      }
-      function prtPkg(pkg) {
-        if (seen[pkg]++) return
-        printf "%*s%s\n", indent, "", pkg
-        indent++
-        if (pkg in reqs)
-          for (req in reqs[pkg])
-            prtPkg(req)
-        indent--
-      }
-      ' query="$pkg" setup.ini
-    done
-  ;;
-
-  rdepends)
-    findworkspace
-    for pkg in $packages
-    do
-      awk '
-      /^@ / {
-        pn = $2
-      }
-      $0 ~ "^requires: .*"query {
-        print pn
-      }
-      ' query="$pkg" setup.ini
-    done
-  ;;
-
-  search)
-    checkpackages
-    for pkg in $packages
-    do
-      key=$(type -P "$pkg" | sed s./..)
-      [[ $key ]] || key=$pkg
-      for manifest in /etc/setup/*.lst.gz
-      do
-        found=$(gzip -cd $manifest | grep -c "$key")
-        if (( found ))
-        then
-          package=$(sed '
-          s,/etc/setup/,,
-          s,.lst.gz,,
-          ' <<< $manifest)
-          echo Found $key in the package $package
-        fi
-      done
-    done
-  ;;
-
-  searchall)
-    for pkg in $packages
-    do
-      printf -v qs 'text=1&arch=%s&grep=%s' $ARCH "$pkg"
-      cd /tmp
-      wget -O matches cygwin.com/cgi-bin2/package-grep.cgi?"$qs"
-      awk '
-      NR > 1          &&
-      ! /-debuginfo-/ &&
-      ! /-devel-/     &&
-      ! /-doc-/       &&
-      ! /-src\t$/     &&
-      ! mc[$2]++      &&
-      $0 = $2
-      ' FS=/ matches
-    done
-  ;;
-
-  install)
-    findworkspace
-    checkpackages
-    for pkg in $packages
-    do
-
-    if grep -q "^$pkg " /etc/setup/installed.db
-    then
-      echo Package $pkg is already installed, skipping
-      continue
-    fi
-    echo
-    echo Installing $pkg
-
-    # look for package and save desc file
-
-    mkdir -p release/"$pkg"
-    awk '$1 == pc' RS='\n\n@ ' FS='\n' pc=$pkg setup.ini > release/$pkg/desc
-    if [ ! -s release/$pkg/desc ]
-    then
-      echo Package $pkg not found or ambiguous name, exiting
-      rm -r release/"$pkg"
-      exit 1
-    fi
-    echo Found package $pkg
-
-    # download and unpack the bz2 or xz file
-
-    # pick the latest version, which comes first
-    install=$(awk '/^install: / {print $2; exit}' release/"$pkg"/desc)
-    if [[ ! $install ]]
-    then
-      echo 'Could not find "install" in package description: obsolete package?'
-      exit 1
-    fi
-
-    file=$(basename $install)
-    cd release/"$pkg"
-    wget -nc $mirror/$install
-
-    # check the md5
-    digest=$(awk '/^install: / {print $4; exit}' desc)
-    digactual=$(md5sum $file | awk NF=1)
-    if [ $digest != $digactual ]
-    then
-      echo MD5 sum did not match, exiting
-      exit 1
-    fi
-
-    echo Unpacking...
-    tar xvf $file -C / > /etc/setup/"$pkg".lst
-    gzip -f /etc/setup/"$pkg".lst
-    cd ../..
-
-    # update the package database
-
-    awk '
-    ins != 1 && pkg < $1 {
-      print pkg, bz, 0
-      ins = 1
-    }
-    1
-    END {
-      if (ins != 1) print pkg, bz, 0
-    }
-    ' pkg="$pkg" bz=$file /etc/setup/installed.db > /tmp/awk.$$
-    mv /etc/setup/installed.db /etc/setup/installed.db-save
-    mv /tmp/awk.$$ /etc/setup/installed.db
-
-    # recursively install required packages
-
-    requires=$(awk '
-    $0 ~ rq {
-      sub(rq, "")
-      print
-    }
-    ' rq='^requires: ' release/"$pkg"/desc)
-    warn=0
-    if [[ $requires ]]
-    then
-      echo Package $pkg requires the following packages, installing:
-      echo $requires
-      for package in $requires
-      do
-        if grep -q "^$package " /etc/setup/installed.db
-        then
-          echo Package $package is already installed, skipping
-          continue
-        fi
-        apt-cyg install --noscripts $package || (( warn++ ))
-      done
-    fi
-    if (( warn ))
-    then
-      echo 'Warning: some required packages did not install, continuing'
-    fi
-
-    # run all postinstall scripts
-
-    (( noscripts )) && continue
-    find /etc/postinstall -name '*.sh' | while read script
-    do
-      echo Running $script
-      $script
-      mv $script $script.done
-    done
-    echo Package $pkg installed
-
-    done
-  ;;
-
-  remove)
-    checkpackages
-    for pkg in $packages
-    do
-
-    if ! grep -q "^$pkg " /etc/setup/installed.db
-    then
-      echo Package $pkg is not installed, skipping
-      continue
-    fi
-
-    cygcheck awk bash bunzip2 grep gzip mv sed tar xargs xz | awk '
-    /bin/ &&
-    ! fd[$NF]++ &&
-    $0 = $NF
-    ' FS='\\' > /tmp/cygcheck.txt
-
-    apt-cyg listfiles $pkg | awk '
-    $0 = $NF
-    ' FS=/ > /tmp/listfiles.txt
-
-    if grep -xf /tmp/cygcheck.txt /tmp/listfiles.txt
-    then
-      echo apt-cyg cannot remove package $pkg, exiting
-      exit 1
-    fi
-    if [ ! -e /etc/setup/"$pkg".lst.gz ]
-    then
-      echo Package manifest missing, cannot remove $pkg. Exiting
-      exit 1
-    fi
-    echo Removing $pkg
-
-    # run preremove scripts
-
-    if [ -e /etc/preremove/"$pkg".sh ]
-    then
-      /etc/preremove/"$pkg".sh
-      rm /etc/preremove/"$pkg".sh
-    fi
-    gzip -cd /etc/setup/"$pkg".lst.gz | sed '\./$.d;s.^./.' | xargs rm -f
-    rm /etc/setup/"$pkg".lst.gz
-    rm -f /etc/postinstall/$pkg.sh.done
-    awk '$1 != pkg' pkg="$pkg" /etc/setup/installed.db > /tmp/awk.$$
-    mv /etc/setup/installed.db /etc/setup/installed.db-save
-    mv /tmp/awk.$$ /etc/setup/installed.db
-    echo Package $pkg removed
-
-    done
-  ;;
-
-  *)
-    usage
-  ;;
-
-esac
+if type -t apt-$command | grep -q function
+then
+  apt-$command
+else
+  usage
+fi
