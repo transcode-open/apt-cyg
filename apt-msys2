@@ -62,7 +62,7 @@ apt-listfiles () {
   do
     awk '
     $2 == "%NAME%\n" pkg {
-      print $15
+      print $NF
     }
     ' pkg=$pkg RS=%FILENAME% FS='\n\n' mingw64.lst
   done |
