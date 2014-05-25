@@ -26,8 +26,9 @@ usage () {
   'apt-msys2 [command] [packages]'
   ''
   'Commands:'
-  '   install <packages>   install packages'
-  '   search <patterns>    search for a filename from all available packages'
+  '   install <packages>     install packages'
+  '   listfiles <packages>   list files owned by packages'
+  '   search <patterns>      search for a filename from all available packages'
   )
   printf '%s\n' "${rw[@]}"
 }
@@ -51,6 +52,21 @@ getdb () {
   [ -a mingw64.files.tar.gz ] && return
   wget $mirror/$repo/mingw64.files.tar.gz
   tar --no-an -Oxf mingw64.files.tar.gz desc files > mingw64.lst
+}
+
+apt-listfiles () {
+  findworkspace
+  getdb
+  local pkg
+  for pkg in ${packages[*]}
+  do
+    awk '
+    $2 == "%NAME%\n" pkg {
+      print $15
+    }
+    ' pkg=$pkg RS=%FILENAME% FS='\n\n' mingw64.lst
+  done |
+  head -c-1
 }
 
 apt-install () {
@@ -83,7 +99,7 @@ while (( $# ))
 do
   case "$1" in
 
-    install | search)
+    install | listfiles | search)
       if [[ $command ]]
       then
         packages+=($1)
