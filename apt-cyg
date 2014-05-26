@@ -1,21 +1,20 @@
 #!/bin/bash
-
-# apt-cyg: install tool for cygwin similar to debian apt-get
-
+# apt-cyg: install tool for Cygwin similar to debian apt-get
+#
 # The MIT License (MIT)
-# 
+#
 # Copyright (c) 2013 Trans-code Design
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -23,7 +22,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-# 
 
 # this script requires some packages
 if ! type awk bzip2 tar wget xz &>/dev/null
@@ -90,7 +88,7 @@ function findworkspace()
   mirrordir=$(sed '
   s / %2f g
   s : %3a g
-  ' <<< "$mirror"/)
+  ' <<< "$mirror")
 
   mkdir -p "$cache/$mirrordir/$ARCH"
   cd "$cache/$mirrordir/$ARCH"
@@ -227,6 +225,47 @@ apt-rdepends () {
   done
 }
 
+download () {
+  local pkg install file digest digactual
+  pkg=$1
+  # look for package and save desc file
+
+  mkdir -p release/"$pkg"
+  awk '$1 == pc' RS='\n\n@ ' FS='\n' pc=$pkg setup.ini > release/$pkg/desc
+  if [ ! -s release/$pkg/desc ]
+  then
+    echo Package $pkg not found or ambiguous name, exiting
+    rm -r release/"$pkg"
+    exit 1
+  fi
+  echo Found package $pkg >&2
+
+  # download and unpack the bz2 or xz file
+
+  # pick the latest version, which comes first
+  install=$(awk '/^install: / {print $2; exit}' release/"$pkg"/desc)
+  if [[ ! $install ]]
+  then
+    echo 'Could not find "install" in package description: obsolete package?'
+    exit 1
+  fi
+
+  file=$(basename $install)
+  cd release/"$pkg"
+  wget -nc $mirror/$install
+
+  # check the md5
+  digest=$(awk '/^install: / {print $4; exit}' desc)
+  digactual=$(md5sum $file | awk NF=1)
+  if [ $digest != $digactual ]
+  then
+    echo MD5 sum did not match, exiting
+    exit 1
+  fi
+
+  echo $file
+}
+
 apt-search () {
   checkpackages
   for pkg in $packages
@@ -269,6 +308,7 @@ apt-searchall () {
 apt-install () {
   findworkspace
   checkpackages
+  local pkg file requires warn package script
   for pkg in $packages
   do
 
@@ -280,45 +320,11 @@ apt-install () {
   echo
   echo Installing $pkg
 
-  # look for package and save desc file
-
-  mkdir -p release/"$pkg"
-  awk '$1 == pc' RS='\n\n@ ' FS='\n' pc=$pkg setup.ini > release/$pkg/desc
-  if [ ! -s release/$pkg/desc ]
-  then
-    echo Package $pkg not found or ambiguous name, exiting
-    rm -r release/"$pkg"
-    exit 1
-  fi
-  echo Found package $pkg
-
-  # download and unpack the bz2 or xz file
-
-  # pick the latest version, which comes first
-  install=$(awk '/^install: / {print $2; exit}' release/"$pkg"/desc)
-  if [[ ! $install ]]
-  then
-    echo 'Could not find "install" in package description: obsolete package?'
-    exit 1
-  fi
-
-  file=$(basename $install)
-  cd release/"$pkg"
-  wget -nc $mirror/$install
-
-  # check the md5
-  digest=$(awk '/^install: / {print $4; exit}' desc)
-  digactual=$(md5sum $file | awk NF=1)
-  if [ $digest != $digactual ]
-  then
-    echo MD5 sum did not match, exiting
-    exit 1
-  fi
-
+  file=$(download $pkg)
+  cd release/$pkg
   echo Unpacking...
   tar xvf $file -C / > /etc/setup/"$pkg".lst
   gzip -f /etc/setup/"$pkg".lst
-  cd ../..
 
   # update the package database
 
@@ -337,12 +343,8 @@ apt-install () {
 
   # recursively install required packages
 
-  requires=$(awk '
-  $0 ~ rq {
-    sub(rq, "")
-    print
-  }
-  ' rq='^requires: ' release/"$pkg"/desc)
+  requires=$(awk '$1=="requires", $0=$2' FS=': ' desc)
+  cd ~-
   warn=0
   if [[ $requires ]]
   then

@@ -49,7 +49,7 @@ findworkspace () {
 }
 
 getdb () {
-  [ -a mingw64.files.tar.gz ] && return
+  [ -e mingw64.files.tar.gz ] && return
   wget $mirror/$repo/mingw64.files.tar.gz
   tar --no-an -Oxf mingw64.files.tar.gz desc files > mingw64.lst
 }
