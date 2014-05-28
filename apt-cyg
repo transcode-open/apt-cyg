@@ -148,17 +148,17 @@ apt-list () {
 
 apt-listfiles () {
   checkpackages
+  findworkspace
+  local pkg
   for pkg in $packages
   do
-    if [ -e /etc/setup/"$pkg".lst.gz ]
+    (( notfirst++ )) && echo
+    if [ ! -e /etc/setup/"$pkg".lst.gz ]
     then
-      gzip -cd /etc/setup/"$pkg".lst.gz
-    else
-      echo package $pkg is not installed
+      download "$pkg" || continue
     fi
-    echo
-  done |
-  head -c-1
+    gzip -cd /etc/setup/"$pkg".lst.gz
+  done
 }
 
 apt-show () {
@@ -166,6 +166,7 @@ apt-show () {
   checkpackages
   for pkg in $packages
   do
+    (( notfirst++ )) && echo
     awk '
     $1 == query {
       print
@@ -174,11 +175,9 @@ apt-show () {
     END {
       if (! fd)
         print "Unable to locate package " query
-      printf "\n"
     }
     ' RS='\n\n@ ' FS='\n' query="$pkg" setup.ini
-  done |
-  head -c-1
+  done
 }
 
 apt-depends () {
@@ -234,9 +233,9 @@ download () {
   awk '$1 == pc' RS='\n\n@ ' FS='\n' pc=$pkg setup.ini > release/$pkg/desc
   if [ ! -s release/$pkg/desc ]
   then
-    echo Package $pkg not found or ambiguous name, exiting
+    echo Package $pkg not found or ambiguous name
     rm -r release/"$pkg"
-    exit 1
+    return 1
   fi
   echo Found package $pkg >&2
 
@@ -263,6 +262,7 @@ download () {
     exit 1
   fi
 
+  tar tf $file | gzip > /etc/setup/"$pkg".lst.gz
   echo $file
 }
 
@@ -274,8 +274,7 @@ apt-search () {
     [[ $key ]] || key=$pkg
     for manifest in /etc/setup/*.lst.gz
     do
-      found=$(gzip -cd $manifest | grep -c "$key")
-      if (( found ))
+      if gzip -cd $manifest | grep -q "$key"
       then
         package=$(sed '
         s,/etc/setup/,,
@@ -320,12 +319,11 @@ apt-install () {
   echo
   echo Installing $pkg
 
-  file=$(download $pkg)
+  file=$(download $pkg) || continue
   cd release/$pkg
   echo Unpacking...
-  tar xvf $file -C / > /etc/setup/"$pkg".lst
-  gzip -f /etc/setup/"$pkg".lst
 
+  tar -x -C / -f $file
   # update the package database
 
   awk '
