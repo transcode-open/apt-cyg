@@ -185,25 +185,44 @@ apt-depends () {
   checkpackages
   for pkg in $packages
   do
+    (( sq++ )) && echo
     awk '
     $1 == "@" {
       pkg = $2
     }
     $1 == "requires:" {
       for (i=2; i<=NF; i++)
-        reqs[pkg][$i]
+        reqs[pkg][i-1]=$i
     }
     END {
+      setMinDepth(query)
       prtPkg(query)
     }
-    function prtPkg(pkg) {
-      if (seen[pkg]++) return
-      printf "%*s%s\n", indent, "", pkg
-      indent++
-      if (pkg in reqs)
-        for (req in reqs[pkg])
-          prtPkg(req)
-      indent--
+    function prtPkg(pkg,    req, i) {
+      depth++
+      if ( depth == mn[pkg] && !seen[pkg]++ ) {
+        printf "%*s%s\n", indent, "", pkg
+        indent += 2
+        if (pkg in reqs)
+          for (i=1; i in reqs[pkg]; i++) {
+            req = reqs[pkg][i]
+            prtPkg(req)
+          }
+        indent -= 2
+      }
+      depth--
+    }
+    function setMinDepth(pkg,    req, i) {
+      depth++
+      mn[pkg] = !(pkg in mn) || depth < mn[pkg] ? depth : mn[pkg]
+      if (depth == mn[pkg]) {
+        if (pkg in reqs)
+          for (i=1; i in reqs[pkg]; i++) {
+            req = reqs[pkg][i]
+            setMinDepth(req)
+          }
+      }
+      depth--
     }
     ' query="$pkg" setup.ini
   done
