@@ -312,14 +312,14 @@ apt-searchall () {
     cd /tmp
     wget -O matches cygwin.com/cgi-bin2/package-grep.cgi?"$qs"
     awk '
-    NR > 1          &&
-    ! /-debuginfo-/ &&
-    ! /-devel-/     &&
-    ! /-doc-/       &&
-    ! /-src\t$/     &&
-    ! mc[$2]++      &&
+    NR == 1                   {next}
+    /-doc-/                   {next}
+    /-debuginfo-/             {next}
+    /-devel-/ && pkg~/\.exe$/ {next}
+    /-src\t$/                 {next}
+    mc[$2]++                  {next}
     $0 = $2
-    ' FS=/ matches
+    ' FS=/ pkg="$pkg" matches
   done
 }
 
