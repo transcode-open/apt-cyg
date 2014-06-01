@@ -33,40 +33,40 @@ fi
 [ $HOSTTYPE = x86_64 ] && ARCH=x86_64 || ARCH=x86
 
 function usage () {
-  rw=(
-  'usage: apt-cyg [command] [options] [packages]'
-  ''
-  'Commands:'
-  '   install <packages>     install packages'
-  '   remove <packages>      remove packages'
-  '   update                 update setup.ini'
-  '   list [patterns]        list packages matching given pattern. If no'
-  '                          pattern is given, list all installed packages.'
-  '   listfiles <packages>   list files owned by packages'
-  '   show <packages>        Displays the package records for the named'
-  '                          packages'
-  '   depends <patterns>     performs recursive dependency listings'
-  '   rdepends <patterns>    Display packages which require X to be installed,'
-  '                          AKA show reverse dependencies'
-  '   search <patterns>      search for a filename from installed packages'
-  '   searchall <patterns>   search for a filename from all available packages'
-  ''
-  'Options:'
-  '   -c, --cache <dir>      set cache'
-  '   -f, --file <file>      read package names from file'
-  '   -m, --mirror <url>     set mirror'
-  '   --help'
-  '   --version'
-  )
-  printf '%s\n' "${rw[@]}"
+sed '1d;$d' <<< '
+usage: apt-cyg [command] [options] [packages]
+
+Commands:
+   install <packages>     install packages
+   remove <packages>      remove packages
+   update                 update setup.ini
+   list [patterns]        list packages matching given pattern. If no
+                          pattern is given, list all installed packages.
+   listfiles <packages>   list files owned by packages
+   show <packages>        Displays the package records for the named
+                          packages
+   depends <patterns>     performs recursive dependency listings
+   rdepends <patterns>    Display packages which require X to be installed,
+                          AKA show reverse dependencies
+   search <patterns>      search for a filename from installed packages
+   searchall <patterns>   search for a filename from all available packages
+
+Options:
+   -c, --cache <dir>      set cache
+   -f, --file <file>      read package names from file
+   -m, --mirror <url>     set mirror
+   --help
+   --version
+'
 }
 
-function version()
-{
-  echo apt-cyg version 0.59
-  echo Written by Stephen Jungels
-  echo
-  echo 'Copyright (c) 2005-9 Stephen Jungels.  Released under the GPL.'
+function version () {
+sed '1d;$d' <<< '
+apt-cyg version 0.59
+Written by Stephen Jungels
+
+Copyright (c) 2005-9 Stephen Jungels.  Released under the GPL.
+'
 }
 
 function findworkspace()
