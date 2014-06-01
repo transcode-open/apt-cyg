@@ -43,8 +43,7 @@ Commands:
    list [patterns]        list packages matching given pattern. If no
                           pattern is given, list all installed packages.
    listfiles <packages>   list files owned by packages
-   show <packages>        Displays the package records for the named
-                          packages
+   show <packages>        Displays the package records for the named packages
    depends <patterns>     performs recursive dependency listings
    rdepends <patterns>    Display packages which require X to be installed,
                           AKA show reverse dependencies
