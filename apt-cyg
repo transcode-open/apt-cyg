@@ -487,7 +487,7 @@ do
           packages=$(awk '
           {
             sub("[\0\r]", "")
-            printf c++ ? " " $0 : $0
+            printf c++ ? FS $0 : $0
           }
           ' "$file")
         else
