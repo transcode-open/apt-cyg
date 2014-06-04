@@ -286,6 +286,7 @@ download () {
 
 apt-search () {
   checkpackages
+  echo Searching downloaded packages...
   for pkg in $packages
   do
     key=$(type -P "$pkg" | sed s./..)
@@ -298,7 +299,7 @@ apt-search () {
         s,/etc/setup/,,
         s,.lst.gz,,
         ' <<< $manifest)
-        echo Found $key in the package $package
+        echo $package
       fi
     done
   done
@@ -447,12 +448,6 @@ apt-remove () {
 }
 
 # process options
-dofile=0
-command=''
-file=''
-filepackages=''
-packages=''
-
 while (( $# ))
 do
   case "$1" in
@@ -486,7 +481,18 @@ do
       if [[ $2 ]]
       then
         file=$2
-        dofile=1
+        # support /dev/clipboard
+        if [ -c "$file" -o -f "$file" ]
+        then
+          packages=$(awk '
+          {
+            sub("[\0\r]", "")
+            printf c++ ? " " $0 : $0
+          }
+          ' "$file")
+        else
+          echo File $file not found, skipping
+        fi
         shift
       else
         echo No file name provided, ignoring $1 >&2
@@ -524,17 +530,6 @@ do
 
   esac
 done
-
-if (( dofile ))
-then
-  if [ -f "$file" ]
-  then
-    filepackages+=$(awk '{printf " %s", $0}' "$file")
-  else
-    echo File $file not found, skipping
-  fi
-  packages+=" $filepackages"
-fi
 
 if type -t apt-$command | grep -q function
 then
