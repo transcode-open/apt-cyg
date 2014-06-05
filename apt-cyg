@@ -130,7 +130,7 @@ apt-list () {
   if checkpackages
   then
     findworkspace
-    for pkg in $packages
+    for pkg in "${packages[@]}"
     do
       echo
       echo Searching for installed packages matching $pkg:
@@ -149,7 +149,7 @@ apt-listfiles () {
   checkpackages
   findworkspace
   local pkg
-  for pkg in $packages
+  for pkg in "${packages[@]}"
   do
     (( notfirst++ )) && echo
     if [ ! -e /etc/setup/"$pkg".lst.gz ]
@@ -163,7 +163,7 @@ apt-listfiles () {
 apt-show () {
   findworkspace
   checkpackages
-  for pkg in $packages
+  for pkg in "${packages[@]}"
   do
     (( notfirst++ )) && echo
     awk '
@@ -182,7 +182,7 @@ apt-show () {
 apt-depends () {
   findworkspace
   checkpackages
-  for pkg in $packages
+  for pkg in "${packages[@]}"
   do
     (( sq++ )) && echo
     awk '
@@ -229,7 +229,7 @@ apt-depends () {
 
 apt-rdepends () {
   findworkspace
-  for pkg in $packages
+  for pkg in "${packages[@]}"
   do
     awk '
     /^@ / {
@@ -287,7 +287,7 @@ download () {
 apt-search () {
   checkpackages
   echo Searching downloaded packages...
-  for pkg in $packages
+  for pkg in "${packages[@]}"
   do
     key=$(type -P "$pkg" | sed s./..)
     [[ $key ]] || key=$pkg
@@ -306,7 +306,7 @@ apt-search () {
 }
 
 apt-searchall () {
-  for pkg in $packages
+  for pkg in "${packages[@]}"
   do
     printf -v qs 'text=1&arch=%s&grep=%s' $ARCH "$pkg"
     cd /tmp
@@ -327,7 +327,7 @@ apt-install () {
   findworkspace
   checkpackages
   local pkg file requires warn package script
-  for pkg in $packages
+  for pkg in "${packages[@]}"
   do
 
   if grep -q "^$pkg " /etc/setup/installed.db
@@ -398,7 +398,7 @@ apt-install () {
 
 apt-remove () {
   checkpackages
-  for pkg in $packages
+  for pkg in "${packages[@]}"
   do
 
   if ! grep -q "^$pkg " /etc/setup/installed.db
@@ -484,12 +484,8 @@ do
         # support /dev/clipboard
         if [ -c "$file" -o -f "$file" ]
         then
-          packages=$(awk '
-          {
-            sub("[\0\r]", "")
-            printf c++ ? FS $0 : $0
-          }
-          ' "$file")
+          fp=$(sed '' "$file")
+          mapfile -t packages <<< "$fp"
         else
           echo File $file not found, skipping
         fi
@@ -516,7 +512,7 @@ do
     | show)
       if [[ $command ]]
       then
-        packages+=" $1"
+        packages+=("$1")
       else
         command=$1
       fi
@@ -524,7 +520,7 @@ do
     ;;
 
     *)
-      packages+=" $1"
+      packages+=("$1")
       shift
     ;;
 
