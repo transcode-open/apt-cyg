@@ -30,7 +30,7 @@ then
   exit 1
 fi
 
-[ $HOSTTYPE = x86_64 ] && ARCH=x86_64 || ARCH=x86
+ARCH=$(arch | sed s.i6.x.)
 
 function usage () {
 sed '1d;$d' <<< '
