@@ -305,21 +305,57 @@ apt-search () {
   done
 }
 
+proxy () {
+  local sd
+  cd /tmp
+  if [ ! -s no_anonim_http.txt ]
+  then
+    wget -q -U ')' 50na50.net/no_anonim_http.txt
+  fi
+  while read px country
+  do
+    if [[ $country != 'United States' ]]
+    then
+      (( sd++ ))
+      continue
+    fi
+    if ! wget -q -T 1 -t 1 -O web.json -e http_proxy=$px "$1"
+    then
+      (( sd++ ))
+      continue
+    fi
+    if grep -q 200 web.json
+    then
+      break
+    else
+      (( sd++ ))
+    fi
+  done < no_anonim_http.txt
+  if (( sd ))
+  then
+    sed -i 1,${sd}d no_anonim_http.txt
+  fi
+}
+
 apt-searchall () {
+  local api nof
+  api=ajax.googleapis.com/ajax/services/search/web
   for pkg in "${packages[@]}"
   do
-    printf -v qs 'text=1&arch=%s&grep=%s' $ARCH "$pkg"
-    cd /tmp
-    wget -O matches cygwin.com/cgi-bin2/package-grep.cgi?"$qs"
-    awk '
-    NR == 1                   {next}
-    /-doc-/                   {next}
-    /-debuginfo-/             {next}
-    /-devel-/ && pkg~/\.exe$/ {next}
-    /-src\t$/                 {next}
-    mc[$2]++                  {next}
-    $0 = $2
-    ' FS=/ pkg="$pkg" matches
+    printf \
+      -v qs 'v=1.0&rsz=8&q="%s"+site:cygwin.com/cygwin/packages/%s' $pkg $ARCH
+    (( nof++ )) && echo
+    echo getting pages . . .
+    proxy "$api?$qs"
+    grep -q pages web.json || continue
+    awk '$2 == "start" {print $4}' RS='[{,]' FS='"' web.json |
+    while read start
+    do
+      echo getting start $start . . . >&2
+      proxy "$api?$qs&start=$start"
+      awk '$2 == "url" {print $4}' RS=, FS='"' web.json
+    done > urls.txt
+    awk '!s[$7]++ {print $7}' FS=/ urls.txt
   done
 }
 
