@@ -338,12 +338,12 @@ proxy () {
 }
 
 apt-searchall () {
-  local api nof
+  local api nof ste
   api=ajax.googleapis.com/ajax/services/search/web
+  ste=cygwin.com/cygwin/packages
   for pkg in "${packages[@]}"
   do
-    printf \
-      -v qs 'v=1.0&rsz=8&q="%s"+site:cygwin.com/cygwin/packages/%s' $pkg $ARCH
+    printf -v qs 'v=1.0&rsz=8&q="%s"+-"index of"+site:%s/%s' $pkg $ste $ARCH
     (( nof++ )) && echo
     echo getting pages . . .
     proxy "$api?$qs"
