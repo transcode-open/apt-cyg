@@ -1,9 +1,9 @@
 apt-cyg
 =======
 
-apt-cyg is a command-line installer for Cygwin which cooperates with Cygwin
-Setup and uses the same repository. The syntax is similar to apt-get. Usage
-examples:
+apt-cyg is a Cygwin package manager. It includes a command-line installer for
+Cygwin which cooperates with Cygwin Setup and uses the same repository. The
+syntax is similar to apt-get. Usage examples:
 
 * `apt-cyg install <package names>` to install packages
 * `apt-cyg remove <package names>` to remove packages
@@ -34,10 +34,3 @@ free to fork and modify this script.
 
 The [Google Code project](http://apt-cyg.googlecode.com) also has a list of
 open issues.
-
-Changelog
----------
-
-[2013-10-23] added multiarch support, autor: https://github.com/aguynamedryan/apt-cyg
-
-[2013-10-23] added xz archives support, autor: ernierasta
