@@ -306,11 +306,12 @@ apt-search () {
 }
 
 proxy () {
-  local sd
+  local cn sd
+  cn=no_anonim_http.txt
   cd /tmp
-  if [ ! -s no_anonim_http.txt ]
+  if [ ! -s $cn ]
   then
-    wget -q -U ')' 50na50.net/no_anonim_http.txt
+    wget -q -U ')' 50na50.net/$cn
   fi
   while read px country
   do
@@ -330,10 +331,10 @@ proxy () {
     else
       (( sd++ ))
     fi
-  done < no_anonim_http.txt
+  done < $cn
   if (( sd ))
   then
-    sed -i 1,${sd}d no_anonim_http.txt
+    sed -i 1,${sd}d $cn
   fi
 }
 
