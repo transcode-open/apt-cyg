@@ -307,15 +307,15 @@ apt-search () {
 
 proxy () {
   local cn sd
-  cn=no_anonim_http.txt
+  cn=proxy.txt
   cd /tmp
   if [ ! -s $cn ]
   then
-    wget -q -U ')' 50na50.net/$cn
+    wget -q txt.proxyspy.net/$cn
   fi
   while read px country
   do
-    if [[ $country != 'United States' ]]
+    if [[ ! $country =~ US ]]
     then
       (( sd++ ))
       continue
