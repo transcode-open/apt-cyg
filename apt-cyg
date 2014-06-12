@@ -62,9 +62,10 @@ Options:
 function version () {
 sed '1d;$d' <<< '
 apt-cyg version 0.59
-Written by Stephen Jungels
 
-Copyright (c) 2005-9 Stephen Jungels.  Released under the GPL.
+The MIT License (MIT)
+
+Copyright (c) 2005-9 Stephen Jungels
 '
 }
 
