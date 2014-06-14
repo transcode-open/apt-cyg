@@ -307,36 +307,51 @@ apt-search () {
 }
 
 proxy () {
-  local cn sd
-  cn=proxy.txt
+  local msg url dt pool px cn
+  msg=$1
+  url=$2
+  set --
+  dt=proxy.txt
   cd /tmp
-  if [ ! -s $cn ]
-  then
-    wget -q txt.proxyspy.net/$cn
-  fi
-  while read px country
+  printf 'request %s... ' "$msg"
+  while :
   do
-    if [[ ! $country =~ US ]]
+    if (( ! $# ))
     then
-      (( sd++ ))
+      touch $dt
+      mapfile -t pool < $dt
+      set -- "${pool[@]}"
+    fi
+    if (( ! $# ))
+    then
+      wget -q -O $dt txt.proxyspy.net/$dt
+    fi
+    read px cn <<< $1
+    if [[ ! $cn =~ US ]]
+    then
+      shift
       continue
     fi
-    if ! wget -q -T 1 -t 1 -O web.json -e http_proxy=$px "$1"
+    if ! wget -q -T 1 -t 1 -O web.json -e http_proxy=$px "$url"
     then
-      (( sd++ ))
+      shift
       continue
     fi
-    if grep -q 200 web.json
-    then
+    case $(awk '/responseStatus/,$0=$2' RS='(, |})' web.json) in
+    200) # OK
       break
-    else
-      (( sd++ ))
-    fi
-  done < $cn
-  if (( sd ))
-  then
-    sed -i 1,${sd}d $cn
-  fi
+    ;;
+    400) # out of range start
+      break
+    ;;
+    403) # suspected terms of service abuse
+      shift
+      continue
+    ;;
+    esac
+  done
+  printf '%s\n' "$px"
+  printf '%s\n' "$@" > $dt
 }
 
 apt-searchall () {
@@ -347,14 +362,12 @@ apt-searchall () {
   do
     printf -v qs 'v=1.0&rsz=8&q="%s"+-"index of"+site:%s/%s' $pkg $ste $ARCH
     (( nof++ )) && echo
-    echo getting pages . . .
-    proxy "$api?$qs"
+    proxy pages "$api?$qs"
     grep -q pages web.json || continue
     awk '$2 == "start" {print $4}' RS='[{,]' FS='"' web.json |
     while read start
     do
-      echo getting start $start . . . >&2
-      proxy "$api?$qs&start=$start"
+      proxy "start $start" "$api?$qs&start=$start" >&2
       awk '$2 == "url" {print $4}' RS=, FS='"' web.json
     done > urls.txt
     awk '!s[$7]++ {print $7}' FS=/ urls.txt
