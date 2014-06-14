@@ -306,6 +306,11 @@ apt-search () {
   done
 }
 
+jn () {
+  # parse json
+  awk '$1 ~ key {print $2}' RS='"?[,{}]' FS='": ?"?' key="$1" "$2"
+}
+
 proxy () {
   local msg url dt pool px cn
   msg=$1
@@ -313,7 +318,7 @@ proxy () {
   set --
   dt=proxy.txt
   cd /tmp
-  printf 'request %s... ' "$msg"
+  printf 'request %s... ' "$msg" >&2
   while :
   do
     if (( ! $# ))
@@ -337,7 +342,7 @@ proxy () {
       shift
       continue
     fi
-    case $(awk '/responseStatus/,$0=$2' RS='(, |})' web.json) in
+    case $(jn responseStatus web.json) in
     200) # OK
       break
     ;;
@@ -350,7 +355,7 @@ proxy () {
     ;;
     esac
   done
-  printf '%s\n' "$px"
+  printf '%s\n' "$px" >&2
   printf '%s\n' "$@" > $dt
 }
 
@@ -364,11 +369,11 @@ apt-searchall () {
     (( nof++ )) && echo
     proxy pages "$api?$qs"
     grep -q pages web.json || continue
-    awk '$2 == "start" {print $4}' RS='[{,]' FS='"' web.json |
+    jn start web.json |
     while read start
     do
-      proxy "start $start" "$api?$qs&start=$start" >&2
-      awk '$2 == "url" {print $4}' RS=, FS='"' web.json
+      proxy "start $start" "$api?$qs&start=$start"
+      jn url web.json
     done > urls.txt
     awk '!s[$7]++ {print $7}' FS=/ urls.txt
   done
