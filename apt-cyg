@@ -30,25 +30,25 @@ then
   exit 1
 fi
 
-ARCH=$(arch | sed s.i6.x.)
+ARCH=${HOSTTYPE/i6/x}
 
 function usage () {
 sed '1d;$d' <<< '
 usage: apt-cyg [command] [options] [packages]
 
 Commands:
-   install <packages>     install packages
-   remove <packages>      remove packages
-   update                 update setup.ini
-   list [patterns]        list packages matching given pattern. If no
-                          pattern is given, list all installed packages.
-   listfiles <packages>   list files owned by packages
-   show <packages>        Displays the package records for the named packages
-   depends <patterns>     performs recursive dependency listings
-   rdepends <patterns>    Display packages which require X to be installed,
-                          AKA show reverse dependencies
-   search <patterns>      search for a filename from installed packages
-   searchall <patterns>   search for a filename from all available packages
+   install     Install packages
+   remove      Remove packages
+   update      Update setup.ini
+   show        Displays the package records for the named packages
+   depends     Performs recursive dependency listings
+   rdepends    Display packages which require X to be installed,
+               AKA show reverse dependencies
+   list        List packages matching given pattern. If no pattern is given,
+               list all installed packages.
+   listfiles   List files owned by packages
+   search      Search for a filename from installed packages
+   searchall   Search for a filename from all available packages
 
 Options:
    -c, --cache <dir>      set cache
