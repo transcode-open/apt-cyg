@@ -342,18 +342,13 @@ proxy () {
       shift
       continue
     fi
-    case $(jn responseStatus web.json) in
-    200) # OK
-      break
-    ;;
-    400) # out of range start
-      break
-    ;;
-    403) # suspected terms of service abuse
+    if jn responseStatus web.json | grep -q 403
+    then
       shift
       continue
-    ;;
-    esac
+    else
+      break
+    fi
   done
   printf '%s\n' "$px" >&2
   printf '%s\n' "$@" > $dt
