@@ -308,7 +308,7 @@ apt-search () {
 
 jn () {
   # parse json
-  awk '$1 ~ key {print $2}' RS='"?[,{}]' FS='": ?"?' key="$1" "$2"
+  awk '$1 ~ key {print $2}' RS='([{}]|"?, ?")' FS='": ?"?' key="$1" "$2"
 }
 
 proxy () {
