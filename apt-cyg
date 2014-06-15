@@ -40,6 +40,7 @@ Commands:
    install     Install packages
    remove      Remove packages
    update      Update setup.ini
+   download    Download only - do NOT install or unpack archives
    show        Displays the package records for the named packages
    depends     Performs recursive dependency listings
    rdepends    Display packages which require X to be installed,
@@ -111,13 +112,12 @@ getsetup()
   fi
 }
 
-function checkpackages()
-{
+function checkpackages () {
   if [[ $packages ]]
   then
     return 0
   else
-    echo Nothing to do.
+    echo No packages found
     return 1
   fi
 }
@@ -149,13 +149,13 @@ apt-list () {
 apt-listfiles () {
   checkpackages
   findworkspace
-  local pkg
+  local pkg sbq
   for pkg in "${packages[@]}"
   do
-    (( notfirst++ )) && echo
+    (( sbq++ )) && echo
     if [ ! -e /etc/setup/"$pkg".lst.gz ]
     then
-      download "$pkg" || continue
+      download "$pkg"
     fi
     gzip -cd /etc/setup/"$pkg".lst.gz
   done
@@ -243,8 +243,19 @@ apt-rdepends () {
   done
 }
 
+apt-download () {
+  checkpackages
+  findworkspace
+  local pkg sbq
+  for pkg in "${packages[@]}"
+  do
+    (( sbq++ )) && echo
+    download "$pkg"
+  done
+}
+
 download () {
-  local pkg install file digest digactual
+  local pkg file digest digactual
   pkg=$1
   # look for package and save desc file
 
@@ -252,25 +263,23 @@ download () {
   awk '$1 == pc' RS='\n\n@ ' FS='\n' pc=$pkg setup.ini > release/$pkg/desc
   if [ ! -s release/$pkg/desc ]
   then
-    echo Package $pkg not found or ambiguous name
+    echo Unable to locate package $pkg
     rm -r release/"$pkg"
-    return 1
+    exit 1
   fi
-  echo Found package $pkg >&2
 
   # download and unpack the bz2 or xz file
 
   # pick the latest version, which comes first
-  install=$(awk '/^install: / {print $2; exit}' release/"$pkg"/desc)
-  if [[ ! $install ]]
+  cd release/$pkg
+  file=$(awk '$1=="install:" && !s++ && $0=$5' FS='[ /]' desc)
+  if [[ ! $file ]]
   then
     echo 'Could not find "install" in package description: obsolete package?'
     exit 1
   fi
 
-  file=$(basename $install)
-  cd release/"$pkg"
-  wget -nc $mirror/$install
+  wget -nc $mirror/$ARCH/release/$pkg/$file
 
   # check the md5
   digest=$(awk '/^install: / {print $4; exit}' desc)
@@ -282,7 +291,8 @@ download () {
   fi
 
   tar tf $file | gzip > /etc/setup/"$pkg".lst.gz
-  echo $file
+  cd ~-
+  echo $file > /tmp/dn
 }
 
 apt-search () {
@@ -339,7 +349,8 @@ apt-install () {
   echo
   echo Installing $pkg
 
-  file=$(download $pkg) || continue
+  download $pkg
+  read file </tmp/dn
   cd release/$pkg
   echo Unpacking...
 
@@ -503,14 +514,15 @@ do
     ;;
 
     install     \
-    | list      \
-    | listfiles \
+    | remove    \
+    | download  \
+    | show      \
     | depends   \
     | rdepends  \
+    | list      \
+    | listfiles \
     | search    \
-    | searchall \
-    | remove    \
-    | show)
+    | searchall)
       if [[ $command ]]
       then
         packages+=("$1")
