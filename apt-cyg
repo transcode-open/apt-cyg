@@ -306,71 +306,21 @@ apt-search () {
   done
 }
 
-jn () {
-  # parse json
-  awk '$1 ~ key {print $2}' RS='([{}]|"?, ?")' FS='": ?"?' key="$1" "$2"
-}
-
-proxy () {
-  local msg url dt pool px cn
-  msg=$1
-  url=$2
-  set --
-  dt=proxy.txt
-  cd /tmp
-  printf 'request %s... ' "$msg" >&2
-  while :
-  do
-    if (( ! $# ))
-    then
-      touch $dt
-      mapfile -t pool < $dt
-      set -- "${pool[@]}"
-    fi
-    if (( ! $# ))
-    then
-      wget -q -O $dt txt.proxyspy.net/$dt
-    fi
-    read px cn <<< $1
-    if [[ ! $cn =~ US ]]
-    then
-      shift
-      continue
-    fi
-    if ! wget -q -T 1 -t 1 -O web.json -e http_proxy=$px "$url"
-    then
-      shift
-      continue
-    fi
-    if jn responseStatus web.json | grep -q 403
-    then
-      shift
-      continue
-    else
-      break
-    fi
-  done
-  printf '%s\n' "$px" >&2
-  printf '%s\n' "$@" > $dt
-}
-
 apt-searchall () {
-  local api nof ste
-  api=ajax.googleapis.com/ajax/services/search/web
-  ste=cygwin.com/cygwin/packages
   for pkg in "${packages[@]}"
   do
-    printf -v qs 'v=1.0&rsz=8&q="%s"+-"index of"+site:%s/%s' $pkg $ste $ARCH
-    (( nof++ )) && echo
-    proxy pages "$api?$qs"
-    grep -q pages web.json || continue
-    jn start web.json |
-    while read start
-    do
-      proxy "start $start" "$api?$qs&start=$start"
-      jn url web.json
-    done > urls.txt
-    awk '!s[$7]++ {print $7}' FS=/ urls.txt
+    printf -v qs 'text=1&arch=%s&grep=%s' $ARCH "$pkg"
+    cd /tmp
+    wget -O matches cygwin.com/cgi-bin2/package-grep.cgi?"$qs"
+    awk '
+    NR == 1                   {next}
+    /-doc-/                   {next}
+    /-debuginfo-/             {next}
+    /-devel-/ && pkg~/\.exe$/ {next}
+    /-src\t$/                 {next}
+    mc[$2]++                  {next}
+    $0 = $2
+    ' FS=/ pkg="$pkg" matches
   done
 }
 
