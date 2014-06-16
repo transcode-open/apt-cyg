@@ -70,8 +70,7 @@ Copyright (c) 2005-9 Stephen Jungels
 '
 }
 
-function findworkspace()
-{
+find-workspace () {
   # default working directory and mirror
   mirror=http://mirrors.kernel.org/sourceware/cygwin
   cache=/var/cache
@@ -93,11 +92,16 @@ function findworkspace()
 
   mkdir -p "$cache/$mirrordir/$ARCH"
   cd "$cache/$mirrordir/$ARCH"
-  [ -e setup.ini ] || getsetup
+  if [ -e setup.ini ]
+  then
+    return 0
+  else
+    get-setup
+    return 1
+  fi
 }
 
-getsetup()
-{
+get-setup () {
   touch setup.ini
   mv setup.ini setup.ini-save
   wget -N $mirror/$ARCH/setup.bz2
@@ -112,7 +116,7 @@ getsetup()
   fi
 }
 
-function checkpackages () {
+function check-packages () {
   if [[ $packages ]]
   then
     return 0
@@ -123,14 +127,16 @@ function checkpackages () {
 }
 
 apt-update () {
-  findworkspace
-  getsetup
+  if find-workspace
+  then
+    get-setup
+  fi
 }
 
 apt-list () {
-  if checkpackages
+  if check-packages
   then
-    findworkspace
+    find-workspace
     for pkg in "${packages[@]}"
     do
       echo
@@ -147,8 +153,8 @@ apt-list () {
 }
 
 apt-listfiles () {
-  checkpackages
-  findworkspace
+  check-packages
+  find-workspace
   local pkg sbq
   for pkg in "${packages[@]}"
   do
@@ -162,8 +168,8 @@ apt-listfiles () {
 }
 
 apt-show () {
-  findworkspace
-  checkpackages
+  find-workspace
+  check-packages
   for pkg in "${packages[@]}"
   do
     (( notfirst++ )) && echo
@@ -181,8 +187,8 @@ apt-show () {
 }
 
 apt-depends () {
-  findworkspace
-  checkpackages
+  find-workspace
+  check-packages
   for pkg in "${packages[@]}"
   do
     (( sq++ )) && echo
@@ -229,7 +235,7 @@ apt-depends () {
 }
 
 apt-rdepends () {
-  findworkspace
+  find-workspace
   for pkg in "${packages[@]}"
   do
     awk '
@@ -244,8 +250,8 @@ apt-rdepends () {
 }
 
 apt-download () {
-  checkpackages
-  findworkspace
+  check-packages
+  find-workspace
   local pkg sbq
   for pkg in "${packages[@]}"
   do
@@ -259,44 +265,46 @@ download () {
   pkg=$1
   # look for package and save desc file
 
-  mkdir -p release/"$pkg"
-  awk '$1 == pc' RS='\n\n@ ' FS='\n' pc=$pkg setup.ini > release/$pkg/desc
-  if [ ! -s release/$pkg/desc ]
+  awk '$1 == pc' RS='\n\n@ ' FS='\n' pc=$pkg setup.ini > desc
+  if [ ! -s desc ]
   then
     echo Unable to locate package $pkg
-    rm -r release/"$pkg"
     exit 1
   fi
 
   # download and unpack the bz2 or xz file
 
   # pick the latest version, which comes first
-  cd release/$pkg
-  file=$(awk '$1=="install:" && !s++ && $0=$5' FS='[ /]' desc)
-  if [[ ! $file ]]
+  set -- $(awk '$1 == "install:"' desc)
+  if (( ! $# ))
   then
     echo 'Could not find "install" in package description: obsolete package?'
     exit 1
   fi
 
-  wget -nc $mirror/$ARCH/release/$pkg/$file
+  dn=$(dirname $2)
+  bn=$(basename $2)
 
   # check the md5
-  digest=$(awk '/^install: / {print $4; exit}' desc)
-  digactual=$(md5sum $file | awk NF=1)
+  digest=$4
+  mkdir -p $cache/$mirrordir/$dn
+  cd $cache/$mirrordir/$dn
+  wget -nc $mirror/$dn/$bn
+  digactual=$(md5sum $bn | awk NF=1)
   if [ $digest != $digactual ]
   then
     echo MD5 sum did not match, exiting
     exit 1
   fi
 
-  tar tf $file | gzip > /etc/setup/"$pkg".lst.gz
+  tar tf $bn | gzip > /etc/setup/"$pkg".lst.gz
   cd ~-
-  echo $file > /tmp/dn
+  mv desc $dn
+  echo $dn $bn > /tmp/dwn
 }
 
 apt-search () {
-  checkpackages
+  check-packages
   echo Searching downloaded packages...
   for pkg in "${packages[@]}"
   do
@@ -317,10 +325,10 @@ apt-search () {
 }
 
 apt-searchall () {
+  cd /tmp
   for pkg in "${packages[@]}"
   do
     printf -v qs 'text=1&arch=%s&grep=%s' $ARCH "$pkg"
-    cd /tmp
     wget -O matches cygwin.com/cgi-bin2/package-grep.cgi?"$qs"
     awk '
     NR == 1                   {next}
@@ -335,9 +343,9 @@ apt-searchall () {
 }
 
 apt-install () {
-  findworkspace
-  checkpackages
-  local pkg file requires warn package script
+  check-packages
+  find-workspace
+  local pkg dn bn requires warn package script
   for pkg in "${packages[@]}"
   do
 
@@ -350,11 +358,11 @@ apt-install () {
   echo Installing $pkg
 
   download $pkg
-  read file </tmp/dn
-  cd release/$pkg
+  read dn bn </tmp/dwn
   echo Unpacking...
 
-  tar -x -C / -f $file
+  cd $cache/$mirrordir/$dn
+  tar -x -C / -f $bn
   # update the package database
 
   awk '
@@ -366,7 +374,7 @@ apt-install () {
   END {
     if (ins != 1) print pkg, bz, 0
   }
-  ' pkg="$pkg" bz=$file /etc/setup/installed.db > /tmp/awk.$$
+  ' pkg="$pkg" bz=$bn /etc/setup/installed.db > /tmp/awk.$$
   mv /etc/setup/installed.db /etc/setup/installed.db-save
   mv /tmp/awk.$$ /etc/setup/installed.db
 
@@ -409,7 +417,7 @@ apt-install () {
 }
 
 apt-remove () {
-  checkpackages
+  check-packages
   for pkg in "${packages[@]}"
   do
 
@@ -420,8 +428,8 @@ apt-remove () {
   fi
 
   cygcheck awk bash bunzip2 grep gzip mv sed tar xargs xz | awk '
-  /bin/ &&
-  ! fd[$NF]++ &&
+  /bin/      &&
+  !fd[$NF]++ &&
   $0 = $NF
   ' FS='\\' > /tmp/cygcheck.txt
 
