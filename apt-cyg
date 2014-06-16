@@ -299,7 +299,7 @@ download () {
 
   tar tf $bn | gzip > /etc/setup/"$pkg".lst.gz
   cd ~-
-  mv desc $dn
+  mv desc $cache/$mirrordir/$dn
   echo $dn $bn > /tmp/dwn
 }
 
