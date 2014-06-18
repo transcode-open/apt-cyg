@@ -72,19 +72,21 @@ Copyright (c) 2005-9 Stephen Jungels
 
 find-workspace () {
   # default working directory and mirror
-  mirror=http://mirrors.kernel.org/sourceware/cygwin
-  cache=/var/cache
   
   # work wherever setup worked last, if possible
-  if [ -e /etc/setup/last-cache ]
-  then
-    cache=$(cygpath -f /etc/setup/last-cache)
-  fi
+  cache=$(awk '
+  /last-cache/ {
+    getline
+    print $1
+  }
+  ' /etc/setup/setup.rc | cygpath -f-)
 
-  if [ -e /etc/setup/last-mirror ]
-  then
-    mirror=$(sed 's./$..' /etc/setup/last-mirror)
-  fi
+  mirror=$(awk '
+  /last-mirror/ {
+    getline
+    print $1
+  }
+  ' /etc/setup/setup.rc)
   mirrordir=$(sed '
   s / %2f g
   s : %3a g
@@ -473,12 +475,25 @@ do
   case "$1" in
 
     --mirror | -m)
-      echo "$2" > /etc/setup/last-mirror
+      awk -i inplace '
+      1
+      /last-mirror/ {
+        getline
+        print "\t" rpc
+      }
+      ' rpc="$2" /etc/setup/setup.rc
       shift 2
     ;;
 
     --cache | -c)
-      cygpath -aw "$2" > /etc/setup/last-cache
+      rpc=$(cygpath -aw "$2" | sed 's \\ \\\\ g')
+      awk -i inplace '
+      1
+      /last-cache/ {
+        getline
+        print "\t" rpc
+      }
+      ' rpc="$rpc" /etc/setup/setup.rc
       shift 2
     ;;
 
