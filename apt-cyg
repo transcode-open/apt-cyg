@@ -330,17 +330,14 @@ apt-searchall () {
   cd /tmp
   for pkg in "${packages[@]}"
   do
-    printf -v qs 'text=1&arch=%s&grep=%s' $ARCH "$pkg"
+    if echo $pkg | grep "[^[:alnum:].-]"
+    then
+        printf -v qs 'text=1&arch=%s&grep=%s' $ARCH "$pkg"
+    else
+        printf -v qs 'text=1&arch=%s&grep=%s' $ARCH "$pkg.exe$"
+    fi
     wget -O matches cygwin.com/cgi-bin2/package-grep.cgi?"$qs"
-    awk '
-    NR == 1                   {next}
-    /-doc-/                   {next}
-    /-debuginfo-/             {next}
-    /-devel-/ && pkg~/\.exe$/ {next}
-    /-src\t$/                 {next}
-    mc[$2]++                  {next}
-    $0 = $2
-    ' FS=/ pkg="$pkg" matches
+    cat matches
   done
 }
 
