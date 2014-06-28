@@ -33,7 +33,7 @@ fi
 ARCH=${HOSTTYPE/i6/x}
 
 function usage () {
-sed '1d;$d' <<< '
+cat <<+
 usage: apt-cyg [command] [options] [packages]
 
 Commands:
@@ -57,17 +57,17 @@ Options:
    -m, --mirror <url>     set mirror
    --help
    --version
-'
++
 }
 
 function version () {
-sed '1d;$d' <<< '
+cat <<+
 apt-cyg version 0.59
 
 The MIT License (MIT)
 
 Copyright (c) 2005-9 Stephen Jungels
-'
++
 }
 
 find-workspace () {
@@ -338,9 +338,9 @@ apt-searchall () {
     /-debuginfo-/             {next}
     /-devel-/ && pkg~/\.exe$/ {next}
     /-src\t$/                 {next}
-    mc[$2]++                  {next}
-    $0 = $2
-    ' FS=/ pkg="$pkg" matches
+    mc[$1]++                  {next}
+    $0 = $1
+    ' FS=-[[:digit:]] pkg="$pkg" matches
   done
 }
 
