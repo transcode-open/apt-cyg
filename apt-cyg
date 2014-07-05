@@ -322,7 +322,7 @@ function wget_return_case_md5sum ()
        ask_user "Continue regardless of invalid SSL certificate?" || return 1
        "${WGET[@]}" --no-check-certificate "$URL" -O "$FILE"
        return 0
-    ;;
+       ;;
     8) echo "$LABEL: FAILED: 404 Not Found $URL." return 1 ;;
     *) echo -e "\e[31;1mError:\e[30;0m FATAL: wget returned unkown value"; return 1 ;;
   esac
@@ -375,34 +375,34 @@ function fetch_trustedkeys ()
     case "$CASE" in
       00|01|0-)
         "${GPG[@]}" --import "$FILE"
-      ;;
+        ;;
       02)
         echo "Warning: ${LABEL} has been updated."
         "${GPG[@]}" --import "$FILE"
-      ;;
+        ;;
       -0)
         "${GPG[@]}" --import "$FILE_LATEST"
-      ;;
+        ;;
       10|20)
         echo -e "\e[31;1mError:\e[30;0m ${LABEL} has miss configuration."
         exit 1
-      ;;
+        ;;
       11|1-|-1)
         echo -e "\e[31;1mError:\e[30;0m Could not download ${LABEL}."
         exit 1
-      ;;
+        ;;
       12|-2)
         echo -e "\e[31;1mError:\e[30;0m ${LABEL} has been updated, maybe. But sometimes it may has been cracked. Be careful !!!"
         exit 1
-      ;;
+        ;;
       21|22|2-)
         echo -e "\e[31;1mError:\e[30;0m ${LABEL} has been cracked, maybe"
         exit 1
-      ;;
+        ;;
       --)
         echo -e "\e[31;1mError:\e[30;0m ${LABEL} has no URL."
         exit 1
-      ;;
+        ;;
     esac
   done
   rm "$FILE" "$FILE_LATEST"
@@ -472,6 +472,7 @@ function apt-cyg-pathof ()
       *)
         echo -e "\e[31;1mError:\e[30;0m in function $FUNCNAME: unknown parameter: $1"
         exit 1
+        ;;
     esac
     shift
   done
@@ -515,17 +516,17 @@ function proxy_unset ()
 function proxy_setup ()
 {
   case "$OPT_PROXY" in
-  auto)
-    proxy_auto
-  ;;
-  inherit)
-  ;;
-  none)
-    proxy_unset
-  ;;
-  *)
-    proxy_set "$OPT_PROXY"
-  ;;
+    auto)
+      proxy_auto
+      ;;
+    inherit)
+      ;;
+    none)
+      proxy_unset
+      ;;
+    *)
+      proxy_set "$OPT_PROXY"
+      ;;
   esac
 }
 
@@ -556,8 +557,8 @@ function package_db-is_registered ()
   package_db-version_check
   
   awk '
-  $1 == PKGNAME && NF != 2 {found = 1; exit}
-  END {exit !found}
+    $1 == PKGNAME && NF != 2 {found = 1; exit}
+    END {exit !found}
   ' PKGNAME="$1" "${PACKAGE_DB}"
 }
 
@@ -576,10 +577,10 @@ function package_db-register ()
   package_db-version_check
   
   awk '
-  function register() {print PKGNAME " " PKGFILE " 0"; registered = 1;}
-  !registered && PKGNAME < $1 && NF != 2 {register()}
-  {print $0}
-  END {if (!registered) register()}
+    function register() {print PKGNAME " " PKGFILE " 0"; registered = 1;}
+    !registered && PKGNAME < $1 && NF != 2 {register()}
+    {print $0}
+    END {if (!registered) register()}
   ' PKGNAME="$1" PKGFILE="$2" "${PACKAGE_DB}" > "${work}"
   
   mv "${PACKAGE_DB}" "${PACKAGE_DB}-save"
@@ -662,23 +663,23 @@ function dep_check ()
   ' \
   DIR="$1" ROOTPKGS="$(join $'\x1c' "${@:2}")" "$(apt-cyg-pathof "setup.ini")" \
   | awk '
-  function min(x,y) {return x < y ? x : y}
-  function max(x,y) {return x < y ? y : x}
-  {
-    packages[$1] = pkg = $1;
-    status[pkg, "available"] = $2;
-    status[pkg, "shallow"  ] = 0 + status[pkg, "shallow"] == 0 ? $3 : min(status[pkg, "shallow"], $3);
-    status[pkg, "deep"     ] = max(0 + status[pkg, "deep"], $4);
-  }
-  END {
-    for (pkg in packages) {
-      printf("%-40s %d\t%d\t%d\n",
-        pkg,
-        status[pkg, "available"],
-        status[pkg, "shallow"],
-        status[pkg, "deep"])
+    function min(x,y) {return x < y ? x : y}
+    function max(x,y) {return x < y ? y : x}
+    {
+      packages[$1] = pkg = $1;
+      status[pkg, "available"] = $2;
+      status[pkg, "shallow"  ] = 0 + status[pkg, "shallow"] == 0 ? $3 : min(status[pkg, "shallow"], $3);
+      status[pkg, "deep"     ] = max(0 + status[pkg, "deep"], $4);
     }
-  }
+    END {
+      for (pkg in packages) {
+        printf("%-40s %d\t%d\t%d\n",
+          pkg,
+          status[pkg, "available"],
+          status[pkg, "shallow"],
+          status[pkg, "deep"])
+      }
+    }
   ' | sort -nrk4
 }
 
@@ -715,15 +716,15 @@ function apt-cyg-completion-install ()
   readarray -t -O ${#SUBCMDS[@]} SUBCMDS < <(grep "^function " "$SCRIPTFILE" | awk 'match($2, /apt-cyg-([-_0-9A-Za-z]+)/,m){print m[1]}')
   readarray -t -O ${#OPTIONS[@]} OPTIONS < <(
     awk '
-    /^function *parse_args *\(\)/ {proc=1}
-    /^} *# *\/parse_args( |$)/     {proc=0}
-    proc && match($0, /^ *(-[^()*]+)\)/, m) {
-      split(m[1], x, "|");
-      for (i in x) print x[i];
-    }
-    ' "$SCRIPTFILE"
-  )
-cat <<-EOD > /etc/bash_completion.d/apt-cyg
+      /^function *parse_args *\(\)/ {proc=1}
+      /^} *# *\/parse_args( |$)/     {proc=0}
+      proc && match($0, /^ *(-[^()*]+)\)/, m) {
+        split(m[1], x, "|");
+        for (i in x) print x[i];
+      }
+      ' "$SCRIPTFILE"
+    )
+  cat <<-EOD > /etc/bash_completion.d/apt-cyg
 # bash completion for apt-cyg
 
 function __apt-cyg ()
@@ -943,138 +944,140 @@ ARGS=()
 
 function parse_args ()
 {
-local unknown_option
-
-while [ $# -gt 0 ]; do
-  case "$1" in
-
-    --charch)
-      OPT_CHARCH="$2"
-      shift 2 || break
-    ;;
-
-    --use-setuprc)
-      "$0" -c "$(grep -A1 last-cache  /etc/setup/setup.rc | tail -n1 | sed -r 's/^\s*|\s*$//g')" > /dev/null
-      "$0" -m "$(grep -A1 last-mirror /etc/setup/setup.rc | tail -n1 | sed -r 's/^\s*|\s*$//g')" > /dev/null
-      shift
-    ;;
-
-    --ignore-case|-i)
-      ignore_case="$1"
-      shift
-    ;;
-
-    --force-remove)
-      force_remove=1
-      shift
-    ;;
-
-    --force-fetch-trustedkeys)
-      force_fetch_trustedkeys=1
-      shift
-    ;;
-
-    --no-verify|-X)
-      no_verify=1
-      shift
-    ;;
-
-    --no-check-certificate)
-      WGET+=( "--no-check-certificate" )
-      shift
-    ;;
-
-    --proxy|-p)
-      OPT_PROXY="$2"
-      shift 2 || break
-    ;;
-
-    --completion-get-subcommand)
-      OPT_COMPLETION_GET_SUBCOMMAND="$1"
-      shift
-    ;;
-
-    --completion-disable-autoupdate)
-      OPT_COMPLETION_DISABLE_AUTOUPDATE="$1"
-      shift
-    ;;
-
-    --max-jobs|-j)
-      LESSER_PARALLEL_MAX_JOBS="$2"
-      shift 2 || break
-    ;;
-
-    --mirror|-m)
-      OPT_MIRROR="$2"
-      shift 2 || break
-    ;;
-
-    --cache|-c)
-      OPT_CACHE="$2"
-      shift 2 || break
-    ;;
-
-    --noscripts)
-      noscripts=1
-      shift
-    ;;
-
-    --noupdate|-u)
-      noupdate=1
-      shift
-    ;;
-
-    --ipv4|-4)
-      WGET=( "${WGET[@]}" "--prefer-family=IPv4" )
-      shift
-    ;;
-
-    --help)
-      usage
-      exit 0
-    ;;
-
-    --version)
-      version
-      exit 0
-    ;;
-
-    --file|-f)
-      [ -n "$2" ] && OPT_FILES+=( "$2" )
-      shift 2 || break
-    ;;
-    -*)
-      unknown_option="$1"
-      break
-    ;;
-    *)
-      if [ -z "$SUBCOMMAND" ]; then
-        SUBCOMMAND="$1"
-      else
-        ARGS+=( "$1" )
-      fi
-      shift
-
-    ;;
-
-  esac
-done
-
-if [ -n "$OPT_COMPLETION_GET_SUBCOMMAND" ]; then
-  echo "$SUBCOMMAND"
-  exit
-fi
-
-if [ -n "$unknown_option" ]; then
-  echo -e "\e[31;1mError:\e[30;0m Unknown option: $unknown_option"
-  exit 1
-fi
-
-if [ $# -gt 0 ]; then
-  echo -e "\e[31;1mError:\e[30;0m Number of parameters is not enough: $@"
-  exit 1
-fi
-
+  local unknown_option
+  
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      
+      --charch)
+        OPT_CHARCH="$2"
+        shift 2 || break
+        ;;
+      
+      --use-setuprc)
+        "$0" -c "$(grep -A1 last-cache  /etc/setup/setup.rc | tail -n1 | sed -r 's/^\s*|\s*$//g')" > /dev/null
+        "$0" -m "$(grep -A1 last-mirror /etc/setup/setup.rc | tail -n1 | sed -r 's/^\s*|\s*$//g')" > /dev/null
+        shift
+        ;;
+      
+      --ignore-case|-i)
+        ignore_case="$1"
+        shift
+        ;;
+      
+      --force-remove)
+        force_remove=1
+        shift
+        ;;
+      
+      --force-fetch-trustedkeys)
+        force_fetch_trustedkeys=1
+        shift
+        ;;
+      
+      --no-verify|-X)
+        no_verify=1
+        shift
+        ;;
+      
+      --no-check-certificate)
+        WGET+=( "--no-check-certificate" )
+        shift
+        ;;
+      
+      --proxy|-p)
+        OPT_PROXY="$2"
+        shift 2 || break
+        ;;
+      
+      --completion-get-subcommand)
+        OPT_COMPLETION_GET_SUBCOMMAND="$1"
+        shift
+        ;;
+      
+      --completion-disable-autoupdate)
+        OPT_COMPLETION_DISABLE_AUTOUPDATE="$1"
+        shift
+        ;;
+      
+      --max-jobs|-j)
+        LESSER_PARALLEL_MAX_JOBS="$2"
+        shift 2 || break
+        ;;
+      
+      --mirror|-m)
+        OPT_MIRROR="$2"
+        shift 2 || break
+        ;;
+      
+      --cache|-c)
+        OPT_CACHE="$2"
+        shift 2 || break
+        ;;
+      
+      --noscripts)
+        noscripts=1
+        shift
+        ;;
+      
+      --noupdate|-u)
+        noupdate=1
+        shift
+        ;;
+      
+      --ipv4|-4)
+        WGET=( "${WGET[@]}" "--prefer-family=IPv4" )
+        shift
+        ;;
+      
+      --help)
+        usage
+        exit 0
+        ;;
+      
+      --version)
+        version
+        exit 0
+        ;;
+      
+      --file|-f)
+        [ -n "$2" ] && OPT_FILES+=( "$2" )
+        shift 2 || break
+        ;;
+      
+      -*)
+        unknown_option="$1"
+        break
+        ;;
+      
+      *)
+        if [ -z "$SUBCOMMAND" ]; then
+          SUBCOMMAND="$1"
+        else
+          ARGS+=( "$1" )
+        fi
+        shift
+        
+        ;;
+      
+    esac
+  done
+  
+  if [ -n "$OPT_COMPLETION_GET_SUBCOMMAND" ]; then
+    echo "$SUBCOMMAND"
+    exit
+  fi
+  
+  if [ -n "$unknown_option" ]; then
+    echo -e "\e[31;1mError:\e[30;0m Unknown option: $unknown_option"
+    exit 1
+  fi
+  
+  if [ $# -gt 0 ]; then
+    echo -e "\e[31;1mError:\e[30;0m Number of parameters is not enough: $@"
+    exit 1
+  fi
+  
 } #/parse_args
 
 parse_args "$@"
@@ -1101,104 +1104,96 @@ done
 
 function apt-cyg-update ()
 {
-
-    findworkspace
-    getsetup
-
+  findworkspace
+  getsetup
 }
 
 
 function apt-cyg-show ()
 {
-
-    echo 1>&2 The following packages are installed:
-    package_db-list
-
+  echo 1>&2 The following packages are installed:
+  package_db-list
 }
 
 
 function apt-cyg-find ()
 {
-    local pkg
-
-    checkpackages "$@"
-    findworkspace
-    getsetup
-
-    for pkg do
-      echo ""
-      echo "Searching for installed packages matching $pkg:"
-      package_db-list | awk '$1~query{print $1}' query="$pkg" IGNORECASE="$ignore_case"
-      echo ""
-      echo "Searching for installable packages matching $pkg:"
-      awk -v query="$pkg" -v IGNORECASE="$ignore_case" \
-        'BEGIN{RS="\n\n@ "; FS="\n"; ORS="\n"} {if ($1 ~ query) {print $1}}' \
-        setup.ini
-    done
-
+  local pkg
+  
+  checkpackages "$@"
+  findworkspace
+  getsetup
+  
+  for pkg do
+    echo ""
+    echo "Searching for installed packages matching $pkg:"
+    package_db-list | awk '$1~query{print $1}' query="$pkg" IGNORECASE="$ignore_case"
+    echo ""
+    echo "Searching for installable packages matching $pkg:"
+    awk -v query="$pkg" -v IGNORECASE="$ignore_case" \
+      'BEGIN{RS="\n\n@ "; FS="\n"; ORS="\n"} {if ($1 ~ query) {print $1}}' \
+      setup.ini
+  done
 }
 
 
 function apt-cyg-describe ()
 {
-    local pkg
-
-    checkpackages "$@"
-    findworkspace
-    getsetup
-    for pkg do
-      echo ""
-      awk -v query="$pkg" -v IGNORECASE="$ignore_case" \
-        'BEGIN{RS="\n\n@ "; FS="\n"; ORS="\n"} {if ($1 ~ query) {print $0 "\n"}}' \
-        setup.ini
-    done
-
+  local pkg
+  
+  checkpackages "$@"
+  findworkspace
+  getsetup
+  for pkg do
+    echo ""
+    awk -v query="$pkg" -v IGNORECASE="$ignore_case" \
+      'BEGIN{RS="\n\n@ "; FS="\n"; ORS="\n"} {if ($1 ~ query) {print $0 "\n"}}' \
+      setup.ini
+  done
 }
 
 
 function apt-cyg-packageof ()
 {
-    local pkg
-    local manifest
-
-    checkpackages "$@"
-    for pkg do
-      local key="$(which "$pkg" 2>/dev/null | sed "s:^/::")"
-      if [ -z "$key" ]; then
-        key="$pkg"
+  local pkg
+  local manifest
+  
+  checkpackages "$@"
+  for pkg do
+    local key="$(which "$pkg" 2>/dev/null | sed "s:^/::")"
+    if [ -z "$key" ]; then
+      key="$pkg"
+    fi
+    for manifest in /etc/setup/*.lst.gz; do
+      local found="$(gzip -cd "$manifest" | grep -c "$key")"
+      if [ $found -gt 0 ]; then
+        local package="$(echo $manifest | sed -e "s:/etc/setup/::" -e "s/.lst.gz//")"
+        echo Found $key in the package $package
       fi
-      for manifest in /etc/setup/*.lst.gz; do
-        local found="$(gzip -cd "$manifest" | grep -c "$key")"
-        if [ $found -gt 0 ]; then
-          local package="$(echo $manifest | sed -e "s:/etc/setup/::" -e "s/.lst.gz//")"
-          echo Found $key in the package $package
-        fi
-      done
     done
-
+  done
 }
 
 
 function apt-cyg-install ()
 {
-    local pkg
-    local script
-
-    checkpackages "$@"
-    findworkspace
-    getsetup
-
-    for pkg do
-
+  local pkg
+  local script
+  
+  checkpackages "$@"
+  findworkspace
+  getsetup
+  
+  for pkg do
     if package_db-is_registered "$pkg"; then
       echo Package $pkg is already installed, skipping
       continue
     fi
     echo ""
     echo Installing $pkg
-
+    
     # look for package and save desc file
-
+    
     mkdir -p "release/$pkg"
     awk > "release/$pkg/desc" -v package="$pkg" \
       'BEGIN{RS="\n\n@ "; FS="\n"} {if ($1 == package) {desc = $0; px++}} \
@@ -1211,17 +1206,17 @@ function apt-cyg-install ()
       exit 1
     fi
     echo Found package $pkg
-
+    
     # download and unpack the bz2 file
-
+    
     # pick the latest version, which comes first
     local install="$(awk '/^install: / { print $2; exit }' "release/$pkg/desc")"
-
+    
     if [ -z "$install" ]; then
       echo "Could not find \"install\" in package description: obsolete package?"
       exit 1
     fi
-
+    
     local file="$(basename "$install")"
     cd "release/$pkg"
     "${WGET[@]}" -nc $mirror/$install
@@ -1278,25 +1273,23 @@ function apt-cyg-install ()
     fi
     
     echo Package $pkg installed
-
-    done
-
+    
+  done
 }
 
 
 function apt-cyg-remove()
 {
-    local pkg
-    local req
-
-    checkpackages "$@"
-    for pkg do
-
+  local pkg
+  local req
+  
+  checkpackages "$@"
+  for pkg do
     if ! package_db-is_registered "$pkg"; then
       echo Package $pkg is not installed, skipping
       continue
     fi
-
+    
     local dontremove="cygwin coreutils gawk bzip2 tar xz wget bash"
     for req in $dontremove; do
       if [ "$pkg" = "$req" ]; then
@@ -1304,41 +1297,39 @@ function apt-cyg-remove()
         exit 1
       fi
     done
-
+    
     if [ ! -e "/etc/setup/$pkg.lst.gz" -a -z "$force_remove" ]; then
       echo Package manifest missing, cannot remove $pkg.  Exiting
       exit 1
     fi
     echo Removing $pkg
-
+    
     # run preremove scripts
-
+    
     if [ -e "/etc/preremove/$pkg.sh" ]; then
       "/etc/preremove/$pkg.sh"
     fi
-
+    
     gzip -cd "/etc/setup/$pkg.lst.gz" | awk '/[^\/]$/ {print "rm -f \"/" $0 "\""}' | sh
     rm -f "/etc/postinstall/$pkg.sh.done" "/etc/preremove/$pkg.sh" "/etc/setup/$pkg.lst.gz"
     package_db-unregister "$pkg"
     echo Package $pkg removed
-
-    done
-
+    
+  done
 }
 
 function invoke_subcommand ()
 {
-    local SUBCOMMAND="${@:1:1}"
-    local ARGS=( "${@:2}" )
-    local ACTION="apt-cyg-${SUBCOMMAND:-help}"
-    if type "$ACTION" >& /dev/null; then
-      "$ACTION" "${ARGS[@]}"
-    else
-      echo -e "\e[31;1mError:\e[30;0m unknown subcommand: $SUBCOMMAND"
-      exit 1
-    fi
+  local SUBCOMMAND="${@:1:1}"
+  local ARGS=( "${@:2}" )
+  local ACTION="apt-cyg-${SUBCOMMAND:-help}"
+  if type "$ACTION" >& /dev/null; then
+    "$ACTION" "${ARGS[@]}"
+  else
+    echo -e "\e[31;1mError:\e[30;0m unknown subcommand: $SUBCOMMAND"
+    exit 1
+  fi
 }
 
 proxy_setup
 invoke_subcommand "$SUBCOMMAND" "${ARGS[@]}"
-
