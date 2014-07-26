@@ -16,15 +16,23 @@ syntax is similar to apt-get. Usage examples:
 Quick start
 -----------
 
-apt-cyg is a simple script. Once you have a copy, make it executable:
+apt-cyg is a simple script. To install:
+```
+# wget https://raw.githubusercontent.com/transcode-open/apt-cyg/master/apt-cyg
+```
+then place it in a `/bin` folder on your path:
+```
+# mv apt-cyg /bin/apt-cyg
+```
+and make it executable:
+```
+chmod +x /bin/apt-cyg
+```
 
-  # chmod +x /bin/apt-cyg
-
-Optionally place apt-cyg in a bin/ folder on your path.
-
-Then use apt-cyg, for example:
-
-  # apt-cyg install nano
+Example use of apt-cyg:
+```
+# apt-cyg install nano
+```
 
 Contributing
 ------------
