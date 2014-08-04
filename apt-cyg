@@ -32,45 +32,45 @@ fi
 
 ARCH=${HOSTTYPE/i6/x}
 
-function usage () {
-cat <<+
-usage: apt-cyg [command] [options] [packages]
+function usage {
+  hr '
+  usage: apt-cyg [command] [options] [packages]
 
-Commands:
-   install     Install packages
-   remove      Remove packages
-   update      Update setup.ini
-   download    Download only - do NOT install or unpack archives
-   show        Displays the package records for the named packages
-   depends     Performs recursive dependency listings
-   rdepends    Display packages which require X to be installed,
-               AKA show reverse dependencies
-   list        List packages matching given pattern. If no pattern is given,
-               list all installed packages.
-   listfiles   List files owned by packages
-   search      Search for a filename from installed packages
-   searchall   Search for a filename from all available packages
+  Commands:
+     install     Install packages
+     remove      Remove packages
+     update      Update setup.ini
+     download    Download only - do NOT install or unpack archives
+     show        Displays the package records for the named packages
+     depends     Performs recursive dependency listings
+     rdepends    Display packages which require X to be installed,
+                 AKA show reverse dependencies
+     list        List packages matching given pattern. If no pattern is given,
+                 list all installed packages.
+     listfiles   List files owned by packages
+     search      Search for a filename from installed packages
+     searchall   Search for a filename from all available packages
 
-Options:
-   -c, --cache <dir>      set cache
-   -f, --file <file>      read package names from file
-   -m, --mirror <url>     set mirror
-   --help
-   --version
-+
+  Options:
+     -c, --cache <dir>      set cache
+     -f, --file <file>      read package names from file
+     -m, --mirror <url>     set mirror
+     --help
+     --version
+  '
 }
 
-function version () {
-cat <<+
-apt-cyg version 0.59
+function version {
+  hr '
+  apt-cyg version 0.59
 
-The MIT License (MIT)
+  The MIT License (MIT)
 
-Copyright (c) 2005-9 Stephen Jungels
-+
+  Copyright (c) 2005-9 Stephen Jungels
+  '
 }
 
-find-workspace () {
+function find-workspace {
   # default working directory and mirror
   
   # work wherever setup worked last, if possible
@@ -103,7 +103,7 @@ find-workspace () {
   fi
 }
 
-get-setup () {
+function get-setup {
   touch setup.ini
   mv setup.ini setup.ini-save
   wget -N $mirror/$ARCH/setup.bz2
@@ -118,7 +118,7 @@ get-setup () {
   fi
 }
 
-function check-packages () {
+function check-packages {
   if [[ $packages ]]
   then
     return 0
@@ -128,14 +128,14 @@ function check-packages () {
   fi
 }
 
-apt-update () {
+function apt-update {
   if find-workspace
   then
     get-setup
   fi
 }
 
-apt-list () {
+function apt-list {
   if check-packages
   then
     find-workspace
@@ -154,7 +154,7 @@ apt-list () {
   fi
 }
 
-apt-listfiles () {
+function apt-listfiles {
   check-packages
   find-workspace
   local pkg sbq
@@ -169,7 +169,7 @@ apt-listfiles () {
   done
 }
 
-apt-show () {
+function apt-show {
   find-workspace
   check-packages
   for pkg in "${packages[@]}"
@@ -188,7 +188,7 @@ apt-show () {
   done
 }
 
-apt-depends () {
+function apt-depends {
   find-workspace
   check-packages
   for pkg in "${packages[@]}"
@@ -236,7 +236,7 @@ apt-depends () {
   done
 }
 
-apt-rdepends () {
+function apt-rdepends {
   find-workspace
   for pkg in "${packages[@]}"
   do
@@ -251,7 +251,7 @@ apt-rdepends () {
   done
 }
 
-apt-download () {
+function apt-download {
   check-packages
   find-workspace
   local pkg sbq
@@ -262,7 +262,7 @@ apt-download () {
   done
 }
 
-download () {
+function download {
   local pkg file digest digactual
   pkg=$1
   # look for package and save desc file
@@ -305,7 +305,7 @@ download () {
   echo $dn $bn > /tmp/dwn
 }
 
-apt-search () {
+function apt-search {
   check-packages
   echo Searching downloaded packages...
   for pkg in "${packages[@]}"
@@ -326,7 +326,7 @@ apt-search () {
   done
 }
 
-apt-searchall () {
+function apt-searchall {
   cd /tmp
   for pkg in "${packages[@]}"
   do
@@ -344,7 +344,7 @@ apt-searchall () {
   done
 }
 
-apt-install () {
+function apt-install {
   check-packages
   find-workspace
   local pkg dn bn requires warn package script
@@ -418,7 +418,7 @@ apt-install () {
   done
 }
 
-apt-remove () {
+function apt-remove {
   check-packages
   for pkg in "${packages[@]}"
   do
@@ -467,6 +467,14 @@ apt-remove () {
   echo Package $pkg removed
 
   done
+}
+
+function hr {
+  sed '
+  1d
+  $d
+  s/  //
+  ' <<< "$1"
 }
 
 # process options
