@@ -26,15 +26,14 @@
 # 
 
 TRUSTEDKEYS=( CYGWIN CYGWINPORTS );
-# ./cygwin.pub
+# ./pubring.asc
 # ------------
 # pub   1024D/676041BA 2008-06-13
 # uid                  Cygwin <cygwin@cygwin.com>
 # sub   1024g/A1DB7B5C 2008-06-13
-TRUSTEDKEY_CYGWIN_MD5="8fe5366fc82289578ab9b6e3c9f1bff9"
+TRUSTEDKEY_CYGWIN_MD5="8555ea34b03d7b09b04886b08d310d8d"
 TRUSTEDKEY_CYGWIN_FPR="1169DF9F22734F743AA59232A9A262FF676041BA"
-TRUSTEDKEY_CYGWIN_URL="https://sourceware.org/cgi-bin/cvsweb.cgi/~checkout~/setup/cygwin.pub?rev=2.1&cvsroot=cygwin-apps"
-TRUSTEDKEY_CYGWIN_URL_LATEST="https://sourceware.org/cgi-bin/cvsweb.cgi/~checkout~/setup/cygwin.pub?cvsroot=cygwin-apps"
+TRUSTEDKEY_CYGWIN_URL_LATEST="https://cygwin.com/key/pubring.asc"
 # ./ports.gpg
 # -----------
 # pub   1024D/66EE1F94 2008-10-27
