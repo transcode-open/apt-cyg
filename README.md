@@ -17,18 +17,21 @@ Quick start
 -----------
 
 apt-cyg is a simple script. To install:
+
+Install required packages using setup.exe
+
+cygwin
+```./setup-x86.exe -q -P wget,tar,qawk,xz,bzip2```
+
+cygwin64
+```./setup-x86_64.exe -q -P wget,tar,qawk,xz,bzip2```
+
 ```
-# wget https://raw.githubusercontent.com/transcode-open/apt-cyg/master/apt-cyg
+# wget https://raw.githubusercontent.com/transcode-open/apt-cyg/master/apt-cyg -O /bin/apt-cyg
 ```
-then place it in a `/bin` folder on your path:
-```
-# mv apt-cyg /bin/apt-cyg
-```
-and make it executable:
 ```
 chmod +x /bin/apt-cyg
 ```
-
 Example use of apt-cyg:
 ```
 # apt-cyg install nano
