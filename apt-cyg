@@ -119,13 +119,17 @@ function get-setup {
 }
 
 function check-packages {
-  if [[ $packages ]]
+  if [[ $pks ]]
   then
     return 0
   else
     echo No packages found
     return 1
   fi
+}
+
+function warn {
+  printf '\e[36m%s\e[m\n' "$*" >&2
 }
 
 function apt-update {
@@ -136,29 +140,27 @@ function apt-update {
 }
 
 function apt-list {
-  if check-packages
-  then
-    find-workspace
-    for pkg in "${packages[@]}"
-    do
-      echo
-      echo Searching for installed packages matching $pkg:
-      awk 'NR>1 && $1~query && $0=$1' query="$pkg" /etc/setup/installed.db
-      echo
-      echo Searching for installable packages matching $pkg:
-      awk '$1 ~ query && $0 = $1' RS='\n\n@ ' FS='\n' query="$pkg" setup.ini
-    done
-  else
-    echo The following packages are installed: >&2
-    awk 'NR>1 && $0=$1' /etc/setup/installed.db
-  fi
+  find-workspace
+  local sbq
+  for pkg in "${pks[@]}"
+  do
+    (( sbq++ )) && echo
+    warn Searching for installed packages matching $pkg:
+    awk 'NR>1 && $1~query && $0=$1' query="$pkg" /etc/setup/installed.db
+    echo
+    warn Searching for installable packages matching $pkg:
+    awk '$1 ~ query && $0 = $1' RS='\n\n@ ' FS='\n' query="$pkg" setup.ini
+  done
+  (( sbq )) && return
+  warn The following packages are installed:
+  awk 'NR>1 && $0=$1' /etc/setup/installed.db
 }
 
 function apt-listfiles {
   check-packages
   find-workspace
   local pkg sbq
-  for pkg in "${packages[@]}"
+  for pkg in "${pks[@]}"
   do
     (( sbq++ )) && echo
     if [ ! -e /etc/setup/"$pkg".lst.gz ]
@@ -172,7 +174,7 @@ function apt-listfiles {
 function apt-show {
   find-workspace
   check-packages
-  for pkg in "${packages[@]}"
+  for pkg in "${pks[@]}"
   do
     (( notfirst++ )) && echo
     awk '
@@ -191,7 +193,7 @@ function apt-show {
 function apt-depends {
   find-workspace
   check-packages
-  for pkg in "${packages[@]}"
+  for pkg in "${pks[@]}"
   do
     (( sq++ )) && echo
     awk '
@@ -238,7 +240,7 @@ function apt-depends {
 
 function apt-rdepends {
   find-workspace
-  for pkg in "${packages[@]}"
+  for pkg in "${pks[@]}"
   do
     awk '
     /^@ / {
@@ -255,7 +257,7 @@ function apt-download {
   check-packages
   find-workspace
   local pkg sbq
-  for pkg in "${packages[@]}"
+  for pkg in "${pks[@]}"
   do
     (( sbq++ )) && echo
     download "$pkg"
@@ -308,7 +310,7 @@ function download {
 function apt-search {
   check-packages
   echo Searching downloaded packages...
-  for pkg in "${packages[@]}"
+  for pkg in "${pks[@]}"
   do
     key=$(type -P "$pkg" | sed s./..)
     [[ $key ]] || key=$pkg
@@ -328,7 +330,7 @@ function apt-search {
 
 function apt-searchall {
   cd /tmp
-  for pkg in "${packages[@]}"
+  for pkg in "${pks[@]}"
   do
     printf -v qs 'text=1&arch=%s&grep=%s' $ARCH "$pkg"
     wget -O matches cygwin.com/cgi-bin2/package-grep.cgi?"$qs"
@@ -347,8 +349,8 @@ function apt-searchall {
 function apt-install {
   check-packages
   find-workspace
-  local pkg dn bn requires warn package script
-  for pkg in "${packages[@]}"
+  local pkg dn bn requires wr package script
+  for pkg in "${pks[@]}"
   do
 
   if grep -q "^$pkg " /etc/setup/installed.db
@@ -384,7 +386,7 @@ function apt-install {
 
   requires=$(awk '$1=="requires", $0=$2' FS=': ' desc)
   cd ~-
-  warn=0
+  wr=0
   if [[ $requires ]]
   then
     echo Package $pkg requires the following packages, installing:
@@ -396,10 +398,10 @@ function apt-install {
         echo Package $package is already installed, skipping
         continue
       fi
-      apt-cyg install --noscripts $package || (( warn++ ))
+      apt-cyg install --noscripts $package || (( wr++ ))
     done
   fi
-  if (( warn ))
+  if (( wr ))
   then
     echo 'Warning: some required packages did not install, continuing'
   fi
@@ -420,7 +422,7 @@ function apt-install {
 
 function apt-remove {
   check-packages
-  for pkg in "${packages[@]}"
+  for pkg in "${pks[@]}"
   do
 
   if ! grep -q "^$pkg " /etc/setup/installed.db
@@ -528,7 +530,7 @@ do
         if [ -c "$file" -o -f "$file" ]
         then
           fp=$(sed '' "$file")
-          mapfile -t packages <<< "$fp"
+          mapfile -t pks <<< "$fp"
         else
           echo File $file not found, skipping
         fi
@@ -556,7 +558,7 @@ do
     | searchall)
       if [[ $command ]]
       then
-        packages+=("$1")
+        pks+=("$1")
       else
         command=$1
       fi
@@ -564,7 +566,7 @@ do
     ;;
 
     *)
-      packages+=("$1")
+      pks+=("$1")
       shift
     ;;
 
