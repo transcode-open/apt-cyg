@@ -279,7 +279,7 @@ function apt-download {
 }
 
 function download {
-  local pkg file digest digactual
+  local pkg digest digactual
   pkg=$1
   # look for package and save desc file
 
@@ -493,6 +493,11 @@ function hr {
   ' <<< "$1"
 }
 
+if [ -p /dev/stdin ]
+then
+  mapfile -t pks
+fi
+
 # process options
 while (( $# ))
 do
@@ -539,18 +544,16 @@ do
     --file | -f)
       if [[ $2 ]]
       then
-        file=$2
-        # support /dev/clipboard
-        if [ -c "$file" -o -f "$file" ]
+        mf=$2
+        if [ -f "$mf" ]
         then
-          fp=$(sed '' "$file")
-          mapfile -t pks <<< "$fp"
+          mapfile -t pks < "$mf"
         else
-          echo File $file not found, skipping
+          echo File "$mf" not found, skipping
         fi
         shift
       else
-        echo No file name provided, ignoring $1 >&2
+        warn No file name provided, ignoring $1
       fi
       shift
     ;;
