@@ -47,6 +47,7 @@ function usage {
                  AKA show reverse dependencies
      list        List packages matching given pattern. If no pattern is given,
                  list all installed packages.
+     category    List packages matching given category
      listfiles   List files owned by packages
      search      Search for a filename from installed packages
      searchall   Search for a filename from all available packages
@@ -137,6 +138,19 @@ function apt-update {
   then
     get-setup
   fi
+}
+
+function apt-category {
+  find-workspace
+  awk '
+  $1 == "@" {
+    pck = $2
+  }
+  $1 == "category:" && $0 ~ query {
+    $1 = ""
+    printf "%-25s%s\n", pck, $0
+  }
+  ' query="$pks" setup.ini
 }
 
 function apt-list {
@@ -553,6 +567,7 @@ do
     | depends   \
     | rdepends  \
     | list      \
+    | category  \
     | listfiles \
     | search    \
     | searchall)
