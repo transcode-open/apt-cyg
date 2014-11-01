@@ -141,16 +141,20 @@ function apt-update {
 }
 
 function apt-category {
+  check-packages
   find-workspace
-  awk '
-  $1 == "@" {
-    pck = $2
-  }
-  $1 == "category:" && $0 ~ query {
-    $1 = ""
-    printf "%-25s%s\n", pck, $0
-  }
-  ' query="$pks" setup.ini
+  for pkg in "${pks[@]}"
+  do
+    awk '
+    $1 == "@" {
+      pck = $2
+    }
+    $1 == "category:" && $0 ~ query {
+      $1 = ""
+      printf "%-25s%s\n", pck, $0
+    }
+    ' query="$pks" setup.ini
+  done
 }
 
 function apt-list {
