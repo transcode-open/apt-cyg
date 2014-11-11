@@ -150,8 +150,7 @@ function apt-category {
       pck = $2
     }
     $1 == "category:" && $0 ~ query {
-      $1 = ""
-      printf "%-25s%s\n", pck, $0
+      print pck
     }
     ' query="$pks" setup.ini
   done
@@ -213,46 +212,33 @@ function apt-depends {
   check-packages
   for pkg in "${pks[@]}"
   do
-    (( sq++ )) && echo
     awk '
+    @include "join"
     $1 == "@" {
-      pkg = $2
+      apg = $2
     }
     $1 == "requires:" {
-      for (i=2; i<=NF; i++)
-        reqs[pkg][i-1]=$i
+      for (z=2; z<=NF; z++)
+        reqs[apg][z-1] = $z
     }
     END {
-      setMinDepth(query)
-      prtPkg(query)
+      prpg(ENVIRON["pkg"])
     }
-    function prtPkg(pkg,    req, i) {
-      depth++
-      if ( depth == mn[pkg] && !seen[pkg]++ ) {
-        printf "%*s%s\n", indent, "", pkg
-        indent += 2
-        if (pkg in reqs)
-          for (i=1; i in reqs[pkg]; i++) {
-            req = reqs[pkg][i]
-            prtPkg(req)
-          }
-        indent -= 2
-      }
-      depth--
+    function smartmatch(small, large,    values) {
+      for (each in large)
+        values[large[each]]
+      return small in values
     }
-    function setMinDepth(pkg,    req, i) {
-      depth++
-      mn[pkg] = !(pkg in mn) || depth < mn[pkg] ? depth : mn[pkg]
-      if (depth == mn[pkg]) {
-        if (pkg in reqs)
-          for (i=1; i in reqs[pkg]; i++) {
-            req = reqs[pkg][i]
-            setMinDepth(req)
-          }
-      }
-      depth--
+    function prpg(fpg) {
+      if (smartmatch(fpg, spath)) return
+      spath[length(spath)+1] = fpg
+      print join(spath, 1, length(spath))
+      if (isarray(reqs[fpg]))
+        for (each in reqs[fpg])
+          prpg(reqs[fpg][each])
+      delete spath[length(spath)]
     }
-    ' query="$pkg" setup.ini
+    ' setup.ini
   done
 }
 
@@ -594,6 +580,8 @@ do
 
   esac
 done
+
+set -a
 
 if type -t apt-$command | grep -q function
 then
