@@ -21,7 +21,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-usage () {
+function usage {
   local rw=(
   'apt-msys2 [command] [packages]'
   ''
@@ -33,14 +33,14 @@ usage () {
   printf '%s\n' "${rw[@]}"
 }
 
-urlencode () {
+function urlencode {
   sed '
   s / %2f g
   s : %3a g
   ' <<< "$1"
 }
 
-findworkspace () {
+function findworkspace {
   mirror=http://downloads.sourceforge.net/project/msys2
   repo=REPOS/MINGW/$ARCH
   local mirrordir=/var/cache/$(urlencode $mirror)/$repo
@@ -48,13 +48,13 @@ findworkspace () {
   cd $mirrordir
 }
 
-getdb () {
+function getdb {
   [ -e mingw64.files.tar.gz ] && return
   wget $mirror/$repo/mingw64.files.tar.gz
   tar --no-an -Oxf mingw64.files.tar.gz desc files > mingw64.lst
 }
 
-apt-listfiles () {
+function apt-listfiles {
   findworkspace
   getdb
   local pkg
@@ -69,7 +69,7 @@ apt-listfiles () {
   head -c-1
 }
 
-apt-install () {
+function apt-install {
   findworkspace
   getdb
   local pkg file eu oe rw
@@ -95,7 +95,7 @@ apt-install () {
   done
 }
 
-apt-search () {
+function apt-search {
   findworkspace
   getdb
   for pkg in ${packages[*]}

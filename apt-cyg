@@ -339,14 +339,18 @@ function apt-searchall {
     printf -v qs 'text=1&arch=%s&grep=%s' $ARCH "$pkg"
     wget -O matches cygwin.com/cgi-bin2/package-grep.cgi?"$qs"
     awk '
-    NR == 1                   {next}
-    /-doc-/                   {next}
-    /-debuginfo-/             {next}
-    /-devel-/ && pkg~/\.exe$/ {next}
-    /-src\t$/                 {next}
-    mc[$1]++                  {next}
-    $0 = $1
-    ' FS=-[[:digit:]] pkg="$pkg" matches
+    {
+      if (NR == 1)
+        next
+      if (mc[$1]++)
+        next
+      if (/-debuginfo-/)
+        next
+      if (/^ /)
+        next
+      print $1
+    }
+    ' FS=-[[:digit:]] matches
   done
 }
 
