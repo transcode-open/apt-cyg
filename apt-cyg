@@ -346,8 +346,6 @@ function apt-searchall {
         next
       if (/-debuginfo-/)
         next
-      if (/^ /)
-        next
       print $1
     }
     ' FS=-[[:digit:]] matches
