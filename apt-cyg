@@ -162,11 +162,11 @@ function apt-list {
   for pkg in "${pks[@]}"
   do
     (( sbq++ )) && echo
-    warn Searching for installed packages matching $pkg:
-    awk 'NR>1 && $1~query && $0=$1' query="$pkg" /etc/setup/installed.db
+    warn Searching for installed packages matching "$pkg":
+    awk 'NR>1 && $1~ENVIRON["pkg"] && $0=$1' /etc/setup/installed.db
     echo
-    warn Searching for installable packages matching $pkg:
-    awk '$1 ~ query && $0 = $1' RS='\n\n@ ' FS='\n' query="$pkg" setup.ini
+    warn Searching for installable packages matching "$pkg":
+    awk '$1 ~ ENVIRON["pkg"] && $0 = $1' RS='\n\n@ ' FS='\n' setup.ini
   done
   (( sbq )) && return
   warn The following packages are installed:
