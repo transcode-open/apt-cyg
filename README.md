@@ -46,6 +46,11 @@ packages.
 <td>Search for a filename from installed packages</td>
 <td>dpkg --search</td>
 </tr>
+<tr>
+<td>download</td>
+<td>Download only - do NOT install or unpack archives</td>
+<td>apt-get&nbsp;install&nbsp;--download-only</td>
+</tr>
 </tbody>
 </table>
 
