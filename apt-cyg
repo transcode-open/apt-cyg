@@ -937,6 +937,7 @@ force_remove=""
 force_fetch_trustedkeys=""
 no_verify=""
 OPT_PROXY=${APT_CYG_PROXY:-auto}
+OPTS4INHERIT=()
 YES_TO_ALL=false
 INITIAL_ARGS=( "$@" )
 ARGS=()
@@ -975,11 +976,13 @@ function parse_args ()
         ;;
       
       --no-verify|-X)
+        OPTS4INHERIT+=( "$1" )
         no_verify=1
         shift
         ;;
       
       --no-check-certificate)
+        OPTS4INHERIT+=( "$1" )
         WGET+=( "--no-check-certificate" )
         shift
         ;;
@@ -1252,7 +1255,7 @@ function apt-cyg-install ()
           echo Package $package is already installed, skipping
           continue
         fi
-        apt-cyg --proxy inherit --noscripts install $package
+        apt-cyg "${OPTS4INHERIT[@]}" --proxy inherit --noscripts install $package
         if [ $? -ne 0 ]; then warn=1; fi
       done
     fi
