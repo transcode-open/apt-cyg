@@ -10,7 +10,7 @@ apt-cyg is a command-line installer for [Cygwin](http://cygwin.com/) which coope
 * "apt-cyg find &lt;pattern(s)&gt;" to find packages matching patterns
 * "apt-cyg describe &lt;pattern(s)&gt;" to describe packages matching patterns
 * "apt-cyg packageof &lt;commands or files&gt;" to locate parent packages
-* "apt-cyg pathof &lt;cache|mirror|mirrordir|cache/mirrordir&gt;" to show path"
+* "apt-cyg pathof &lt;cache|mirror|mirrordir|cache/mirrordir|setup.ini&gt;" to show path"
 * "apt-cyg key-add &lt;files&gt; ..." to add keys contained in &lt;files&gt;
 * "apt-cyg key-del &lt;keyids&gt; ..." to remove keys &lt;keyids&gt;
 * "apt-cyg key-list" to list keys
@@ -21,6 +21,9 @@ apt-cyg is a command-line installer for [Cygwin](http://cygwin.com/) which coope
 * "apt-cyg completion-install" to install completion.
 * "apt-cyg completion-uninstall" to uninstall completion.
 * "apt-cyg mirrors-list" to show list of mirrors.
+* "apt-cyg benchmark-mirrors &lt;url&gt; ..." to benchmark mirrors.
+* "apt-cyg benchmark-parallel-mirrors &lt;url&gt; ..." to benchmark mirrors in parallel.
+* "apt-cyg benchmark-parallel-mirrors-list" to benchmark mirrors-list in parallel.
 
 Requirements
 -----------
