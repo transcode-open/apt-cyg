@@ -53,8 +53,13 @@ packages.
 </tr>
 <tr>
 <td>depends</td>
-<td> Performs recursive dependency listings</td>
+<td>Performs recursive dependency listings</td>
 <td>apt-cache depends</td>
+</tr>
+<tr>
+<td>listfiles</td>
+<td>List files owned by packages</td>
+<td>dpkg --listfiles</td>
 </tr>
 </tbody>
 </table>
