@@ -232,7 +232,7 @@ function apt-depends {
     function prpg(fpg) {
       if (smartmatch(fpg, spath)) return
       spath[length(spath)+1] = fpg
-      print join(spath, 1, length(spath))
+      print join(spath, 1, length(spath), " > ")
       if (isarray(reqs[fpg]))
         for (each in reqs[fpg])
           prpg(reqs[fpg][each])
@@ -247,13 +247,32 @@ function apt-rdepends {
   for pkg in "${pks[@]}"
   do
     awk '
-    /^@ / {
-      pn = $2
+    @include "join"
+    $1 == "@" {
+      apg = $2
     }
-    $0 ~ "^requires: .*"query {
-      print pn
+    $1 == "requires:" {
+      for (z=2; z<=NF; z++)
+        reqs[$z][length(reqs[$z])+1] = apg
     }
-    ' query="$pkg" setup.ini
+    END {
+      prpg(ENVIRON["pkg"])
+    }
+    function smartmatch(small, large,    values) {
+      for (each in large)
+        values[large[each]]
+      return small in values
+    }
+    function prpg(fpg) {
+      if (smartmatch(fpg, spath)) return
+      spath[length(spath)+1] = fpg
+      print join(spath, 1, length(spath), " < ")
+      if (isarray(reqs[fpg]))
+        for (each in reqs[fpg])
+          prpg(reqs[fpg][each])
+      delete spath[length(spath)]
+    }
+    ' setup.ini
   done
 }
 
