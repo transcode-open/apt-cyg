@@ -51,6 +51,11 @@ packages.
 <td>Download only - do NOT install or unpack archives</td>
 <td>apt-get&nbsp;install&nbsp;--download-only</td>
 </tr>
+<tr>
+<td>depends</td>
+<td> Performs recursive dependency listings</td>
+<td>apt-cache depends</td>
+</tr>
 </tbody>
 </table>
 
