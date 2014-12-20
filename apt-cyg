@@ -23,14 +23,18 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-# this script requires some packages
-if ! type awk bzip2 tar wget xz &>/dev/null
-then
-  echo You must install wget, tar, gawk, xz and bzip2 to use apt-cyg.
-  exit 1
-fi
-
 ARCH=${HOSTTYPE/i6/x}
+
+function wget {
+  if command wget -h &>/dev/null
+  then
+    command wget "$@"
+  else
+    warn wget is not installed, using lynx as fallback
+    set "${*: -1}"
+    lynx -source "$1" > "${1##*/}"
+  fi
+}
 
 function usage {
   hr '
@@ -129,8 +133,12 @@ function check-packages {
   fi
 }
 
-function warn {
+function info {
   printf '\e[36m%s\e[m\n' "$*" >&2
+}
+
+function warn {
+  printf '\e[1;31m%s\e[m\n' "$*" >&2
 }
 
 function apt-update {
@@ -162,14 +170,14 @@ function apt-list {
   for pkg in "${pks[@]}"
   do
     (( sbq++ )) && echo
-    warn Searching for installed packages matching "$pkg":
+    info Searching for installed packages matching "$pkg":
     awk 'NR>1 && $1~ENVIRON["pkg"] && $0=$1' /etc/setup/installed.db
     echo
-    warn Searching for installable packages matching "$pkg":
+    info Searching for installable packages matching "$pkg":
     awk '$1 ~ ENVIRON["pkg"] && $0 = $1' RS='\n\n@ ' FS='\n' setup.ini
   done
   (( sbq )) && return
-  warn The following packages are installed:
+  info The following packages are installed:
   awk 'NR>1 && $0=$1' /etc/setup/installed.db
 }
 
@@ -428,7 +436,7 @@ function apt-install {
   fi
   if (( wr ))
   then
-    echo 'Warning: some required packages did not install, continuing'
+    info some required packages did not install, continuing
   fi
 
   # run all postinstall scripts
@@ -564,7 +572,7 @@ do
         fi
         shift
       else
-        warn No file name provided, ignoring $1
+        info No file name provided, ignoring $1
       fi
       shift
     ;;
