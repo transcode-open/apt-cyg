@@ -23,6 +23,41 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+mapfile usage <<+
+usage: apt-cyg [command] [options] [packages]
+
+Commands:
+   install     Install packages
+   remove      Remove packages
+   update      Update setup.ini
+   download    Download only - do NOT install or unpack archives
+   show        Displays the package records for the named packages
+   depends     Performs recursive dependency listings
+   rdepends    Display packages which require X to be installed,
+               AKA show reverse dependencies
+   list        List packages matching given pattern. If no pattern is given,
+               list all installed packages.
+   category    List packages matching given category
+   listfiles   List files owned by packages
+   search      Search for a filename from installed packages
+   searchall   Search for a filename from all available packages
+
+Options:
+   -c, --cache <dir>      set cache
+   -f, --file <file>      read package names from file
+   -m, --mirror <url>     set mirror
+   --help
+   --version
++
+
+mapfile version <<+
+apt-cyg version 0.59
+
+The MIT License (MIT)
+
+Copyright (c) 2005-9 Stephen Jungels
++
+
 ARCH=${HOSTTYPE/i6/x}
 
 function wget {
@@ -34,45 +69,6 @@ function wget {
     set "${*: -1}"
     lynx -source "$1" > "${1##*/}"
   fi
-}
-
-function usage {
-  hr '
-  usage: apt-cyg [command] [options] [packages]
-
-  Commands:
-     install     Install packages
-     remove      Remove packages
-     update      Update setup.ini
-     download    Download only - do NOT install or unpack archives
-     show        Displays the package records for the named packages
-     depends     Performs recursive dependency listings
-     rdepends    Display packages which require X to be installed,
-                 AKA show reverse dependencies
-     list        List packages matching given pattern. If no pattern is given,
-                 list all installed packages.
-     category    List packages matching given category
-     listfiles   List files owned by packages
-     search      Search for a filename from installed packages
-     searchall   Search for a filename from all available packages
-
-  Options:
-     -c, --cache <dir>      set cache
-     -f, --file <file>      read package names from file
-     -m, --mirror <url>     set mirror
-     --help
-     --version
-  '
-}
-
-function version {
-  hr '
-  apt-cyg version 0.59
-
-  The MIT License (MIT)
-
-  Copyright (c) 2005-9 Stephen Jungels
-  '
 }
 
 function find-workspace {
@@ -504,14 +500,6 @@ function apt-remove {
   done
 }
 
-function hr {
-  sed '
-  1d
-  $d
-  s/  //
-  ' <<< "$1"
-}
-
 if [ -p /dev/stdin ]
 then
   mapfile -t pks
@@ -551,12 +539,12 @@ do
     ;;
 
     --help)
-      usage
+      printf %s "${usage[@]}"
       exit 0
     ;;
 
     --version)
-      version
+      printf %s "${version[@]}"
       exit 0
     ;;
 
@@ -616,5 +604,5 @@ if type -t apt-$command | grep -q function
 then
   apt-$command
 else
-  usage
+  printf %s "${usage[@]}"
 fi
