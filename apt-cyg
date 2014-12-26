@@ -320,12 +320,10 @@ function download {
   digest=$4
   mkdir -p $cache/$mirrordir/$dn
   cd $cache/$mirrordir/$dn
-  wget -nc $mirror/$dn/$bn
-  digactual=$(md5sum $bn | awk NF=1)
-  if [ $digest != $digactual ]
+  if ! test -e $bn || ! md5sum -c <<< "$digest $bn"
   then
-    echo MD5 sum did not match, exiting
-    exit 1
+    wget -O $bn $mirror/$dn/$bn
+    md5sum -c <<< "$digest $bn" || exit
   fi
 
   tar tf $bn | gzip > /etc/setup/"$pkg".lst.gz
@@ -378,7 +376,7 @@ function apt-searchall {
 function apt-install {
   check-packages
   find-workspace
-  local pkg dn bn requires wr package script
+  local pkg dn bn requires wr package sbq script
   for pkg in "${pks[@]}"
   do
 
@@ -387,7 +385,7 @@ function apt-install {
     echo Package $pkg is already installed, skipping
     continue
   fi
-  echo
+  (( sbq++ )) && echo
   echo Installing $pkg
 
   download $pkg
