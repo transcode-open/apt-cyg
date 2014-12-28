@@ -449,51 +449,60 @@ function apt-install {
 
 function apt-remove {
   check-packages
+  cd /etc
+  cygcheck awk bash bunzip2 grep gzip mv sed tar xz > setup/essential.lst
   for pkg in "${pks[@]}"
   do
 
-  if ! grep -q "^$pkg " /etc/setup/installed.db
+  if ! grep -q "^$pkg " setup/installed.db
   then
     echo Package $pkg is not installed, skipping
     continue
   fi
 
-  cygcheck awk bash bunzip2 grep gzip mv sed tar xargs xz | awk '
-  /bin/      &&
-  !fd[$NF]++ &&
-  $0 = $NF
-  ' FS='\\' > /tmp/cygcheck.txt
-
-  apt-cyg listfiles $pkg | awk '
-  $0 = $NF
-  ' FS=/ > /tmp/listfiles.txt
-
-  if grep -xf /tmp/cygcheck.txt /tmp/listfiles.txt
+  if [ ! -e setup/"$pkg".lst.gz ]
   then
-    echo apt-cyg cannot remove package $pkg, exiting
+    warn Package manifest missing, cannot remove $pkg. Exiting
     exit 1
   fi
-  if [ ! -e /etc/setup/"$pkg".lst.gz ]
+  gzip -dfk setup/"$pkg".lst.gz
+  awk '
+  NR == FNR {
+    if ($NF) ess[$NF]
+    next
+  }
+  $NF in ess {
+    exit 1
+  }
+  ' FS='[/\\\\]' setup/{essential,$pkg}.lst
+  esn=$?
+  if [ $esn = 0 ]
   then
-    echo Package manifest missing, cannot remove $pkg. Exiting
+    echo Removing $pkg
+    if [ -e preremove/"$pkg".sh ]
+    then
+      preremove/"$pkg".sh
+      rm preremove/"$pkg".sh
+    fi
+    mapfile dt < setup/"$pkg".lst
+    for each in ${dt[*]}
+    do
+      [ -f /$each ] && rm /$each
+    done
+    for each in ${dt[*]}
+    do
+      [ -d /$each ] && rmdir --i /$each
+    done
+    rm -f setup/"$pkg".lst.gz postinstall/"$pkg".sh.done
+    awk -i inplace '$1 != ENVIRON["pkg"]' setup/installed.db
+    echo Package $pkg removed
+  fi
+  rm setup/"$pkg".lst
+  if [ $esn = 1 ]
+  then
+    warn apt-cyg cannot remove package $pkg, exiting
     exit 1
   fi
-  echo Removing $pkg
-
-  # run preremove scripts
-
-  if [ -e /etc/preremove/"$pkg".sh ]
-  then
-    /etc/preremove/"$pkg".sh
-    rm /etc/preremove/"$pkg".sh
-  fi
-  gzip -cd /etc/setup/"$pkg".lst.gz | sed '\./$.d;s.^./.' | xargs rm -f
-  rm /etc/setup/"$pkg".lst.gz
-  rm -f /etc/postinstall/$pkg.sh.done
-  awk '$1 != pkg' pkg="$pkg" /etc/setup/installed.db > /tmp/awk.$$
-  mv /etc/setup/installed.db /etc/setup/installed.db-save
-  mv /tmp/awk.$$ /etc/setup/installed.db
-  echo Package $pkg removed
 
   done
 }
