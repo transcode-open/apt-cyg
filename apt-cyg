@@ -43,10 +43,8 @@ Commands:
    searchall   Search for a filename from all available packages
 
 Options:
-   -c, --cache <dir>      set cache
-   -f, --file <file>      read package names from file
-   -m, --mirror <url>     set mirror
-   --help
+   --cache <dir>    set cache
+   --mirror <url>   set mirror
    --version
 +
 
@@ -58,7 +56,7 @@ The MIT License (MIT)
 Copyright (c) 2005-9 Stephen Jungels
 +
 
-ARCH=${HOSTTYPE/i6/x}
+readonly usage version
 
 function wget {
   if command wget -h &>/dev/null
@@ -75,26 +73,26 @@ function find-workspace {
   # default working directory and mirror
   
   # work wherever setup worked last, if possible
-  cache=$(awk '
+  readonly cache=$(awk '
   /last-cache/ {
     getline
     print $1
   }
   ' /etc/setup/setup.rc | cygpath -f-)
 
-  mirror=$(awk '
+  readonly mirror=$(awk '
   /last-mirror/ {
     getline
     print $1
   }
   ' /etc/setup/setup.rc)
-  mirrordir=$(sed '
+  readonly mirrordir=$(sed '
   s / %2f g
   s : %3a g
   ' <<< "$mirror")
 
-  mkdir -p "$cache/$mirrordir/$ARCH"
-  cd "$cache/$mirrordir/$ARCH"
+  mkdir -p "$cache/$mirrordir/$arch"
+  cd "$cache/$mirrordir/$arch"
   if [ -e setup.ini ]
   then
     return 0
@@ -105,22 +103,16 @@ function find-workspace {
 }
 
 function get-setup {
-  touch setup.ini
-  mv setup.ini setup.ini-save
-  wget -N $mirror/$ARCH/setup.bz2
-  if [ -e setup.bz2 ]
+  if wget -N $mirror/$arch/setup.bz2
   then
     bunzip2 setup.bz2
     mv setup setup.ini
     echo Updated setup.ini
-  else
-    echo Error updating setup.ini, reverting
-    mv setup.ini-save setup.ini
   fi
 }
 
 function check-packages {
-  if [[ $pks ]]
+  if [ "$pks" ]
   then
     return 0
   else
@@ -147,32 +139,31 @@ function apt-update {
 function apt-category {
   check-packages
   find-workspace
-  for pkg in "${pks[@]}"
+  for vas in "${pks[@]}"
   do
     awk '
     $1 == "@" {
       pck = $2
     }
-    $1 == "category:" && $0 ~ query {
+    $1 == "category:" && $0 ~ vas {
       print pck
     }
-    ' query="$pks" setup.ini
+    ' vas="$vas" setup.ini
   done
 }
 
 function apt-list {
   find-workspace
-  local sbq
-  for pkg in "${pks[@]}"
+  for vas in "${pks[@]}"
   do
-    (( sbq++ )) && echo
-    info Searching for installed packages matching "$pkg":
-    awk 'NR>1 && $1~ENVIRON["pkg"] && $0=$1' /etc/setup/installed.db
+    let sbq++ && echo
+    info Searching for installed packages matching "$vas":
+    awk 'NR>1 && $1~vas && $0=$1' vas="$vas" /etc/setup/installed.db
     echo
-    info Searching for installable packages matching "$pkg":
-    awk '$1 ~ ENVIRON["pkg"] && $0 = $1' RS='\n\n@ ' FS='\n' setup.ini
+    info Searching for installable packages matching "$vas":
+    awk '$1~vas && $0=$1' RS='\n\n@ ' FS='\n' vas="$vas" setup.ini
   done
-  (( sbq )) && return
+  let sbq && return
   info The following packages are installed:
   awk 'NR>1 && $0=$1' /etc/setup/installed.db
 }
@@ -180,41 +171,40 @@ function apt-list {
 function apt-listfiles {
   check-packages
   find-workspace
-  local pkg sbq
-  for pkg in "${pks[@]}"
+  for vas in "${pks[@]}"
   do
-    (( sbq++ )) && echo
-    if [ ! -e /etc/setup/"$pkg".lst.gz ]
+    let sbq++ && echo
+    if [ ! -e /etc/setup/"$vas".lst.gz ]
     then
-      download "$pkg"
+      download || return
     fi
-    gzip -cd /etc/setup/"$pkg".lst.gz
+    gzip -cd /etc/setup/"$vas".lst.gz
   done
 }
 
 function apt-show {
   find-workspace
   check-packages
-  for pkg in "${pks[@]}"
+  for vas in "${pks[@]}"
   do
-    (( notfirst++ )) && echo
+    let sbq++ && echo
     awk '
-    $1 == query {
+    $1 == vas {
       print
       fd++
     }
     END {
       if (! fd)
-        print "Unable to locate package " query
+        print "Unable to locate package", vas
     }
-    ' RS='\n\n@ ' FS='\n' query="$pkg" setup.ini
+    ' RS='\n\n@ ' FS='\n' vas="$vas" setup.ini
   done
 }
 
 function apt-depends {
   find-workspace
   check-packages
-  for pkg in "${pks[@]}"
+  for vas in "${pks[@]}"
   do
     awk '
     @include "join"
@@ -226,7 +216,7 @@ function apt-depends {
         reqs[apg][z-1] = $z
     }
     END {
-      prpg(ENVIRON["pkg"])
+      prpg(vas)
     }
     function smartmatch(small, large,    values) {
       for (each in large)
@@ -242,13 +232,14 @@ function apt-depends {
           prpg(reqs[fpg][each])
       delete spath[length(spath)]
     }
-    ' setup.ini
+    ' vas="$vas" setup.ini
   done
 }
 
 function apt-rdepends {
+  check-packages
   find-workspace
-  for pkg in "${pks[@]}"
+  for vas in "${pks[@]}"
   do
     awk '
     @include "join"
@@ -260,7 +251,7 @@ function apt-rdepends {
         reqs[$z][length(reqs[$z])+1] = apg
     }
     END {
-      prpg(ENVIRON["pkg"])
+      prpg(vas)
     }
     function smartmatch(small, large,    values) {
       for (each in large)
@@ -276,89 +267,77 @@ function apt-rdepends {
           prpg(reqs[fpg][each])
       delete spath[length(spath)]
     }
-    ' setup.ini
+    ' vas="$vas" setup.ini
   done
 }
 
 function apt-download {
   check-packages
   find-workspace
-  local pkg sbq
-  for pkg in "${pks[@]}"
+  for vas in "${pks[@]}"
   do
-    (( sbq++ )) && echo
-    download "$pkg"
+    let sbq++ && echo
+    download
   done
 }
 
 function download {
-  local pkg digest digactual
-  pkg=$1
-  # look for package and save desc file
-
-  awk '$1 == pc' RS='\n\n@ ' FS='\n' pc=$pkg setup.ini > desc
-  if [ ! -s desc ]
-  then
-    echo Unable to locate package $pkg
-    exit 1
-  fi
+  # look for package and save md5 file
 
   # download and unpack the bz2 or xz file
 
   # pick the latest version, which comes first
-  set -- $(awk '$1 == "install:"' desc)
-  if (( ! $# ))
+  awk '
+  $1 == "@" {
+    c = $2
+  }
+  $1 == "install:" && c == vas {
+    print $4, $2
+    exit
+  }
+  ' vas="$vas" setup.ini > md5.sum
+  if [ ! -s md5.sum ]
   then
-    echo 'Could not find "install" in package description: obsolete package?'
-    exit 1
+    warn Unable to locate package $vas
+    return 1
   fi
 
-  dn=$(dirname $2)
-  bn=$(basename $2)
+  read _ acv < md5.sum
 
   # check the md5
-  digest=$4
-  mkdir -p $cache/$mirrordir/$dn
-  cd $cache/$mirrordir/$dn
-  if ! test -e $bn || ! md5sum -c <<< "$digest $bn"
+  mv md5.sum ..
+  cd ..
+  if ! test -e $acv || ! md5sum -c md5.sum
   then
-    wget -O $bn $mirror/$dn/$bn
-    md5sum -c <<< "$digest $bn" || exit
+    wget -rnH $mirror/$acv
+    md5sum -c md5.sum || return
   fi
 
-  tar tf $bn | gzip > /etc/setup/"$pkg".lst.gz
-  cd ~-
-  mv desc $cache/$mirrordir/$dn
-  echo $dn $bn > /tmp/dwn
+  tar tf $acv | gzip > /etc/setup/"$vas".lst.gz
 }
 
 function apt-search {
-  check-packages
+  check-packages || return
   echo Searching downloaded packages...
-  for pkg in "${pks[@]}"
+  for vas in "${pks[@]}"
   do
-    key=$(type -P "$pkg" | sed s./..)
-    [[ $key ]] || key=$pkg
-    for manifest in /etc/setup/*.lst.gz
+    for mft in /etc/setup/*.lst.gz
     do
-      if gzip -cd $manifest | grep -q "$key"
+      if gzip -cd $mft | grep -q "$vas"
       then
-        package=$(sed '
-        s,/etc/setup/,,
-        s,.lst.gz,,
-        ' <<< $manifest)
-        echo $package
+        awk '$0=$4' FS='[./]' <<< $mft
       fi
     done
   done
 }
 
 function apt-searchall {
-  cd /tmp
-  for pkg in "${pks[@]}"
+  check-packages
+  cd /etc/setup
+  for vas in "${pks[@]}"
   do
-    printf -v qs 'text=1&arch=%s&grep=%s' $ARCH "$pkg"
-    wget -O matches cygwin.com/cgi-bin2/package-grep.cgi?"$qs"
+    printf -v qry 'text=1&arch=%s&grep=%s' $arch "$vas"
+    wget -O matches cygwin.com/cgi-bin2/package-grep.cgi?"$qry"
     awk '
     {
       if (NR == 1)
@@ -373,76 +352,105 @@ function apt-searchall {
   done
 }
 
+function set-cache {
+  if [ "$1" ]
+  then
+    vas=$(cygpath -aw "$1")
+    awk -i inplace '
+    1
+    /last-cache/ {
+      getline
+      print "\t" vas
+    }
+    ' vas="${vas//\\/\\\\}" /etc/setup/setup.rc
+    echo Cache set to "$vas"
+  else
+    warn No path provided, exiting
+  fi
+}
+
+function set-mirror {
+  if [ "$1" ]
+  then
+    awk -i inplace '
+    1
+    /last-mirror/ {
+      getline
+      print "\t" vas
+    }
+    ' vas="$1" /etc/setup/setup.rc
+    echo Mirror set to "$1"
+  else
+    warn No URL provided, exiting
+  fi
+}
+
 function apt-install {
   check-packages
   find-workspace
-  local pkg dn bn requires wr package sbq script
-  for pkg in "${pks[@]}"
+  for vas in "${pks[@]}"
   do
 
-  if grep -q "^$pkg " /etc/setup/installed.db
+  if grep -q "^$vas " /etc/setup/installed.db
   then
-    echo Package $pkg is already installed, skipping
+    echo Package $vas is already installed, skipping
     continue
   fi
-  (( sbq++ )) && echo
-  echo Installing $pkg
+  let sbq++ && echo
+  echo Installing $vas
 
-  download $pkg
-  read dn bn </tmp/dwn
+  download || return
   echo Unpacking...
 
-  cd $cache/$mirrordir/$dn
-  tar -x -C / -f $bn
+  tar -x -C / -f $acv
+  cd ~-
   # update the package database
 
-  awk '
-  ins != 1 && pkg < $1 {
-    print pkg, bz, 0
-    ins = 1
+  awk -e '
+  {
+    foo[$0]
   }
-  1
-  END {
-    if (ins != 1) print pkg, bz, 0
+  ENDFILE {
+    $1 = vas
+    $2 = acv
+    $3 = 0
+    foo[$0]
+    asorti(foo)
+    for (bar in foo)
+      print foo[bar]
   }
-  ' pkg="$pkg" bz=$bn /etc/setup/installed.db > /tmp/awk.$$
-  mv /etc/setup/installed.db /etc/setup/installed.db-save
-  mv /tmp/awk.$$ /etc/setup/installed.db
+  ' -i inplace vas="$vas" acv=$acv /etc/setup/installed.db
 
   # recursively install required packages
 
-  requires=$(awk '$1=="requires", $0=$2' FS=': ' desc)
-  cd ~-
-  wr=0
-  if [[ $requires ]]
+  awk '
+  $1 == "@" {
+    c = $2
+  }
+  $1 == "requires:" && c == vas {
+    print
+    exit
+  }
+  ' vas="$vas" setup.ini > deps.ini
+  if [ -s deps.ini ]
   then
-    echo Package $pkg requires the following packages, installing:
-    echo $requires
-    for package in $requires
-    do
-      if grep -q "^$package " /etc/setup/installed.db
-      then
-        echo Package $package is already installed, skipping
-        continue
-      fi
-      apt-cyg install --noscripts $package || (( wr++ ))
-    done
-  fi
-  if (( wr ))
-  then
+    read _ rqs < deps.ini
+    echo Package $vas requires the following packages, installing:
+    echo $rqs
+    apt-cyg install --deps $rqs ||
     info some required packages did not install, continuing
   fi
 
   # run all postinstall scripts
 
-  (( noscripts )) && continue
+  let dps && continue
   find /etc/postinstall -name '*.sh' | while read script
   do
     echo Running $script
     $script
     mv $script $script.done
   done
-  echo Package $pkg installed
+  echo Package $vas installed
 
   done
 }
@@ -451,21 +459,21 @@ function apt-remove {
   check-packages
   cd /etc
   cygcheck awk bash bunzip2 grep gzip mv sed tar xz > setup/essential.lst
-  for pkg in "${pks[@]}"
+  for vas in "${pks[@]}"
   do
 
-  if ! grep -q "^$pkg " setup/installed.db
+  if ! grep -q "^$vas " setup/installed.db
   then
-    echo Package $pkg is not installed, skipping
+    echo Package $vas is not installed, skipping
     continue
   fi
 
-  if [ ! -e setup/"$pkg".lst.gz ]
+  if [ ! -e setup/"$vas".lst.gz ]
   then
-    warn Package manifest missing, cannot remove $pkg. Exiting
-    exit 1
+    warn Package manifest missing, cannot remove $vas. Exiting
+    return 1
   fi
-  gzip -dk setup/"$pkg".lst.gz
+  gzip -dk setup/"$vas".lst.gz
   awk '
   NR == FNR {
     if ($NF) ess[$NF]
@@ -474,126 +482,74 @@ function apt-remove {
   $NF in ess {
     exit 1
   }
-  ' FS='[/\\\\]' setup/{essential,$pkg}.lst
+  ' FS='[/\\\\]' setup/{essential,$vas}.lst
   esn=$?
   if [ $esn = 0 ]
   then
-    echo Removing $pkg
-    if [ -e preremove/"$pkg".sh ]
+    echo Removing $vas
+    if [ -e preremove/"$vas".sh ]
     then
-      preremove/"$pkg".sh
-      rm preremove/"$pkg".sh
+      preremove/"$vas".sh
+      rm preremove/"$vas".sh
     fi
-    mapfile dt < setup/"$pkg".lst
-    for each in ${dt[*]}
+    mapfile mft < setup/"$vas".lst
+    for emt in ${mft[*]}
     do
-      [ -f /$each ] && rm /$each
+      [ -f /$emt ] && rm /$emt
     done
-    for each in ${dt[*]}
+    for emt in ${mft[*]}
     do
-      [ -d /$each ] && rmdir --i /$each
+      [ -d /$emt ] && rmdir --i /$emt
     done
-    rm -f setup/"$pkg".lst.gz postinstall/"$pkg".sh.done
-    awk -i inplace '$1 != ENVIRON["pkg"]' setup/installed.db
-    echo Package $pkg removed
+    rm -f setup/"$vas".lst.gz postinstall/"$vas".sh.done
+    awk -i inplace '$1 != vas' vas="$vas" setup/installed.db
+    echo Package $vas removed
   fi
-  rm setup/"$pkg".lst
+  rm setup/"$vas".lst
   if [ $esn = 1 ]
   then
-    warn apt-cyg cannot remove package $pkg, exiting
-    exit 1
+    warn apt-cyg cannot remove package $vas, exiting
+    return 1
   fi
 
   done
 }
 
-if [ -p /dev/stdin ]
-then
-  mapfile -t pks
-fi
+function begin {
+  local acv dps emt esn mft pks qry rqs sbq tsk vas arch cache mirror mirrordir
+  if [ -p /dev/stdin ]
+  then
+    mapfile -t pks
+  fi
 
-# process options
-while (( $# ))
-do
+  # process options
+  while let $#
+  do
   case "$1" in
 
-    --mirror | -m)
-      awk -i inplace '
-      1
-      /last-mirror/ {
-        getline
-        print "\t" rpc
-      }
-      ' rpc="$2" /etc/setup/setup.rc
-      shift 2
+    --mirror)
+      set-mirror "$2"
+      return
     ;;
 
-    --cache | -c)
-      rpc=$(cygpath -aw "$2" | sed 's \\ \\\\ g')
-      awk -i inplace '
-      1
-      /last-cache/ {
-        getline
-        print "\t" rpc
-      }
-      ' rpc="$rpc" /etc/setup/setup.rc
-      shift 2
+    --cache)
+      set-cache "$2"
+      return
     ;;
 
-    --noscripts)
-      noscripts=1
+    --deps)
+      dps=1
       shift
-    ;;
-
-    --help)
-      printf %s "${usage[@]}"
-      exit 0
     ;;
 
     --version)
       printf %s "${version[@]}"
-      exit 0
+      return
     ;;
 
-    --file | -f)
-      if [[ $2 ]]
-      then
-        mf=$2
-        if [ -f "$mf" ]
-        then
-          mapfile -t pks < "$mf"
-        else
-          echo File "$mf" not found, skipping
-        fi
-        shift
-      else
-        info No file name provided, ignoring $1
-      fi
-      shift
-    ;;
-
-    update)
-      command=$1
-      shift
-    ;;
-
-    install     \
-    | remove    \
-    | download  \
-    | show      \
-    | depends   \
-    | rdepends  \
-    | list      \
-    | category  \
-    | listfiles \
-    | search    \
-    | searchall)
-      if [[ $command ]]
-      then
-        pks+=("$1")
-      else
-        command=$1
-      fi
+    list | remove | update  | install  | download | listfiles |\
+    show | search | depends | category | rdepends | searchall )
+      tsk=$1
       shift
     ;;
 
@@ -603,13 +559,25 @@ do
     ;;
 
   esac
-done
+  done
+  if type -t apt-$tsk | grep -q function
+  then
+    readonly arch=${HOSTTYPE/i6/x}
+    apt-$tsk
+  else
+    printf %s "${usage[@]}"
+  fi
+}
 
-set -a
+function charlie {
+  cd /etc/setup
+  compgen -v > $1.lst
+  if [ $1 = fin ]
+  then
+    comm -3 {start,fin}.lst
+  fi
+}
 
-if type -t apt-$command | grep -q function
-then
-  apt-$command
-else
-  printf %s "${usage[@]}"
-fi
+charlie start
+begin "$@"
+charlie fin
