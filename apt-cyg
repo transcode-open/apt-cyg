@@ -850,6 +850,20 @@ function apt-cyg-benchmark-parallel-mirrors-list
   apt-cyg-benchmark-parallel-mirrors "${mirrors[@]}"
 }
 
+function apt-cyg-scriptinfo ()
+{
+cat<<EOD
+SCRIPT_PATH     = "$SCRIPT_PATH"
+SCRIPT_FILE     = "$SCRIPT_FILE"
+SCRIPT_NAME     = "$SCRIPT_NAME"
+SCRIPT_DIR      = "$SCRIPT_DIR"
+SCRIPT_REALPATH = "$SCRIPT_REALPATH"
+SCRIPT_REALFILE = "$SCRIPT_REALFILE"
+SCRIPT_REALNAME = "$SCRIPT_REALNAME"
+SCRIPT_REALDIR  = "$SCRIPT_REALDIR"
+EOD
+}
+
 # Lesser Parallel for Embedding
 # Copyright (c) 2014 Koichi OKADA. All rights reserved.
 # The official repository is:
@@ -1332,6 +1346,15 @@ function invoke_subcommand ()
     exit 1
   fi
 }
+
+SCRIPT_PATH="$(which "$0")"
+SCRIPT_FILE="${SCRIPT_PATH##*/}"
+SCRIPT_NAME="${SCRIPT_FILE%.*}"
+SCRIPT_DIR="${SCRIPT_PATH%/*}"
+SCRIPT_REALPATH="$(realpath "$(which "$0")")"
+SCRIPT_REALFILE="${SCRIPT_REALPATH##*/}"
+SCRIPT_REALNAME="${SCRIPT_REALFILE%.*}"
+SCRIPT_REALDIR="${SCRIPT_REALPATH%/*}"
 
 proxy_setup
 invoke_subcommand "$SUBCOMMAND" "${ARGS[@]}"
