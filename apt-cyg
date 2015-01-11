@@ -816,7 +816,7 @@ function apt-cyg-mirrors-list ()
   ' "/etc/setup/setup.rc"
 }
 
-function apt-cyg-benchmark-mirrors
+function apt-cyg-benchmark-mirrors ()
 {
   local mirror result exitcode
   for mirror; do
@@ -830,7 +830,7 @@ function apt-cyg-benchmark-mirrors
   done
 }
 
-function apt-cyg-benchmark-parallel-mirrors
+function apt-cyg-benchmark-parallel-mirrors ()
 {
   local result="$(mktemp "${SCRIPTNAME}.$$.XXXXX")"
   local mirror
@@ -843,7 +843,7 @@ function apt-cyg-benchmark-parallel-mirrors
 
 }
 
-function apt-cyg-benchmark-parallel-mirrors-list
+function apt-cyg-benchmark-parallel-mirrors-list ()
 {
   local mirrors
   readarray -t mirrors < <(apt-cyg-mirrors-list)
