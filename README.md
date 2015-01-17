@@ -47,6 +47,11 @@ packages.
 <td>dpkg --search</td>
 </tr>
 <tr>
+<td>searchall</td>
+<td>Search for a filename from all available packages</td>
+<td>apt-cache search</td>
+</tr>
+<tr>
 <td>download</td>
 <td>Download only - do NOT install or unpack archives</td>
 <td>apt-get&nbsp;install&nbsp;--download-only</td>
