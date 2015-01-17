@@ -390,7 +390,7 @@ function apt-searchall {
       }
     }
     '
-}
+   done
 
 function apt-install {
   check-packages
