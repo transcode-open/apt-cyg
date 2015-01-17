@@ -353,25 +353,42 @@ function apt-search {
   done
 }
 
+#function apt-searchall {
+#  cd /tmp
+#  for pkg in "${pks[@]}"
+#  do
+#    printf -v qs 'text=1&arch=%s&grep=%s' $ARCH "$pkg"
+#    wget -O matches cygwin.com/cgi-bin2/package-grep.cgi?"$qs"
+#    awk '
+#    {
+#      if (NR == 1)
+#        next
+#      if (mc[$1]++)
+#        next
+#      if (/-debuginfo-/)
+#        next
+#      print $1
+#    }
+#    ' FS=-[[:digit:]] matches
+#  done
+#}
+
 function apt-searchall {
-  cd /tmp
-  for pkg in "${pks[@]}"
+  find-workspace
+  for pkg in ${pks[@]}
   do
-    printf -v qs 'text=1&arch=%s&grep=%s' $ARCH "$pkg"
-    wget -O matches cygwin.com/cgi-bin2/package-grep.cgi?"$qs"
-    awk '
-    {
-      if (NR == 1)
-        next
-      if (mc[$1]++)
-        next
-      if (/-debuginfo-/)
-        next
-      print $1
+    grep -A1 "^@.*${pkg}" setup.ini | awk '
+    $1 == "@" {
+      printf "%s\n", $2
+      FS=":"
     }
-    ' FS=-[[:digit:]] matches
+    $1 == "sdesc" {
+      printf "    %s\n", $2
+      FS=" "
+    }
+    '
   done
-}
+  }
 
 function apt-install {
   check-packages
