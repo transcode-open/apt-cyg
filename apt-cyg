@@ -450,7 +450,7 @@ function apt-install {
 function apt-remove {
   check-packages
   cd /etc
-  cygcheck awk bash bunzip2 grep gzip mv sed tar xz > setup/essential.lst
+  cygcheck awk bash bunzip2 grep gzip mv sed tar xz > setup/essential.lst 2> /dev/null
   for pkg in "${pks[@]}"
   do
 
