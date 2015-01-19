@@ -81,7 +81,8 @@ function usage()
   echo "  \"apt-cyg mirrors-list\" to show list of mirros."
   echo "  \"apt-cyg benchmark-mirrors <url> ...\" to benchmark mirrors."
   echo "  \"apt-cyg benchmark-parallel-mirrors <url> ...\" to benchmark mirrors in parallel."
-  echo "  \"apt-cyg benchmark-parallel-mirrors-list\" to benchmark mirrors-list in parallel."
+  echo "  \"apt-cyg scriptinfo\" to show script infomations."
+  echo "  \"apt-cyg show-packages-busyness\" to show packages are busy or noe."
   echo "Options:"
   echo "  --charch <arch>          : change archetecture"
   echo "  --use-setuprc            : set cache and mirror with /etc/setup/setup.rc"
@@ -862,6 +863,25 @@ SCRIPT_REALFILE = "$SCRIPT_REALFILE"
 SCRIPT_REALNAME = "$SCRIPT_REALNAME"
 SCRIPT_REALDIR  = "$SCRIPT_REALDIR"
 EOD
+}
+
+# Usage: isbusy [file ...]
+function isbusy ()
+{
+  perl -e 'foreach $i(@ARGV){if(-f $i){open(DATAFILE,"+<",$i)||exit(0);close(DATAFILE);}}exit(1);' -- "$@"
+}
+
+function apt-cyg-show-packages-busyness ()
+{
+  local pkg lst files
+  for pkg; do
+    lst="/etc/setup/${pkg}.lst.gz"
+    if [ -e "$lst" ]; then
+      readarray -t files < <(gzip -dc "$lst"|sed 's:^:/:g')
+      isbusy "${files[@]}" && echo -n "busy: " || echo -n "free: "
+      echo "$pkg"
+    fi
+  done
 }
 
 # Lesser Parallel for Embedding
