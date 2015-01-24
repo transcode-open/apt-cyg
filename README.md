@@ -24,6 +24,8 @@ apt-cyg is a command-line installer for [Cygwin](http://cygwin.com/) which coope
 * "apt-cyg benchmark-mirrors &lt;url&gt; ..." to benchmark mirrors.
 * "apt-cyg benchmark-parallel-mirrors &lt;url&gt; ..." to benchmark mirrors in parallel.
 * "apt-cyg benchmark-parallel-mirrors-list" to benchmark mirrors-list in parallel.
+* "apt-cyg scriptinfo" to show script infomations."
+* "apt-cyg show-packages-busyness &lt;package names&gt; ..." to show packages are busy or noe."
 
 Requirements
 -----------
