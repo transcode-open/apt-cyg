@@ -885,6 +885,16 @@ function apt-cyg-show-packages-busyness ()
   done
 }
 
+function get_codepage ()
+{
+  cmd.exe /c chcp | awk '{printf "CP"$NF;}'
+}
+
+function cp2utf8 ()
+{
+  iconv -f $(get_codepage) -t UTF-8
+}
+
 # Lesser Parallel for Embedding
 # Copyright (c) 2014 Koichi OKADA. All rights reserved.
 # The official repository is:
@@ -990,8 +1000,8 @@ function parse_args ()
         ;;
       
       --use-setuprc)
-        "$0" -c "$(grep -A1 last-cache  /etc/setup/setup.rc | tail -n1 | sed -r 's/^\s*|\s*$//g')" > /dev/null
-        "$0" -m "$(grep -A1 last-mirror /etc/setup/setup.rc | tail -n1 | sed -r 's/^\s*|\s*$//g')" > /dev/null
+        "$0" -c "$(grep -aA1 '^last-cache$'  /etc/setup/setup.rc | tail -n1 | cp2utf8 | sed -r 's/^\s*|\s*$//g')" > /dev/null
+        "$0" -m "$(grep -aA1 '^last-mirror$' /etc/setup/setup.rc | tail -n1           | sed -r 's/^\s*|\s*$//g')" > /dev/null
         shift
         ;;
       
