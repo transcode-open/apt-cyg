@@ -567,7 +567,7 @@ function package_db-list ()
 {
   package_db-version_check
   
-  awk 'NF == 3 {print $1}' "${PACKAGE_DB}"
+  awk 'NF == 3 { $0=gensub(/(.*)-(.*)-(.*).*\..*\..*/, "\\1 \\2-\\3","g",$2) ; printf("%-45s %s\n",$1,$2) }' "${PACKAGE_DB}"
 }
 
 # Usage: package_db-register PKGNAME PKGFILE
