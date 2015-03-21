@@ -718,7 +718,7 @@ function apt-cyg-completion-install ()
   readarray -t -O ${#OPTIONS[@]} OPTIONS < <(
     awk '
       /^function *parse_args *\(\)/ {proc=1}
-      /^} *# *\/parse_args( |$)/     {proc=0}
+      /^} *# *\/parse_args( |$)/    {proc=0}
       proc && match($0, /^ *(-[^()*]+)\)/, m) {
         split(m[1], x, "|");
         for (i in x) print x[i];
