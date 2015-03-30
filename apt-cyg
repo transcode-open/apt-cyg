@@ -338,7 +338,7 @@ function wget_and_check_md5sum ()
   local FILE="$4"
   "${WGET[@]}" "$URL" -O "$FILE"
   wget_return_case_md5sum "$?" || return 1
-  if ! { echo "$MD5 *$FILE" | md5sum -c >& /dev/null; } then
+  if ! { echo "$MD5 *$FILE" | hash_check >& /dev/null; } then
     echo "$LABEL: FAILED: MD5 hash is not match."
     return 2
   fi
@@ -895,6 +895,55 @@ function cp2utf8 ()
   iconv -f $(get_codepage) -t UTF-8
 }
 
+# dummy command for unknown sum.
+# Usage: unknownsum
+function unknownsum ()
+{
+  return 1
+}
+
+# Determine the hash method from a HASH.
+# Usage: hash_method HASH
+function hash_method ()
+{
+  case "${#1}" in
+    32)  echo md5     ;;
+    40)  echo sha1    ;;
+    56)  echo sha224  ;;
+    64)  echo sha256  ;;
+    96)  echo sha384  ;;
+    128) echo sha512  ;;
+    *)   echo unknown ;;
+  esac
+}
+
+# Read md5 and sha{1,224,256,384,512} sums from the FILEs and check them.
+# Usage: hash_check [FILE ...]
+function hash_check ()
+{
+  local f0 f1 f2 method count=0
+  while true; do
+    while read f0; do
+      f1="${f0% *}"
+      f2="${f0#*\*}"
+      method="$(hash_method "$f1")sum"
+      if echo "$f0" | "$method" -c --status; then
+        echo "hash_check: $method: $f2: OK"
+      else
+        echo "hash_check: $method: $f2: FAILED"
+        count=$(( count + 1 ))
+      fi
+    done 0<${1:-/dev/stdin}
+    shift
+    (( $# <= 0 )) && break
+  done
+  if (( 0 < count )); then
+    echo "hash_check: WARNING: $count computed checksum did NOT match"
+    return 1
+  fi
+  return 0
+}
+
 # Lesser Parallel for Embedding
 # Copyright (c) 2014 Koichi OKADA. All rights reserved.
 # The official repository is:
@@ -1270,9 +1319,8 @@ function apt-cyg-install ()
     
     # check the SHA512 hash
     local digest="$(awk '/^install: / { print $4; exit }' "desc")"
-    local digactual="$(sha512sum $file | awk '{print $1}')"
-    if [ "$digest" != "$digactual" ]; then
-      echo SHA512 sum did not match, exiting
+    if ! echo "${digest} *${file}" | hash_check; then
+      echo "error: hash did not match: $file"
       exit 1
     fi
     
