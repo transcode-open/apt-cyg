@@ -295,6 +295,39 @@ function wget-exitstatus ()
   esac
 }
 
+function wget_advice ()
+{
+  local status=${1:-$?}
+  case $status in
+  5) echo "If you can tolerate security risks, use --no-certification option." ;;
+  esac
+  return $status
+}
+
+# Usage: get_advice cmd
+function get_advice ()
+{
+  local status=${2:-$?}
+  type "${1}_advice" >&/dev/nul && { ( exit $status ); "${1}_advice"; }
+  return $status
+}
+
+# Usage: push_advice cmd
+function push_advice ()
+{
+  local status=${2:-$?}
+  ADVICE+=( "$( get_advice "${1}_advice")" )
+  return $status
+}
+
+function show_advice ()
+{
+  local i
+  for i in "${ADVICE[@]}"; do
+    echo "$i" >&2
+  done
+}
+
 # Usage: wget_and_hash_check label hash url file
 function wget_and_hash_check ()
 {
@@ -302,7 +335,7 @@ function wget_and_hash_check ()
   local SUM="$2"
   local URL="$3"
   local FILE="$4"
-  if ! "${WGET[@]}" "$URL" -O "$FILE"; then
+  if ! { "${WGET[@]}" "$URL" -O "$FILE" || get_advice wget; }; then
     echo "$LABEL: FAILED: Could not download $URL."
     return 1
   fi
