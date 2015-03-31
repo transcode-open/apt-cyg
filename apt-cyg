@@ -276,24 +276,6 @@ function init_gnupg ()
   GPG_KEYRING=( --keyring pubring.gpg )
 }
 
-# Usage: ask_user "question?" (optional recognition of YES_TO_ALL=true auto yes)
-function ask_user ()
-{
-  while true; do
-    [ -n "$2" ] && { local pmt="$2"; local def=; }
-    [ -n "$2" ] || { local pmt="y/n";local def=; }
-    $YES_TO_ALL && { local RPY=Y;local def=Y; }
-    [ -z "$def" ] && { echo -ne "$1 ";read -p "[$pmt] " RPY; }
-    [ -z "$RPY" ] && { local RPY=$def; }
-    case "$RPY" in
-      Y*|y*) return 0 ;;
-      N*|n*) return 1 ;;
-         1*) return 0 ;;
-         2*) return 1 ;;
-    esac
-  done
-}
-
 # Reference:
 # https://www.gnu.org/software/wget/manual/wget.html#Exit-Status
 # Usage: wget-exitstatus EXITSTATUS
@@ -313,22 +295,6 @@ function wget-exitstatus ()
   esac
 }
 
-# Usage: wget_return_case returncode
-function wget_return_case ()
-{
-  case "$1" in
-    0) return 0 ;;
-    1) echo "$LABEL: FAILED: Could not download: $URL."; return 1 ;;
-    5) echo "$LABEL: WARNING: The SSL certificate is invalid: $URL."
-       ask_user "Continue regardless of invalid SSL certificate?" || return 1
-       "${WGET[@]}" --no-check-certificate "$URL" -O "$FILE"
-       return 0
-       ;;
-    8) echo "$LABEL: FAILED: 404 Not Found $URL."; return 1 ;;
-    *) echo -e "\e[31;1mError:\e[30;0m FATAL: wget returned unkown value"; return 1 ;;
-  esac
-}
-
 # Usage: wget_and_hash_check label hash url file
 function wget_and_hash_check ()
 {
@@ -336,8 +302,10 @@ function wget_and_hash_check ()
   local SUM="$2"
   local URL="$3"
   local FILE="$4"
-  "${WGET[@]}" "$URL" -O "$FILE"
-  wget_return_case "$?" || return 1
+  if ! "${WGET[@]}" "$URL" -O "$FILE"; then
+    echo "$LABEL: FAILED: Could not download $URL."
+    return 1
+  fi
   if ! echo "$SUM *$FILE" | hash_check >& /dev/null; then
     echo "$LABEL: FAILED: Hash does not match $URL."
     return 2
