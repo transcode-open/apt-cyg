@@ -31,7 +31,7 @@ TRUSTEDKEYS=( CYGWIN CYGWINPORTS );
 # pub   1024D/676041BA 2008-06-13
 # uid                  Cygwin <cygwin@cygwin.com>
 # sub   1024g/A1DB7B5C 2008-06-13
-TRUSTEDKEY_CYGWIN_MD5="8555ea34b03d7b09b04886b08d310d8d"
+TRUSTEDKEY_CYGWIN_SUM="8555ea34b03d7b09b04886b08d310d8d"
 TRUSTEDKEY_CYGWIN_FPR="1169DF9F22734F743AA59232A9A262FF676041BA"
 TRUSTEDKEY_CYGWIN_URL_LATEST="https://cygwin.com/key/pubring.asc"
 # ./ports.gpg
@@ -39,7 +39,7 @@ TRUSTEDKEY_CYGWIN_URL_LATEST="https://cygwin.com/key/pubring.asc"
 # pub   1024D/66EE1F94 2008-10-27
 # uid                  Yaakov Selkowitz (Cygwin Ports) <yselkowitz@users.sourceforge.net>
 # sub   4096g/7D66B0D2 2008-10-27
-TRUSTEDKEY_CYGWINPORTS_MD5="4c7904807340411f48f7519173cd600d"
+TRUSTEDKEY_CYGWINPORTS_SUM="4c7904807340411f48f7519173cd600d"
 TRUSTEDKEY_CYGWINPORTS_FPR="45600BB98CA878AA97A70119FF20AF9A66EE1F94"
 TRUSTEDKEY_CYGWINPORTS_URL_LATEST="http://cygwinports.org/ports.gpg"
 
@@ -313,13 +313,13 @@ function wget-exitstatus ()
   esac
 }
 
-# Usage: wget_return_case_md5sum returncode
-function wget_return_case_md5sum ()
+# Usage: wget_return_case returncode
+function wget_return_case ()
 {
   case "$1" in
     0) return 0 ;;
-    1) echo "$LABEL: FAILED: Could not download $URL."; return 1 ;;
-    5) echo "$LABEL: WARNING: The SSL certificate is invalid $URL."
+    1) echo "$LABEL: FAILED: Could not download: $URL."; return 1 ;;
+    5) echo "$LABEL: WARNING: The SSL certificate is invalid: $URL."
        ask_user "Continue regardless of invalid SSL certificate?" || return 1
        "${WGET[@]}" --no-check-certificate "$URL" -O "$FILE"
        return 0
@@ -329,17 +329,17 @@ function wget_return_case_md5sum ()
   esac
 }
 
-# Usage: wget_and_check_md5sum label hash url file
-function wget_and_check_md5sum ()
+# Usage: wget_and_hash_check label hash url file
+function wget_and_hash_check ()
 {
   local LABEL="$1"
-  local MD5="$2"
+  local SUM="$2"
   local URL="$3"
   local FILE="$4"
   "${WGET[@]}" "$URL" -O "$FILE"
-  wget_return_case_md5sum "$?" || return 1
-  if ! { echo "$MD5 *$FILE" | hash_check >& /dev/null; } then
-    echo "$LABEL: FAILED: MD5 hash is not match."
+  wget_return_case "$?" || return 1
+  if ! echo "$SUM *$FILE" | hash_check >& /dev/null; then
+    echo "$LABEL: FAILED: Hash does not match $URL."
     return 2
   fi
   echo "$LABEL: OK"
@@ -353,7 +353,7 @@ function fetch_trustedkeys ()
   local FILE_LATEST="$(mktemp)"
   for i in "${TRUSTEDKEYS[@]}"; do
     local LABEL="TRUSTEDKEY_${i}"
-    local MD5="$(eval echo "\$${LABEL}_MD5")"
+    local SUM="$(eval echo "\$${LABEL}_SUM")"
     local FPR="$(eval echo "\$${LABEL}_FPR")"
     local URL="$(eval echo "\$${LABEL}_URL")"
     local URL_LATEST="$(eval echo "\$${LABEL}_URL_LATEST")"
@@ -362,13 +362,13 @@ function fetch_trustedkeys ()
       continue
     fi
     if [ -n "$URL" ]; then
-      wget_and_check_md5sum "$LABEL" "$MD5" "$URL" "$FILE"
+      wget_and_hash_check "$LABEL" "$SUM" "$URL" "$FILE"
       CASE+="$?"
     else
       CASE+="-"
     fi
     if [ -n "$URL_LATEST" ]; then
-      wget_and_check_md5sum "$LABEL" "$MD5" "$URL_LATEST" "$FILE_LATEST"
+      wget_and_hash_check "$LABEL" "$SUM" "$URL_LATEST" "$FILE_LATEST"
       CASE+="$?"
     else
       CASE+="-"
