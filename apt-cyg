@@ -324,7 +324,7 @@ function wget_return_case_md5sum ()
        "${WGET[@]}" --no-check-certificate "$URL" -O "$FILE"
        return 0
        ;;
-    8) echo "$LABEL: FAILED: 404 Not Found $URL." return 1 ;;
+    8) echo "$LABEL: FAILED: 404 Not Found $URL."; return 1 ;;
     *) echo -e "\e[31;1mError:\e[30;0m FATAL: wget returned unkown value"; return 1 ;;
   esac
 }
