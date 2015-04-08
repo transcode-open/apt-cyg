@@ -67,11 +67,11 @@ packages.
 Quick start
 -----------
 
-apt-cyg is a simple script. To install:
+apt-cyg is a simple script. To install, start Cygwin with Admin privileges by right-clicking the Cygwin icon and clicking "Run as Administrator", then type in Cygwin Terminal:
 
     lynx -source rawgit.com/transcode-open/apt-cyg/master/apt-cyg > apt-cyg
     install apt-cyg /bin
 
-Example use of apt-cyg:
+Example use of apt-cyg (you must be running as Administrator):
 
     apt-cyg install nano
