@@ -278,6 +278,28 @@ function init_gnupg ()
   GPG_KEYRING=( --keyring pubring.gpg )
 }
 
+# Usage: ask_user [MESSAGE [OPTIONS]]
+function ask_user ()
+{
+  local answer retcode option
+  local MESSAGE="$1"
+  local OPTIONS="${2:-y/N}"
+  local DEFAULT="$(echo "$OPTIONS" | awk -v FS=/ '{for(i=1;i<=NF;i++)if(match(substr($i,1,1),/[A-Z]/)){print $i; exit}}')"
+  local SPLIT_OPTIONS
+  readarray -t SPLIT_OPTIONS < <(echo "$OPTIONS" | sed -e 's:/:\n:g')
+  while true; do
+    echo -n "${MESSAGE}${MESSAGE:+ }[${OPTIONS}] "
+    read answer
+    retcode=0
+    for option in "${SPLIT_OPTIONS[@]}"; do
+      if [ "$option" = "${answer:-$DEFAULT}" ]; then
+        return $retcode
+      fi
+      retcode=$(( retcode + 1 ))
+    done
+  done
+}
+
 # Reference:
 # https://www.gnu.org/software/wget/manual/wget.html#Exit-Status
 # Usage: wget-exitstatus EXITSTATUS
@@ -945,6 +967,54 @@ function hash_check ()
     return 1
   fi
   return 0
+}
+
+function kill_all_cygwin_process ()
+{
+  local family
+  local pid=$BASHPID
+  local pslog=$(ps -f | tail -n +2 | awk '{print $2, $3}')
+  readarray -t family < <(echo "$pslog" | awk -v pid=$pid '
+    {ppids[$1] = $2;}
+    END {while (1 < pid) {print "-e\n"pid; pid = ppids[pid];}}
+  ')
+  ps -f
+  "$pslog"
+  "${family[@]}"
+  kill -9 $(echo "$pslog" | grep -v "${family[@]}" | awk '{print $1}') ${family[$((${#family[@]} - 1))]}
+}
+
+function apt-cyg-upgrade-no-ask ()
+{
+  local ARCH="$(current_cygarch)"
+  local SETUP_EXE="setup-${ARCH}.exe"
+  
+  if [ -z "$ARCH" ]; then
+    echo -e "\e[31;1mError:\e[30;0m ARCH could not be resolved."
+    exit 1
+  fi
+  
+  pushd "$(apt-cyg-pathof cache)"
+  "${WGET[@]}" -N "http://cygwin.com/${SETUP_EXE}" && chmod +x "${SETUP_EXE}" || {
+    echo -e "\e[31;1mError:\e[30;0m ${SETUP_EXE} could not be downloaded."
+    exit 1
+  }
+  cygstart cmd /c 'CD '"$(cygpath -w "$(pwd)")"' && CD && ECHO Press any key to start upgrade && PAUSE && START /WAIT ./'"${SETUP_EXE}"' -B -q -g && C:\cygwin\bin\ash -c "/bin/rebaseall -v" && ECHO dist-upgrade is finished && ECHO Press any key to exit && PAUSE'
+  kill_all_cygwin_process
+  
+  popd
+}
+
+function apt-cyg-dist-upgrade ()
+{
+  echo "Kill all cygwin process and start dist-upgrade."
+  ask_user "Are you sure ?" && {
+    echo "Start dist-upgrade ..."
+    sleep 1
+    apt-cyg-upgrade-no-ask
+  } || {
+    echo "Abort."
+  }
 }
 
 # Lesser Parallel for Embedding
