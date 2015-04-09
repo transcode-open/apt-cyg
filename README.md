@@ -26,9 +26,10 @@ apt-cyg is a command-line installer for [Cygwin](http://cygwin.com/) which coope
 * "apt-cyg benchmark-parallel-mirrors-list" to benchmark mirrors-list in parallel.
 * "apt-cyg scriptinfo" to show script infomations."
 * "apt-cyg show-packages-busyness &lt;package names&gt; ..." to show packages are busy or noe."
+* "apt-cyg dist-upgrade" to upgrade all packages that is installed. This subcommand uses setup-*.exe
 
 Requirements
------------
+------------
 
 apt-cyg requires the cygwin default environment and optional packages below.
 
@@ -72,6 +73,17 @@ Then use apt-cyg, for example:
 
 New features
 ------------
+
+### dist-upgrade support
+
+This fork has achieved dist-upgrade command by using `setup-x86.exe` and `setup-x96_64.exe` as a backend.
+Note that all of running tasks on the cygwin will be killed before starting dist-upgrade.
+
+### Multiple hash algorithms support
+
+After the middle of 2015-03, the cygwin project changed the hash algorithm for checking tarball from md5 to sha512.
+But, as of 2015-04-09, the cygwinports project seems still using md5.
+This fork is available for both of cygwin and cygwinports by supporting algorithm of md5, sha1, sha224, sha256 and sha512.
 
 ### True multi-architecture support
 
@@ -173,6 +185,12 @@ Todo
 
 Known Problem
 ------------
+
+### 2015-04-09: gpgv seems not work correctly on 32 bit environment
+
+To solve this problem, the backend of `verify_signatures` function was changed from `gpgv` to `gpg`.
+thienhv reported this problem [#14](https://github.com/kou1okada/apt-cyg/issues/14). Thanks.
+
 ### 2014-01-17: ca-certificates package is not setup correct at x86_64 with Windows 8.
 
 After clean installing with setup-x86_64, there are something wrong about ca-certificate package as below:

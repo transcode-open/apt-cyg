@@ -86,6 +86,7 @@ function usage()
   echo "  \"apt-cyg benchmark-parallel-mirrors-list\" to benchmark mirrors-list in parallel."
   echo "  \"apt-cyg scriptinfo\" to show script infomations."
   echo "  \"apt-cyg show-packages-busyness <package names> ...\" to show packages are busy or noe."
+  echo "  \"apt-cyg dist-upgrade\" to upgrade all packages that is installed. This subcommand uses setup-*.exe"
   echo "Options:"
   echo "  --charch <arch>          : change archetecture"
   echo "  --use-setuprc            : set cache and mirror with /etc/setup/setup.rc"
