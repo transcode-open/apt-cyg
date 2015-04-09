@@ -86,7 +86,9 @@ function usage()
   echo "  \"apt-cyg benchmark-parallel-mirrors-list\" to benchmark mirrors-list in parallel."
   echo "  \"apt-cyg scriptinfo\" to show script infomations."
   echo "  \"apt-cyg show-packages-busyness <package names> ...\" to show packages are busy or noe."
-  echo "  \"apt-cyg dist-upgrade\" to upgrade all packages that is installed. This subcommand uses setup-*.exe"
+  echo "  \"apt-cyg dist-upgrade\" to upgrade all packages that is installed. This subcommand uses setup.exe"
+  echo "  \"apt-cyg update-setup\" to update setup.exe"
+  echo "  \"apt-cyg setup\" to call setup.exe"
   echo "Options:"
   echo "  --charch <arch>          : change archetecture"
   echo "  --use-setuprc            : set cache and mirror with /etc/setup/setup.rc"
@@ -95,6 +97,7 @@ function usage()
   echo "  --force-fetch-trustedkeys: force fetch trustedkeys"
   echo "  --no-verify, -X          : Don't verify setup.ini signatures"
   echo "  --no-check-certificate   : Don't validate the server's certificate"
+  echo "  --no-update-setup        : Don't update setup.exe"
   echo "  --proxy, -p <auto|inherit|none|URL> :"
   echo "                             set proxy (default: \${APT_CYG_PROXY:-auto})"
   echo "  --completion-get-subcommand:"
@@ -984,15 +987,27 @@ function kill_all_cygwin_process ()
 
 function apt-cyg-update-setup ()
 {
+  [ -n "$OPT_NO_UPDATE_SETUP" ] && return
+  
   pushd "$(apt-cyg-pathof cache)"
   
   if "${WGET[@]}" -N "https://cygwin.com/${SETUP_EXE}"; then
     chmod +x "${SETUP_EXE}"
-    ls -l
+    ls -l "${SETUP_EXE}"
   else
     echo -e "\e[31;1mError:\e[30;0m ${SETUP_EXE} could not be downloaded."
     exit 1
   fi
+  
+  popd
+}
+
+function apt-cyg-setup ()
+{
+  pushd "$(apt-cyg pathof cache)"
+  
+  apt-cyg-update-setup
+  ./"${SETUP_EXE}" "$@"
   
   popd
 }
@@ -1115,7 +1130,7 @@ ARGS=()
 
 function parse_args ()
 {
-  local unknown_option
+  local unknown_option END_OPTS
   
   while [ $# -gt 0 ]; do
     case "$1" in
@@ -1155,6 +1170,11 @@ function parse_args ()
       --no-check-certificate)
         OPTS4INHERIT+=( "$1" )
         WGET+=( "--no-check-certificate" )
+        shift
+        ;;
+      
+      --no-update-setup)
+        OPT_NO_UPDATE_SETUP="$1"
         shift
         ;;
       
@@ -1218,6 +1238,12 @@ function parse_args ()
         shift 2 || break
         ;;
       
+      --)
+        END_OPTS="$1"
+        shift
+        break
+        ;;
+      
       -*)
         unknown_option="$1"
         break
@@ -1235,6 +1261,7 @@ function parse_args ()
       
     esac
   done
+  [ -n "$END_OPTS" ] && while (( 0 < "$#" )); do ARGS+=( "$1" ); shift; done
   
   if [ -n "$OPT_COMPLETION_GET_SUBCOMMAND" ]; then
     echo "$SUBCOMMAND"
