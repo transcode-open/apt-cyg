@@ -979,27 +979,29 @@ function kill_all_cygwin_process ()
     {ppids[$1] = $2;}
     END {while (1 < pid) {print "-e\n"pid; pid = ppids[pid];}}
   ')
-  ps -f
-  "$pslog"
-  "${family[@]}"
   kill -9 $(echo "$pslog" | grep -v "${family[@]}" | awk '{print $1}') ${family[$((${#family[@]} - 1))]}
 }
 
-function apt-cyg-upgrade-no-ask ()
+function apt-cyg-update-setup ()
 {
-  local ARCH="$(current_cygarch)"
-  local SETUP_EXE="setup-${ARCH}.exe"
+  pushd "$(apt-cyg-pathof cache)"
   
-  if [ -z "$ARCH" ]; then
-    echo -e "\e[31;1mError:\e[30;0m ARCH could not be resolved."
+  if "${WGET[@]}" -N "https://cygwin.com/${SETUP_EXE}"; then
+    chmod +x "${SETUP_EXE}"
+    ls -l
+  else
+    echo -e "\e[31;1mError:\e[30;0m ${SETUP_EXE} could not be downloaded."
     exit 1
   fi
   
+  popd
+}
+
+function apt-cyg-dist-upgrade-no-ask ()
+{
   pushd "$(apt-cyg-pathof cache)"
-  "${WGET[@]}" -N "http://cygwin.com/${SETUP_EXE}" && chmod +x "${SETUP_EXE}" || {
-    echo -e "\e[31;1mError:\e[30;0m ${SETUP_EXE} could not be downloaded."
-    exit 1
-  }
+  
+  apt-cyg-update-setup
   cygstart cmd /c 'CD '"$(cygpath -w "$(pwd)")"' && CD && ECHO Press any key to start upgrade && PAUSE && START /WAIT ./'"${SETUP_EXE}"' -B -q -g && C:\cygwin\bin\ash -c "/bin/rebaseall -v" && ECHO dist-upgrade is finished && ECHO Press any key to exit && PAUSE'
   kill_all_cygwin_process
   
@@ -1012,7 +1014,7 @@ function apt-cyg-dist-upgrade ()
   ask_user "Are you sure ?" && {
     echo "Start dist-upgrade ..."
     sleep 1
-    apt-cyg-upgrade-no-ask
+    apt-cyg-dist-upgrade-no-ask
   } || {
     echo "Abort."
   }
@@ -1106,6 +1108,7 @@ force_fetch_trustedkeys=""
 no_verify=""
 OPT_PROXY=${APT_CYG_PROXY:-auto}
 OPTS4INHERIT=()
+SETUP_EXE="setup-$(current_cygarch).exe"
 YES_TO_ALL=false
 INITIAL_ARGS=( "$@" )
 ARGS=()
