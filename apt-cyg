@@ -43,6 +43,8 @@ TRUSTEDKEY_CYGWINPORTS_SUM="ccf174d1e6ec20e50ff954e3d4a0c3de478032a100d26789c019
 TRUSTEDKEY_CYGWINPORTS_FPR="45600BB98CA878AA97A70119FF20AF9A66EE1F94"
 TRUSTEDKEY_CYGWINPORTS_URL_LATEST="http://cygwinports.org/ports.gpg"
 
+(( 5 <= "${DEBUG:-0}" )) && set -x
+
 # this script requires some packages
 
 WGET="$( which wget 2>/dev/null )"
