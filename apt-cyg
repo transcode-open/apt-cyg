@@ -438,7 +438,7 @@ function fetch_trustedkeys ()
 function verify_signatures ()
 {
   while [ $# -gt 0 ]; do
-    if ! "${GPGV[@]}" "${GPG_KEYRING[@]}" "$1"; then
+    if ! "${GPG[@]}" "${GPG_KEYRING[@]}" "$1"; then
       echo -e "\e[31;1mError:\e[30;0m BAD signature: $1"
       return 1
     fi
