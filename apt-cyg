@@ -316,14 +316,14 @@ function download {
   dn=$(dirname $2)
   bn=$(basename $2)
 
-  # check the md5
+  # check the sha512
   digest=$4
   mkdir -p $cache/$mirrordir/$dn
   cd $cache/$mirrordir/$dn
-  if ! test -e $bn || ! md5sum -c <<< "$digest $bn"
+  if ! test -e $bn || ! sha512sum -c <<< "$digest $bn"
   then
     wget -O $bn $mirror/$dn/$bn
-    md5sum -c <<< "$digest $bn" || exit
+    sha512sum -c <<< "$digest $bn" || exit
   fi
 
   tar tf $bn | gzip > /etc/setup/"$pkg".lst.gz
