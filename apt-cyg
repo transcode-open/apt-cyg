@@ -177,7 +177,7 @@ function download_and_verify ()
 
 function files_backup ()
 {
-  locale file
+  local file
   for file; do
     [ -e "${file}~" ] && mv    "${file}~" "${file}"
     [ -e "${file}"  ] && cp -a "${file}"  "${file}~"
@@ -186,7 +186,7 @@ function files_backup ()
 
 function files_restore ()
 {
-  locale file
+  local file
   for file; do
     [ -e "${file}"  ] && rm    "${file}"
     [ -e "${file}~" ] && mv    "${file}~" "${file}"
@@ -195,7 +195,7 @@ function files_restore ()
 
 function files_backup_clean ()
 {
-  locale file
+  local file
   for file; do
     [ -e "${file}~" ] && rm    "${file}~"
   done
