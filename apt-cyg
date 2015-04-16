@@ -60,6 +60,55 @@ Copyright (c) 2005-9 Stephen Jungels
 
 ARCH=${HOSTTYPE/i6/x}
 
+# dummy command for unknown sum.
+# Usage: unknownsum
+function unknownsum ()
+{
+  return 1
+}
+
+# Determine the hash method from a HASH.
+# Usage: hash_method HASH
+function hash_method ()
+{
+  case "${#1}" in
+    32)  echo md5     ;;
+    40)  echo sha1    ;;
+    56)  echo sha224  ;;
+    64)  echo sha256  ;;
+    96)  echo sha384  ;;
+    128) echo sha512  ;;
+    *)   echo unknown ;;
+  esac
+}
+
+# Read md5 and sha{1,224,256,384,512} sums from the FILEs and check them.
+# Usage: hash_check [FILE ...]
+function hash_check ()
+{
+  local f0 f1 f2 method count=0
+  while true; do
+    while read f0; do
+      f1="${f0% *}"
+      f2="${f0#*\*}"
+      method="$(hash_method "$f1")sum"
+      if echo "$f0" | "$method" -c --status; then
+        echo "hash_check: $method: $f2: OK"
+      else
+        echo "hash_check: $method: $f2: FAILED"
+        count=$(( count + 1 ))
+      fi
+    done 0<${1:-<(cat)}
+    shift
+    (( $# <= 0 )) && break
+  done
+  if (( 0 < count )); then
+    echo "hash_check: WARNING: $count computed checksum did NOT match"
+    return 1
+  fi
+  return 0
+}
+
 function wget {
   if command wget -h &>/dev/null
   then
@@ -320,10 +369,10 @@ function download {
   digest=$4
   mkdir -p $cache/$mirrordir/$dn
   cd $cache/$mirrordir/$dn
-  if ! test -e $bn || ! md5sum -c <<< "$digest $bn"
+  if ! test -e $bn || ! hash_check <<< "$digest *$bn"
   then
     wget -O $bn $mirror/$dn/$bn
-    md5sum -c <<< "$digest $bn" || exit
+    hash_check <<< "$digest *$bn" || exit
   fi
 
   tar tf $bn | gzip > /etc/setup/"$pkg".lst.gz
