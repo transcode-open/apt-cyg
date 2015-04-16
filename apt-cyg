@@ -367,7 +367,7 @@ function wget_and_hash_check ()
     echo "$LABEL: FAILED: Could not download $URL."
     return 1
   fi
-  if ! echo "$SUM *$FILE" | hash_check >& /dev/null; then
+  if ! hash_check <<<"$SUM *$FILE" >&/dev/null; then
     echo "$LABEL: FAILED: Hash does not match $URL."
     return 2
   fi
@@ -1423,7 +1423,7 @@ function apt-cyg-install ()
     
     # check the SHA512 hash
     local digest="$(awk '/^install: / { print $4; exit }' "desc")"
-    if ! echo "${digest} *${file}" | hash_check; then
+    if ! hash_check <<<"${digest} *${file}" ; then
       echo "error: hash did not match: $file"
       exit 1
     fi
