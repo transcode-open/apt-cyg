@@ -962,7 +962,7 @@ function hash_check ()
         echo "hash_check: $method: $f2: FAILED"
         count=$(( count + 1 ))
       fi
-    done 0<${1:-/dev/stdin}
+    done 0<${1:-<(cat)}
     shift
     (( $# <= 0 )) && break
   done
