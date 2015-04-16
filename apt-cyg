@@ -318,12 +318,16 @@ function download {
 
   # check the md5
   digest=$4
+  case ${#digest} in
+   32) hash=md5sum    ;;
+  128) hash=sha512sum ;;
+  esac
   mkdir -p $cache/$mirrordir/$dn
   cd $cache/$mirrordir/$dn
-  if ! test -e $bn || ! md5sum -c <<< "$digest $bn"
+  if ! test -e $bn || ! $hash -c <<< "$digest $bn"
   then
     wget -O $bn $mirror/$dn/$bn
-    md5sum -c <<< "$digest $bn" || exit
+    $hash -c <<< "$digest $bn" || exit
   fi
 
   tar tf $bn | gzip > /etc/setup/"$pkg".lst.gz
