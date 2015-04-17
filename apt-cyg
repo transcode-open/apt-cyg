@@ -73,7 +73,7 @@ function wget {
 
 function find-workspace {
   # default working directory and mirror
-  
+
   # work wherever setup worked last, if possible
   cache=$(awk '
   /last-cache/ {
@@ -358,23 +358,54 @@ function apt-search {
 }
 
 function apt-searchall {
-  cd /tmp
-  for pkg in "${pks[@]}"
-  do
-    printf -v qs 'text=1&arch=%s&grep=%s' $ARCH "$pkg"
-    wget -O matches cygwin.com/cgi-bin2/package-grep.cgi?"$qs"
-    awk '
-    {
-      if (NR == 1)
-        next
-      if (mc[$1]++)
-        next
-      if (/-debuginfo-/)
-        next
-      print $1
-    }
-    ' FS=-[[:digit:]] matches
-  done
+  find-workspace
+  if [[ $mirror == *"cygwinports"* ]]
+  then
+    echo "Searching CygwinPorts from $mirror"
+    if [[ $ARCH == x86_64 ]]; then
+      NEWARCH="64"
+    else
+      NEWARCH="32"
+    fi
+    cd /tmp
+    wget -O portlist ftp://ftp.cygwinports.org/pub/cygwinports/portslist"$NEWARCH".txt
+    for pkg in "${pks[@]}"
+    do
+      grep $pkg portlist > matches
+      if [[ -s matches ]]; then
+        awk '
+        {
+          if (mc[$1]++)
+            next
+          if (/-debuginfo/)
+            next
+          print $1
+        }
+        ' FS=-[[:digit:]] matches
+      else
+        echo "No matches found for $pkg"
+      fi
+    done
+  else
+    echo "Searching Cygwin from $mirror"
+    cd /tmp
+    for pkg in "${pks[@]}"
+    do
+      printf -v qs 'text=1&arch=%s&grep=%s' $ARCH "$pkg"
+      wget -O matches cygwin.com/cgi-bin2/package-grep.cgi?"$qs"
+      awk '
+      {
+        if (NR == 1)
+          next
+        if (mc[$1]++)
+          next
+        if (/-debuginfo-/)
+          next
+        print $1
+      }
+      ' FS=-[[:digit:]] matches
+    done
+  fi
 }
 
 function apt-install {
