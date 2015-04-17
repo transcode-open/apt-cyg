@@ -54,4 +54,5 @@ func foxtrot() {
 func main() {  
   foxtrot()
   // parse ini
+  // category: Base
 }
