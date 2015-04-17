@@ -61,6 +61,11 @@ packages.
 <td>List files owned by packages</td>
 <td>dpkg --listfiles</td>
 </tr>
+<tr>
+<td>searchall</td>
+<td>Search for a filename from all available packages</td>
+<td>apt-file search</td>
+</tr>
 </tbody>
 </table>
 
