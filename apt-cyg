@@ -361,7 +361,6 @@ function apt-searchall {
   find-workspace
   if [[ $mirror == *"cygwinports"* ]]
   then
-    echo "Searching CygwinPorts from $mirror"
     if [[ $ARCH == x86_64 ]]; then
       NEWARCH="64"
     else
@@ -387,7 +386,6 @@ function apt-searchall {
       fi
     done
   else
-    echo "Searching Cygwin from $mirror"
     cd /tmp
     for pkg in "${pks[@]}"
     do
