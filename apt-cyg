@@ -24,30 +24,83 @@
 # THE SOFTWARE.
 
 mapfile usage <<+
-usage: apt-cyg [command] [options] [packages]
+NAME
+  apt-cyg - package manager utility
 
-Commands:
-   install     Install packages
-   remove      Remove packages
-   update      Update setup.ini
-   download    Download only - do NOT install or unpack archives
-   show        Displays the package records for the named packages
-   depends     Performs recursive dependency listings
-   rdepends    Display packages which require X to be installed,
-               AKA show reverse dependencies
-   list        List packages matching given pattern. If no pattern is given,
-               list all installed packages.
-   category    List packages matching given category
-   listfiles   List files owned by packages
-   search      Search for a filename from installed packages
-   searchall   Search for a filename from all available packages
+SYNOPSIS
+  apt-cyg [operation] [options] [targets]
 
-Options:
-   -c, --cache <dir>      set cache
-   -f, --file <file>      read package names from file
-   -m, --mirror <url>     set mirror
-   --help
-   --version
+DESCRIPTION
+  apt-cyg is a package management utility that tracks installed packages on a
+  Cygwin system. Invoking apt-cyg involves specifiying an operation with any
+  potential options and targets to operate on. A target is usually a package
+  name, file name, or a search string. Targets can be provided as command line
+  arguments.
+
+OPERATIONS
+  install
+    Install package(s).
+
+  remove
+    Remove package(s) from the system.
+
+  update
+    Download a fresh copy of the master package list (setup.ini) from the
+    server defined in setup.rc.
+
+  download
+    Retrieve package(s) from the server, but do not install/upgrade anything.
+
+  show
+    Display information on given package(s).
+
+  depends
+    Produce a dependency tree for a package.
+
+  rdepends
+    Produce a tree of packages that depend on the named package.
+
+  list
+    Search each locally-installed package for names that match regexp. If no
+    package names are provided in the command line, all installed packages will
+    be queried.
+
+  listall
+    This will search each package in the master package list (setup.ini) for
+    names that match regexp.
+
+  category
+    Display all packages that are members of a named category.
+
+  listfiles
+    List all files owned by a given package. Multiple packages can be specified
+    on the command line.
+
+  search
+    Search for downloaded packages that own the specified file(s). The path can
+    be relative or absolute, and one or more files can be specified.
+
+  searchall
+    Search cygwin.com to retrieve file information about packages. The provided
+    target is considered to be a filename and searchall will return the
+    package(s) which contain this file.
+
+OPTIONS
+  --nodeps
+    Specify this option to skip all dependency checks.
+
+  --mirror <url>
+    A full URL to a location where the database, packages, and signatures for
+    this repository can be found.
+
+  --cache <dir>
+    Overrides the default location of the package cache directory. A typical
+    default is C:\Users\John\Downloads. If a file is not found in the cache
+    directory, it will be downloaded. NOTE: this is an absolute path, the root
+    path is not automatically prepended.
+
+  --version
+    Display version and exit.
 +
 
 mapfile version <<+
@@ -124,7 +177,7 @@ function check-packages {
   then
     return 0
   else
-    echo No packages found
+    echo No packages found.
     return 1
   fi
 }
@@ -161,20 +214,25 @@ function apt-category {
 }
 
 function apt-list {
+  local sbq
+  for pkg in "${pks[@]}"
+  do
+    let sbq++ && echo
+    awk 'NR>1 && $1~pkg && $0=$1' pkg="$pkg" /etc/setup/installed.db
+  done
+  let sbq && return
+  awk 'NR>1 && $0=$1' /etc/setup/installed.db
+}
+
+function apt-listall {
+  check-packages
   find-workspace
   local sbq
   for pkg in "${pks[@]}"
   do
-    (( sbq++ )) && echo
-    info Searching for installed packages matching "$pkg":
-    awk 'NR>1 && $1~ENVIRON["pkg"] && $0=$1' /etc/setup/installed.db
-    echo
-    info Searching for installable packages matching "$pkg":
-    awk '$1 ~ ENVIRON["pkg"] && $0 = $1' RS='\n\n@ ' FS='\n' setup.ini
+    let sbq++ && echo
+    awk '$1~pkg && $0=$1' RS='\n\n@ ' FS='\n' pkg="$pkg" setup.ini
   done
-  (( sbq )) && return
-  info The following packages are installed:
-  awk 'NR>1 && $0=$1' /etc/setup/installed.db
 }
 
 function apt-listfiles {
@@ -521,7 +579,7 @@ while (( $# ))
 do
   case "$1" in
 
-    --mirror | -m)
+    --mirror)
       awk -i inplace '
       1
       /last-mirror/ {
@@ -532,7 +590,7 @@ do
       shift 2
     ;;
 
-    --cache | -c)
+    --cache)
       rpc=$(cygpath -aw "$2" | sed 's \\ \\\\ g')
       awk -i inplace '
       1
@@ -549,31 +607,9 @@ do
       shift
     ;;
 
-    --help)
-      printf %s "${usage[@]}"
-      exit 0
-    ;;
-
     --version)
       printf %s "${version[@]}"
       exit 0
-    ;;
-
-    --file | -f)
-      if [[ $2 ]]
-      then
-        mf=$2
-        if [ -f "$mf" ]
-        then
-          mapfile -t pks < "$mf"
-        else
-          echo File "$mf" not found, skipping
-        fi
-        shift
-      else
-        info No file name provided, ignoring $1
-      fi
-      shift
     ;;
 
     update)
@@ -581,17 +617,8 @@ do
       shift
     ;;
 
-    install     \
-    | remove    \
-    | download  \
-    | show      \
-    | depends   \
-    | rdepends  \
-    | list      \
-    | category  \
-    | listfiles \
-    | search    \
-    | searchall)
+    list | remove | depends | listall  | download | listfiles |\
+    show | search | install | category | rdepends | searchall )
       if [[ $command ]]
       then
         pks+=("$1")

@@ -4,70 +4,57 @@ apt-cyg
 apt-cyg is a Cygwin package manager. It includes a command-line installer for
 Cygwin which cooperates with Cygwin Setup and uses the same repository.
 
-<table>
-<thead>
-<tr>
-<th>Command</th>
-<th>Description</th>
-<th>Analog</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>install</td>
-<td>Install packages</td>
-<td>apt-get install</td>
-</tr>
-<tr>
-<td>remove</td>
-<td>Remove packages</td>
-<td>apt-get&nbsp;remove</td>
-</tr>
-<tr>
-<td>update</td>
-<td>Update setup.ini</td>
-<td>apt-get&nbsp;update</td>
-</tr>
-<tr>
-<td>show</td>
-<td>Displays the package records for the named packages</td>
-<td>apt-cache&nbsp;show</td>
-</tr>
-<tr>
-<td>list</td>
-<td>
-List packages matching given pattern. If no pattern is given, list all installed
-packages.
-</td>
-<td>dpkg --list</td>
-</tr>
-<tr>
-<td>search</td>
-<td>Search for a filename from installed packages</td>
-<td>dpkg --search</td>
-</tr>
-<tr>
-<td>download</td>
-<td>Download only - do NOT install or unpack archives</td>
-<td>apt-get&nbsp;install&nbsp;--download-only</td>
-</tr>
-<tr>
-<td>depends</td>
-<td>Performs recursive dependency listings</td>
-<td>apt-cache depends</td>
-</tr>
-<tr>
-<td>listfiles</td>
-<td>List files owned by packages</td>
-<td>dpkg --listfiles</td>
-</tr>
-<tr>
-<td>searchall</td>
-<td>Search for a filename from all available packages</td>
-<td>apt-file search</td>
-</tr>
-</tbody>
-</table>
+Operations
+----------
+
+~~~
+install
+  Install package(s).
+
+remove
+  Remove package(s) from the system.
+
+update
+  Download a fresh copy of the master package list (setup.ini) from the
+  server defined in setup.rc.
+
+download
+  Retrieve package(s) from the server, but do not install/upgrade anything.
+
+show
+  Display information on given package(s).
+
+depends
+  Produce a dependency tree for a package.
+
+rdepends
+  Produce a tree of packages that depend on the named package.
+
+list
+  Search each locally-installed package for names that match regexp. If no
+  package names are provided in the command line, all installed packages will
+  be queried.
+
+listall
+  This will search each package in the master package list (setup.ini) for
+  names that match regexp.
+
+category
+  Display all packages that are members of a named category.
+
+listfiles
+  List all files owned by a given package. Multiple packages can be specified
+  on the command line.
+
+search
+  Search for downloaded packages that own the specified file(s). The path can
+  be relative or absolute, and one or more files can be specified.
+
+searchall
+  Search cygwin.com to retrieve file information about packages. The provided
+  target is considered to be a filename and searchall will return the
+  package(s) which contain this file.
+~~~
 
 Quick start
 -----------
