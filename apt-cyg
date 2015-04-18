@@ -182,10 +182,6 @@ function check-packages {
   fi
 }
 
-function info {
-  printf '\e[36m%s\e[m\n' "$*" >&2
-}
-
 function warn {
   printf '\e[1;31m%s\e[m\n' "$*" >&2
 }
@@ -492,7 +488,7 @@ function apt-install {
   fi
   if (( wr ))
   then
-    info some required packages did not install, continuing
+    echo some required packages did not install, continuing
   fi
 
   # run all postinstall scripts
