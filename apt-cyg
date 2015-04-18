@@ -32,10 +32,10 @@ SYNOPSIS
 
 DESCRIPTION
   apt-cyg is a package management utility that tracks installed packages on a
-  Cygwin system. Invoking apt-cyg involves specifiying an operation with any
+  Cygwin system. Invoking apt-cyg involves specifying an operation with any
   potential options and targets to operate on. A target is usually a package
-  name, file name, or a search string. Targets can be provided as command line
-  arguments.
+  name, file name, URL, or a search string. Targets can be provided as command
+  line arguments.
 
 OPERATIONS
   install
@@ -85,19 +85,20 @@ OPERATIONS
     target is considered to be a filename and searchall will return the
     package(s) which contain this file.
 
+  mirror
+    Set the mirror; a full URL to a location where the database, packages, and
+    signatures for this repository can be found. If no URL is provided, display
+    current mirror.
+
+  cache
+    Set the package cache directory. If a file is not found in cache directory,
+    it will be downloaded. Unix and Windows forms are accepted, as well as
+    absolute or regular paths. If no directory is provided, display current
+    cache.
+
 OPTIONS
   --nodeps
     Specify this option to skip all dependency checks.
-
-  --mirror <url>
-    A full URL to a location where the database, packages, and signatures for
-    this repository can be found.
-
-  --cache <dir>
-    Overrides the default location of the package cache directory. A typical
-    default is C:\Users\John\Downloads. If a file is not found in the cache
-    directory, it will be downloaded. NOTE: this is an absolute path, the root
-    path is not automatically prepended.
 
   --version
     Display version and exit.
@@ -110,8 +111,6 @@ The MIT License (MIT)
 
 Copyright (c) 2005-9 Stephen Jungels
 +
-
-ARCH=${HOSTTYPE/i6/x}
 
 function wget {
   if command wget -h &>/dev/null
@@ -146,8 +145,8 @@ function find-workspace {
   s : %3a g
   ' <<< "$mirror")
 
-  mkdir -p "$cache/$mirrordir/$ARCH"
-  cd "$cache/$mirrordir/$ARCH"
+  mkdir -p "$cache/$mirrordir/$arch"
+  cd "$cache/$mirrordir/$arch"
   if [ -e setup.ini ]
   then
     return 0
@@ -160,7 +159,7 @@ function find-workspace {
 function get-setup {
   touch setup.ini
   mv setup.ini setup.ini-save
-  wget -N $mirror/$ARCH/setup.bz2
+  wget -N $mirror/$arch/setup.bz2
   if [ -e setup.bz2 ]
   then
     bunzip2 setup.bz2
@@ -415,7 +414,7 @@ function apt-searchall {
   cd /tmp
   for pkg in "${pks[@]}"
   do
-    printf -v qs 'text=1&arch=%s&grep=%s' $ARCH "$pkg"
+    printf -v qs 'text=1&arch=%s&grep=%s' $arch "$pkg"
     wget -O matches cygwin.com/cgi-bin2/package-grep.cgi?"$qs"
     awk '
     {
@@ -565,6 +564,49 @@ function apt-remove {
   done
 }
 
+function apt-mirror {
+  if [ "$pks" ]
+  then
+    awk -i inplace '
+    1
+    /last-mirror/ {
+      getline
+      print "\t" pks
+    }
+    ' pks="$pks" /etc/setup/setup.rc
+    echo Mirror set to "$pks".
+  else
+    awk '
+    /last-mirror/ {
+      getline
+      print $1
+    }
+    ' /etc/setup/setup.rc
+  fi
+}
+
+function apt-cache {
+  if [ "$pks" ]
+  then
+    vas=$(cygpath -aw "$pks")
+    awk -i inplace '
+    1
+    /last-cache/ {
+      getline
+      print "\t" vas
+    }
+    ' vas="${vas//\\/\\\\}" /etc/setup/setup.rc
+    echo Cache set to "$vas".
+  else
+    awk '
+    /last-cache/ {
+      getline
+      print $1
+    }
+    ' /etc/setup/setup.rc
+  fi
+}
+
 if [ -p /dev/stdin ]
 then
   mapfile -t pks
@@ -575,29 +617,6 @@ while (( $# ))
 do
   case "$1" in
 
-    --mirror)
-      awk -i inplace '
-      1
-      /last-mirror/ {
-        getline
-        print "\t" rpc
-      }
-      ' rpc="$2" /etc/setup/setup.rc
-      shift 2
-    ;;
-
-    --cache)
-      rpc=$(cygpath -aw "$2" | sed 's \\ \\\\ g')
-      awk -i inplace '
-      1
-      /last-cache/ {
-        getline
-        print "\t" rpc
-      }
-      ' rpc="$rpc" /etc/setup/setup.rc
-      shift 2
-    ;;
-
     --noscripts)
       noscripts=1
       shift
@@ -605,7 +624,7 @@ do
 
     --version)
       printf %s "${version[@]}"
-      exit 0
+      exit
     ;;
 
     update)
@@ -613,8 +632,8 @@ do
       shift
     ;;
 
-    list | remove | depends | listall  | download | listfiles |\
-    show | search | install | category | rdepends | searchall )
+    list | cache  | remove | depends | listall  | download | listfiles |\
+    show | mirror | search | install | category | rdepends | searchall )
       if [[ $command ]]
       then
         pks+=("$1")
@@ -636,6 +655,7 @@ set -a
 
 if type -t apt-$command | grep -q function
 then
+  readonly arch=${HOSTTYPE/i6/x}
   apt-$command
 else
   printf %s "${usage[@]}"
