@@ -522,10 +522,21 @@ function apt-cyg-upgrade-self ()
 
 function proxy_auto ()
 {
-  local proxy=$("${WGET[@]}" --no-proxy -q -O - wpad/wpad.dat \
-  | grep PROXY \
-  | sed -e 's/^.*PROXY\s*\([^"]*\).*$/http:\/\/\1/g')
+  local hash="$(ipconfig 2>&1 | md5sum -b | awk '{print $1}')"
+  local cache="/tmp/apt-cyg.proxy.$hash"
+  local last="$(stat -c %Y "$cache" 2>/dev/null)"
+  local now="$(date +%s)"
+  local proxy
   
+  [ -n "$OPT_PROXY_FORCE_REFRESH" ] && last=0
+  if (( (now - ${last:-0}) < OPT_PROXY_REFRESH_INTERVAL )); then
+    proxy="$(<"$cache")"
+  else
+    proxy=$("${WGET[@]}" --no-proxy -q -O - wpad/wpad.dat \
+    | grep PROXY \
+    | sed -e 's/^.*PROXY\s*\([^"]*\).*$/http:\/\/\1/g')
+    echo "$proxy" > "$cache"
+  fi
   [ -n "$proxy" ] && proxy_set "$proxy"
 }
 
@@ -1127,6 +1138,7 @@ force_remove=""
 force_fetch_trustedkeys=""
 no_verify=""
 OPT_PROXY=${APT_CYG_PROXY:-auto}
+OPT_PROXY_REFRESH_INTERVAL=${APT_CYG_PROXY_REFRESH_INTERVAL:-86400} # 86400s = 1day
 OPTS4INHERIT=()
 SETUP_EXE="setup-$(current_cygarch).exe"
 YES_TO_ALL=false
@@ -1185,6 +1197,16 @@ function parse_args ()
       
       --proxy|-p)
         OPT_PROXY="$2"
+        shift 2 || break
+        ;;
+      
+      --proxy-force-refresh)
+        OPT_PROXY_FORCE_REFRESH="$1"
+        shift
+        ;;
+      
+      --proxy-refresh-interval)
+        OPT_PROXY_REFRESH_INTERVAL="$2"
         shift 2 || break
         ;;
       
