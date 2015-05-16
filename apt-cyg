@@ -48,6 +48,9 @@ OPERATIONS
     Download a fresh copy of the master package list (setup.ini) from the
     server defined in setup.rc.
 
+  upgrade
+    Upgrade all outdated package(s).
+
   download
     Retrieve package(s) from the server, but do not install/upgrade anything.
 
@@ -437,16 +440,20 @@ function apt-install {
   for pkg in "${pks[@]}"
   do
 
-  if grep -q "^$pkg " /etc/setup/installed.db
+  if [[ "$1" != "--force" ]]
   then
-    echo Package $pkg is already installed, skipping
-    continue
+    if grep -q "^$pkg " /etc/setup/installed.db
+    then
+      echo Package $pkg is already installed, skipping
+      continue
+    fi
   fi
   (( sbq++ )) && echo
   echo Installing $pkg
 
   download $pkg
   read dn bn </tmp/dwn
+  rm /tmp/dwn
   echo Unpacking...
 
   cd $cache/$mirrordir/$dn
@@ -458,7 +465,9 @@ function apt-install {
     print pkg, bz, 0
     ins = 1
   }
-  1
+  pkg != $1 {
+    print
+  }
   END {
     if (ins != 1) print pkg, bz, 0
   }
@@ -502,6 +511,55 @@ function apt-install {
   echo Package $pkg installed
 
   done
+}
+
+function apt-upgrade {
+  find-workspace
+
+  apt-update
+
+  # 0. Read setup.ini.
+  # 1. Discard [prev] and [test] version.
+  # 2. Select "@package_name" and "install: ..." line.
+  # 3. Combine "@package_name" and "install: ..." to one line.
+  # 4. Strip useless text.
+  # 5. Remove .tar.bz2 and .tar.xz filename extension.
+  # 6. Sort.
+
+  cat setup.ini | \
+    sed "/\[prev\]\|\[test\]/,/^$/d" | \
+    grep -E "@ |install: " | \
+    tr "\n" "/" | sed "s/@ /\n/g" | \
+    cut -f1-2 -d " " | awk -F/ '{print $1 " " $NF}' | \
+    sed "s/\.tar\.bz2//g; s/\.tar\.xz//g" | \
+    sort -u > /tmp/all_packages.$$
+
+  sed "1d; s/\.tar\.xz .*$//g; s/\.tar\.bz2 .*$//g" /etc/setup/installed.db | \
+    sort -u > /tmp/installed_packages.$$
+
+  comm -23 /tmp/installed_packages.$$ /tmp/all_packages.$$ > \
+    /tmp/new_packages.$$
+
+  while read name version
+  do
+    pks+=("$name")
+    echo -n $version "=> "
+    cat /tmp/new_packages.$$ | grep "^$name " | cut -f2 -d" "
+  done < /tmp/new_packages.$$
+
+  rm -f /tmp/all_packages.$$ /tmp/installed_packages.$$ /tmp/new_packages.$$
+
+  if [[ "$pks" ]]
+  then
+    echo -n "Upgrade the above packages? (Y/n) "
+    read answer
+    if [ -z "$answer" -o "$answer" = "Y" ]
+    then
+      apt-install --force
+    fi
+  else
+    echo "All packages are up to date."
+  fi
 }
 
 function apt-remove {
@@ -633,7 +691,7 @@ do
     ;;
 
     list | cache  | remove | depends | listall  | download | listfiles |\
-    show | mirror | search | install | category | rdepends | searchall )
+    show | mirror | search | install | category | rdepends | searchall | upgrade)
       if [[ $command ]]
       then
         pks+=("$1")
