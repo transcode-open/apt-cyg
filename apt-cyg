@@ -544,7 +544,7 @@ function apt-upgrade {
   do
     pks+=("$name")
     echo -n $version "=> "
-    cat /tmp/new_packages.$$ | grep "^$name " | cut -f2 -d" "
+    cat /tmp/all_packages.$$ | grep "^$name " | cut -f2 -d" "
   done < /tmp/new_packages.$$
 
   rm -f /tmp/all_packages.$$ /tmp/installed_packages.$$ /tmp/new_packages.$$
