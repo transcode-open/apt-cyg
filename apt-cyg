@@ -556,6 +556,10 @@ function apt-upgrade {
     if [ -z "$answer" -o "$answer" = "Y" ]
     then
       apt-install --force
+      echo "Please manual run :" \
+        "cygstart --action=runas dash.exe" \
+        "/etc/postinstall/0p_000_autorebase.dash"
+      echo "to rebase packages if needed."
     fi
   else
     echo "All packages are up to date."
