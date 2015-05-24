@@ -932,7 +932,7 @@ function apt-cyg-show-packages-busyness ()
 
 function get_codepage ()
 {
-  cmd.exe /c chcp | awk '{printf "CP"$NF;}'
+  cmd.exe /c chcp | awk '{printf $NF;}' | sed -re 's/^[^0-9]*([0-9]+).*$/\CP\1/g'
 }
 
 function cp2utf8 ()
