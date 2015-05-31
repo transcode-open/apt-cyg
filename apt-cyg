@@ -375,8 +375,8 @@ function download {
    32) hash=md5sum    ;;
   128) hash=sha512sum ;;
   esac
-  mkdir -p $cache/$mirrordir/$dn
-  cd $cache/$mirrordir/$dn
+  mkdir -p "$cache/$mirrordir/$dn"
+  cd "$cache/$mirrordir/$dn"
   if ! test -e $bn || ! $hash -c <<< "$digest $bn"
   then
     wget -O $bn $mirror/$dn/$bn
@@ -385,7 +385,7 @@ function download {
 
   tar tf $bn | gzip > /etc/setup/"$pkg".lst.gz
   cd ~-
-  mv desc $cache/$mirrordir/$dn
+  mv desc "$cache/$mirrordir/$dn"
   echo $dn $bn > /tmp/dwn
 }
 
@@ -449,7 +449,7 @@ function apt-install {
   read dn bn </tmp/dwn
   echo Unpacking...
 
-  cd $cache/$mirrordir/$dn
+  cd "$cache/$mirrordir/$dn"
   tar -x -C / -f $bn
   # update the package database
 
