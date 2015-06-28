@@ -1033,7 +1033,7 @@ function apt-cyg-dist-upgrade-no-ask ()
   pushd "$(apt-cyg-pathof cache)"
   
   apt-cyg-update-setup
-  cygstart cmd /c 'CD '"$(cygpath -w "$(pwd)")"' && CD && ECHO Press any key to start upgrade && PAUSE && START /WAIT ./'"${SETUP_EXE}"' -B -q -g && C:\cygwin\bin\ash -c "/bin/rebaseall -v" && ECHO dist-upgrade is finished && ECHO Press any key to exit && PAUSE'
+  cygstart cmd /c 'ECHO Press any key to start dist-upgrade for cygwin '"$(current_cygarch)"' && PAUSE && START /WAIT .\'"${SETUP_EXE}"' -B -q -g && ash -c "/bin/rebaseall -v" && ECHO dist-upgrade is finished && ECHO Press any key to exit && PAUSE' # '
   kill_all_cygwin_process
   
   popd
