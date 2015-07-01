@@ -145,8 +145,14 @@ function find-workspace {
   s : %3a g
   ' <<< "$mirror")
 
+  if [ "$cache" == "/" ]
+  then
+  mkdir -p "/$mirrordir/$arch"
+  cd "/$mirrordir/$arch"
+  else
   mkdir -p "$cache/$mirrordir/$arch"
   cd "$cache/$mirrordir/$arch"
+  fi
   if [ -e setup.ini ]
   then
     return 0
