@@ -132,7 +132,7 @@ function find-workspace {
     getline
     print $1
   }
-  ' /etc/setup/setup.rc | cygpath -f-)
+  ' /etc/setup/setup.rc)
 
   mirror=$(awk '
   /last-mirror/ {
