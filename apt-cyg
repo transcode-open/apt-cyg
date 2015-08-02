@@ -110,6 +110,8 @@ function usage()
   echo "  --file, -f <file>        : read package names from file"
   echo "  --noupdate, -u           : don't update setup.ini from mirror"
   echo "  --ipv4, -4               : wget prefer ipv4"
+  echo "  --quiet, -q              : quiet (no output)"
+  echo "  --verbose, -v            : verbose"
   echo "  --help"
   echo "  --version"
 }
