@@ -124,6 +124,21 @@ function version()
   echo "Copyright (c) 2005-9 Stephen Jungels.  Released under the GPL."
 }
 
+# Usage: verbose [level [msg ...]]
+function verbose ()
+{
+  (( "${OPT_VERBOSE_LEVEL:-1}" < "${1:-1}" )) && return
+  shift
+  (( 0 < $# )) && echo "$@" || cat
+} >&2
+
+# Usage: verbosefor [level]
+function verbosefor ()
+{
+  (( "${OPT_VERBOSE_LEVEL:-1}" < "${1:-1}" )) && { echo "/dev/null"; return; }
+  echo "/dev/stderr"
+}
+
 function current_cygarch ()
 {
   arch | sed -e 's/^i686$/x86/g'
@@ -155,8 +170,8 @@ function findworkspace()
   mirror="${mirror%/}"
   mirrordir="$(mirror_to_mirrordir "$mirror/")"
   
-  echo Working directory is $cache
-  echo Mirror is $mirror
+  verbose 1 "Cache directory is $cache"
+  verbose 1 "Mirror is $mirror"
   mkdir -p "$cache/$mirrordir/$arch"
   cd "$cache/$mirrordir/$arch"
   
@@ -208,21 +223,22 @@ function setupini_download ()
   
   [ $noscripts -ne 0 -o $noupdate -ne 0 ] && return
   
-  pushd "$BASEDIR"
+  pushd "$BASEDIR" > /dev/null
   files_backup setup.ini setup.ini.sig setup.bz2 setup.bz2.sig
   
   while true; do
+    verbose 1 "Updating setup.ini"
     download_and_verify "$mirror/$arch/setup.bz2" && { bunzip2 -k setup.bz2 && mv setup setup.ini || rm -f setup.bz2; }
     download_and_verify "$mirror/$arch/setup.ini" || break
     
     files_backup_clean setup.ini setup.ini.sig setup.bz2 setup.bz2.sig
-    popd
-    echo "Updated setup.ini"
+    popd > /dev/null
+    verbose 1 "Updated setup.ini"
     return
   done
   files_restore setup.ini setup.ini.sig setup.bz2 setup.bz2.sig
-  popd
-  echo -e "\e[31;1mError:\e[30;0m updating setup.ini, reverting."
+  popd > /dev/null
+  echo -e "\e[31;1mError:\e[30;0m updating setup.ini, reverting." >&2
   return 1
 }
 
@@ -387,7 +403,7 @@ function fetch_trustedkeys ()
     local URL="$(eval echo "\$${LABEL}_URL")"
     local URL_LATEST="$(eval echo "\$${LABEL}_URL_LATEST")"
     local CASE=""
-    if [ -z "$force_fetch_trustedkeys" ] && { "${GPG[@]}" --fingerprint --with-colons | grep -q "$FPR"; } then
+    if [ -z "$force_fetch_trustedkeys" ] && { "${GPG[@]}" --fingerprint --with-colons | grep -q "$FPR"; } &> $(verbosefor 2); then
       continue
     fi
     if [ -n "$URL" ]; then
@@ -442,9 +458,11 @@ function fetch_trustedkeys ()
 function verify_signatures ()
 {
   while [ $# -gt 0 ]; do
-    if ! "${GPG[@]}" "${GPG_KEYRING[@]}" "$1"; then
-      echo -e "\e[31;1mError:\e[30;0m BAD signature: $1"
+    if ! "${GPG[@]}" "${GPG_KEYRING[@]}" "$1" &> $(verbosefor 2); then
+      echo -e "\e[31;1mError:\e[30;0m BAD signature: $1" >&2
       return 1
+    else
+      verbose 0 -e "\e[32;1msignature verified\e[30;0m: $1"
     fi
     shift
   done
@@ -515,9 +533,9 @@ function apt-cyg-upgrade-self ()
     echo -e "\e[31;1mError:\e[30;0m apt-get is not under the git version control."
     exit 1
   fi
-  pushd "$basedir"
+  pushd "$basedir" > /dev/null
   git pull -v
-  popd
+  popd > /dev/null
 }
 
 function proxy_auto ()
@@ -973,9 +991,9 @@ function hash_check ()
       f2="${f0#*\*}"
       method="$(hash_method "$f1")sum"
       if echo "$f0" | "$method" -c --status; then
-        echo "hash_check: $method: $f2: OK"
+        verbose 0 "hash_check: $method: $f2: OK"
       else
-        echo "hash_check: $method: $f2: FAILED"
+        verbose 0 "hash_check: $method: $f2: FAILED"
         count=$(( count + 1 ))
       fi
     done 0<${1:-<(cat)}
@@ -983,7 +1001,7 @@ function hash_check ()
     (( $# <= 0 )) && break
   done
   if (( 0 < count )); then
-    echo "hash_check: WARNING: $count computed checksum did NOT match"
+    verbose 0 "hash_check: WARNING: $count computed checksum did NOT match"
     return 1
   fi
   return 0
@@ -1005,38 +1023,38 @@ function apt-cyg-update-setup ()
 {
   [ -n "$OPT_NO_UPDATE_SETUP" ] && return
   
-  pushd "$(apt-cyg-pathof cache)"
+  pushd "$(apt-cyg-pathof cache)" > /dev/null
   
   if "${WGET[@]}" -N "https://cygwin.com/${SETUP_EXE}"; then
     chmod +x "${SETUP_EXE}"
-    ls -l "${SETUP_EXE}"
+    ls -l "${SETUP_EXE}" > $(verbosefor 2)
   else
     echo -e "\e[31;1mError:\e[30;0m ${SETUP_EXE} could not be downloaded."
     exit 1
   fi
   
-  popd
+  popd > /dev/null
 }
 
 function apt-cyg-setup ()
 {
-  pushd "$(apt-cyg pathof cache)"
+  pushd "$(apt-cyg pathof cache)" > /dev/null
   
   apt-cyg-update-setup
   ./"${SETUP_EXE}" "$@"
   
-  popd
+  popd > /dev/null
 }
 
 function apt-cyg-dist-upgrade-no-ask ()
 {
-  pushd "$(apt-cyg-pathof cache)"
+  pushd "$(apt-cyg-pathof cache)" > /dev/null
   
   apt-cyg-update-setup
   cygstart cmd /c 'ECHO Press any key to start dist-upgrade for cygwin '"$(current_cygarch)"' && PAUSE && START /WAIT .\'"${SETUP_EXE}"' -B -q -g && ash -c "/bin/rebaseall -v" && ECHO dist-upgrade is finished && ECHO Press any key to exit && PAUSE' # '
   kill_all_cygwin_process
   
-  popd
+  popd > /dev/null
 }
 
 function apt-cyg-dist-upgrade ()
@@ -1250,6 +1268,16 @@ function parse_args ()
         shift
         ;;
       
+      --quiet|-q)
+        OPT_VERBOSE_LEVEL=-1
+        shift
+        ;;
+      
+      --verbose|-v)
+        OPT_VERBOSE_LEVEL=2
+        shift
+        ;;
+      
       --help)
         usage
         exit 0
@@ -1326,6 +1354,12 @@ for file in "${OPT_FILES[@]}"; do
     echo File $file not found, skipping
   fi
 done
+
+wget --help | grep -- --show-progress &>/dev/null && HAVE_SHOW_PROGRESS="--show-progress"
+wget --help | grep -- --no-verbose    &>/dev/null && HAVE_NO_VERBOSE="--no-verbose"
+(( "${OPT_VERBOSE_LEVEL:-1}" < 0 )) && WGET+=( --quiet ) || \
+(( "${OPT_VERBOSE_LEVEL:-1}" < 1 )) && WGET+=( --quiet $HAVE_SHOW_PROGRESS ) || \
+(( "${OPT_VERBOSE_LEVEL:-1}" < 2 )) && WGET+=( $HAVE_NO_VERBOSE $HAVE_SHOW_PROGRESS )
 
 
 
@@ -1416,8 +1450,8 @@ function apt-cyg-install ()
       echo Package $pkg is already installed, skipping
       continue
     fi
-    echo ""
-    echo Installing $pkg
+    verbose 0 ""
+    verbose 0 "Installing $pkg"
     
     # look for package and save desc file
     
@@ -1428,11 +1462,11 @@ function apt-cyg-install ()
        setup.ini
     local desc="$(< "release/$pkg/desc")"
     if [ "$desc" = "Package not found" ]; then
-      echo Package $pkg not found or ambiguous name, exiting
+      verbose 0 "Package $pkg not found or ambiguous name, exiting"
       rm -r "release/$pkg"
       exit 1
     fi
-    echo Found package $pkg
+    verbose 0 "Found package $pkg"
     
     # download and unpack the bz2 file
     
@@ -1440,7 +1474,7 @@ function apt-cyg-install ()
     local install="$(awk '/^install: / { print $2; exit }' "release/$pkg/desc")"
     
     if [ -z "$install" ]; then
-      echo "Could not find \"install\" in package description: obsolete package?"
+      verbose 0 "Could not find \"install\" in package description: obsolete package?"
       exit 1
     fi
     
@@ -1451,11 +1485,11 @@ function apt-cyg-install ()
     # check the SHA512 hash
     local digest="$(awk '/^install: / { print $4; exit }' "desc")"
     if ! hash_check <<<"${digest} *${file}" ; then
-      echo "error: hash did not match: $file"
+      verbose 0 "error: hash did not match: $file"
       exit 1
     fi
     
-    echo "Unpacking..."
+    verbose 0 "Unpacking..."
     tar > "/etc/setup/$pkg.lst" xvf "$file" -C /
     gzip -f "/etc/setup/$pkg.lst"
     cd ../..
@@ -1472,11 +1506,11 @@ function apt-cyg-install ()
     
     local warn=0
     if [ -n "$requires" ]; then
-      echo Package $pkg requires the following packages, installing:
-      echo $requires
+      verbose 0 "Package $pkg requires the following packages, installing:"
+      verbose 0 "$requires"
       for package in $requires; do
         if package_db-is_registered "$package"; then
-          echo Package $package is already installed, skipping
+          verbose 0 "Package $package is already installed, skipping"
           continue
         fi
         apt-cyg "${OPTS4INHERIT[@]}" --proxy inherit --noscripts install $package
@@ -1491,14 +1525,14 @@ function apt-cyg-install ()
     
     local pis="$(ls /etc/postinstall/*.sh 2>/dev/null | wc -l)"
     if [ $pis -gt 0 -a $noscripts -ne 1 ]; then
-      echo Running postinstall scripts
+      verbose 0 "Running postinstall scripts"
       for script in /etc/postinstall/*.sh; do
         $script
         mv $script $script.done
       done
     fi
     
-    echo Package $pkg installed
+    verbose 0 "Package $pkg installed"
     
   done
 }
@@ -1512,23 +1546,23 @@ function apt-cyg-remove()
   checkpackages "$@"
   for pkg do
     if ! package_db-is_registered "$pkg"; then
-      echo Package $pkg is not installed, skipping
+      verbose 0 "Package $pkg is not installed, skipping"
       continue
     fi
     
     local dontremove="cygwin coreutils gawk bzip2 tar xz wget bash"
     for req in $dontremove; do
       if [ "$pkg" = "$req" ]; then
-        echo apt-cyg cannot remove package $pkg, exiting
+        verbose 0 "apt-cyg cannot remove package $pkg, exiting"
         exit 1
       fi
     done
     
     if [ ! -e "/etc/setup/$pkg.lst.gz" -a -z "$force_remove" ]; then
-      echo Package manifest missing, cannot remove $pkg.  Exiting
+      verbose 0 "Package manifest missing, cannot remove $pkg.  Exiting"
       exit 1
     fi
-    echo Removing $pkg
+    verbose 0 "Removing $pkg"
     
     # run preremove scripts
     
@@ -1539,7 +1573,7 @@ function apt-cyg-remove()
     gzip -cd "/etc/setup/$pkg.lst.gz" | awk '/[^\/]$/ {print "rm -f \"/" $0 "\""}' | sh
     rm -f "/etc/postinstall/$pkg.sh.done" "/etc/preremove/$pkg.sh" "/etc/setup/$pkg.lst.gz"
     package_db-unregister "$pkg"
-    echo Package $pkg removed
+    verbose 0 "Package $pkg removed"
     
   done
 }
