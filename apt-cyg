@@ -130,7 +130,7 @@ function version()
 # Usage: verbose [level [msg ...]]
 function verbose ()
 {
-  (( "${OPT_VERBOSE_LEVEL:-1}" < "${1:-1}" )) && return
+  (( "${OPT_VERBOSE_LEVEL}" < "${1:-1}" )) && return
   shift
   (( 0 < $# )) && echo "$@" || cat
 } >&2
@@ -138,7 +138,7 @@ function verbose ()
 # Usage: verbosefor [level]
 function verbosefor ()
 {
-  (( "${OPT_VERBOSE_LEVEL:-1}" < "${1:-1}" )) && { echo "/dev/null"; return; }
+  (( "${OPT_VERBOSE_LEVEL}" < "${1:-1}" )) && { echo "/dev/null"; return; }
   echo "/dev/stderr"
 }
 
@@ -1345,6 +1345,8 @@ function parse_args ()
 
 parse_args "$@"
 
+: ${OPT_VERBOSE_LEVEL:=1}
+
 [ -n "$OPT_CHARCH" ] && charch "$OPT_CHARCH" "${INITIAL_ARGS[@]}"
 
 [ "${#OPT_MIRROR[@]}" -gt 0 ] && echo "${OPT_MIRROR%/}/"             > /etc/setup/last-mirror
@@ -1365,9 +1367,9 @@ done
 
 wget --help | grep -- --show-progress &>/dev/null && HAVE_SHOW_PROGRESS="--show-progress"
 wget --help | grep -- --no-verbose    &>/dev/null && HAVE_NO_VERBOSE="--no-verbose"
-(( "${OPT_VERBOSE_LEVEL:-1}" < 0 )) && WGET+=( --quiet ) || \
-(( "${OPT_VERBOSE_LEVEL:-1}" < 1 )) && WGET+=( --quiet $HAVE_SHOW_PROGRESS ) || \
-(( "${OPT_VERBOSE_LEVEL:-1}" < 2 )) && WGET+=( $HAVE_NO_VERBOSE $HAVE_SHOW_PROGRESS )
+(( "${OPT_VERBOSE_LEVEL}" < 0 )) && WGET+=( --quiet ) || \
+(( "${OPT_VERBOSE_LEVEL}" < 1 )) && WGET+=( --quiet $HAVE_SHOW_PROGRESS ) || \
+(( "${OPT_VERBOSE_LEVEL}" < 2 )) && WGET+=( $HAVE_NO_VERBOSE $HAVE_SHOW_PROGRESS )
 
 
 
