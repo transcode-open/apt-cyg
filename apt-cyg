@@ -98,6 +98,7 @@ function usage()
   echo "  --no-verify, -X          : Don't verify setup.ini signatures"
   echo "  --no-check-certificate   : Don't validate the server's certificate"
   echo "  --no-update-setup        : Don't update setup.exe"
+  echo "  --no-header              : Don't print header"
   echo "  --proxy, -p <auto|inherit|none|URL> :"
   echo "                             set proxy (default: \${APT_CYG_PROXY:-auto})"
   echo "  --completion-get-subcommand:"
@@ -752,14 +753,14 @@ function dep_check ()
 function apt-cyg-depends ()
 {
   local pkg
-  printf "%-40s %s\t%s\t%s\n" "PKGNAME" "AVAIL" "SHALLOW" "DEEP"
+  [ -z "$OPT_NO_HEADER" ] && printf "%-40s %s\t%s\t%s\n" "PKGNAME" "AVAIL" "SHALLOW" "DEEP"
   dep_check depends "$@"
 }
 
 function apt-cyg-rdepends ()
 {
   local pkg
-  printf "%-40s %s\t%s\t%s\n" "PKGNAME" "AVAIL" "SHALLOW" "DEEP"
+  [ -z "$OPT_NO_HEADER" ] && printf "%-40s %s\t%s\t%s\n" "PKGNAME" "AVAIL" "SHALLOW" "DEEP"
   dep_check rdepends "$@"
 }
 
@@ -1215,6 +1216,11 @@ function parse_args ()
         shift
         ;;
       
+      --no-header)
+        OPT_NO_HEADER="$1"
+        shift
+        ;;
+      
       --proxy|-p)
         OPT_PROXY="$2"
         shift 2 || break
@@ -1374,7 +1380,7 @@ function apt-cyg-update ()
 
 function apt-cyg-show ()
 {
-  echo 1>&2 The following packages are installed:
+  [ -z "$OPT_NO_HEADER" ] && echo "The following packages are installed:"
   package_db-list
 }
 
