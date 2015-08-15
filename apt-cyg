@@ -592,6 +592,13 @@ function proxy_setup ()
   esac
 }
 
+# Usage: get_pkgname PKGFILE
+function get_pkgname ()
+{
+  local tarball="${1##*/}"
+  echo "$tarball" | sed -re's/-[0-9].*//g'
+}
+
 # PACKAGE_DB is defined at package_db.cc in the cygwin-app setup.exe
 # See blow:
 # https://www.sourceware.org/cygwin-apps/setup.html
@@ -636,9 +643,11 @@ function package_db-list ()
   ' "${PACKAGE_DB}"
 }
 
-# Usage: package_db-register PKGNAME PKGFILE
+# Usage: package_db-register PKGFILE
 function package_db-register ()
 {
+  local pkgfile="${1##*/}"
+  local pkgname="$(get_pkgname "$pkgfile")"
   local work="/tmp/apt-cyg.$$.${PACKAGE_DB##*/}"
   
   package_db-version_check
@@ -648,7 +657,7 @@ function package_db-register ()
     !registered && PKGNAME < $1 && NF != 2 {register()}
     {print $0}
     END {if (!registered) register()}
-  ' PKGNAME="$1" PKGFILE="$2" "${PACKAGE_DB}" > "${work}"
+  ' PKGNAME="$pkgname" PKGFILE="${pkgfile}" "${PACKAGE_DB}" > "${work}"
   
   mv "${PACKAGE_DB}" "${PACKAGE_DB}-save"
   mv "${work}"       "${PACKAGE_DB}"
@@ -1507,7 +1516,7 @@ function apt-cyg-install ()
     
     # update the package database
     
-    package_db-register "$pkg" "$file"
+    package_db-register "$file"
     
     
     # recursively install required packages
