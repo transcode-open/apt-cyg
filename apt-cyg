@@ -462,6 +462,7 @@ function apt-install {
   mv /etc/setup/installed.db /etc/setup/installed.db-save
   mv /tmp/awk.$$ /etc/setup/installed.db
 
+  [ -v nodeps ] && continue
   # recursively install required packages
 
   requires=$(awk '$1=="requires", $0=$2' FS=': ' desc)
@@ -488,7 +489,7 @@ function apt-install {
 
   # run all postinstall scripts
 
-  (( noscripts )) && continue
+  [ -v noscripts ] && continue
   find /etc/postinstall -name '*.sh' | while read script
   do
     echo Running $script
@@ -609,9 +610,14 @@ then
 fi
 
 # process options
-while (( $# ))
+until [ $# = 0 ]
 do
   case "$1" in
+
+    --nodeps)
+      nodeps=1
+      shift
+    ;;
 
     --noscripts)
       noscripts=1
