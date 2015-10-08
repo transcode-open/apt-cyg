@@ -519,7 +519,7 @@ function apt-remove {
     warn Package manifest missing, cannot remove $pkg. Exiting
     exit 1
   fi
-  gzip -dk setup/"$pkg".lst.gz
+  gzip -d < setup/"$pkg".lst.gz > setup/"$pkg".lst
   awk '
   NR == FNR {
     if ($NF) ess[$NF]
