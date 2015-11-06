@@ -1499,7 +1499,7 @@ function apt-cyg-install ()
     
     local file="$(basename "$install")"
     cd "release/$pkg"
-    "${WGET[@]}" -nc $mirror/$install
+    "${WGET[@]}" -Nc $mirror/$install
     
     # check the SHA512 hash
     local digest="$(awk '/^install: / { print $4; exit }' "desc")"
