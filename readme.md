@@ -9,8 +9,8 @@ Cygwin which cooperates with Cygwin Setup and uses the same repository.
 [![bountysource][3]][2]
 
 [1]:https://github.com/transcode-open/apt-cyg
-[2]:https://www.bountysource.com/teams/apt-cyg
-[3]:https://api.bountysource.com/badge/team?team_id=39147&style=raised
+[2]:https://www.bountysource.com/teams/svnpenn
+[3]:https://api.bountysource.com/badge/team?team_id=114003&style=raised
 
 Operations
 ----------
