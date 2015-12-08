@@ -128,9 +128,12 @@ function find-workspace {
   
   # work wherever setup worked last, if possible
   cache=$(awk '
-  /last-cache/ {
-    getline
-    print $1
+  BEGIN {
+    RS = "\n\\<"
+    FS = "\n\t"
+  }
+  $1 == "last-cache" {
+    print $2
   }
   ' /etc/setup/setup.rc)
 
