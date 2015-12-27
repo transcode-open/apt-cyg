@@ -180,6 +180,10 @@ Ex.) Merging to the GPL from the MIT is possible. But merging to the MIT from th
 * [wuyangnju / apt-cyg](https://github.com/wuyangnju/apt-cyg/network)
 * [takuya / apt-cyg](https://github.com/takuya/apt-cyg/network)
 
+### Derivations of non-fork on the github
+
+* [nobuyo / medy](https://github.com/nobuyo/medy)
+
 Todo
 ------------
 
