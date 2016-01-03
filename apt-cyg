@@ -105,7 +105,7 @@ OPTIONS
 "
 
 version="\
-apt-cyg version 0.59
+apt-cyg version 1
 
 The MIT License (MIT)
 
