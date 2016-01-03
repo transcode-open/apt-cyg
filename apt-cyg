@@ -23,7 +23,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-mapfile usage <<+
+usage="\
 NAME
   apt-cyg - package manager utility
 
@@ -102,15 +102,15 @@ OPTIONS
 
   --version
     Display version and exit.
-+
+"
 
-mapfile version <<+
+version="\
 apt-cyg version 0.59
 
 The MIT License (MIT)
 
 Copyright (c) 2005-9 Stephen Jungels
-+
+"
 
 function wget {
   if command wget -h &>/dev/null
@@ -628,7 +628,7 @@ do
     ;;
 
     --version)
-      printf %s "${version[@]}"
+      printf "$version"
       exit
     ;;
 
@@ -663,5 +663,5 @@ then
   readonly arch=${HOSTTYPE/i6/x}
   apt-$command
 else
-  printf %s "${usage[@]}"
+  printf "$usage"
 fi
