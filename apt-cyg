@@ -909,7 +909,7 @@ function apt-cyg-benchmark-mirrors ()
 
 function apt-cyg-benchmark-parallel-mirrors ()
 {
-  local result="$(mktemp "${SCRIPTNAME}.$$.XXXXX")"
+  local result="$(mktemp --tmpdir "${SCRIPTNAME}.$$.XXXXX")"
   local mirror
   for mirror; do echo $mirror; done | lesser-parallel apt-cyg-benchmark-mirrors {} | tee "$result"
   echo Finished benchmark.
