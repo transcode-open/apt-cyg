@@ -23,6 +23,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+if [ ${BASH_VERSINFO}${BASH_VERSINFO[1]} -lt 42 ]
+then
+  echo 'Bash version 4.2+ required'
+  exit
+fi
+
 usage="\
 NAME
   apt-cyg - package manager utility
