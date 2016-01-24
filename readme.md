@@ -1,6 +1,22 @@
 apt-cyg
 =======
 
+STATUS UPDATE 1-24-2016:
+-----------------------
+
+Over the weekend apt-cyg lost it's only active maintainer. Since I am working on other things now, 
+this project is basically read-only. That means I won't be responding to bug reports or issues.
+
+If you have a problem with apt-cyg:
+
+1. You might be able to fork it and fix it yourself, if you enjoy BASH programming
+2. Look for forks with an active maintainer, pick one that works for you, vote it up.
+
+And now back to apt-cyg...
+
+apt-cyg
+-------
+
 apt-cyg is a Cygwin package manager. It includes a command-line installer for
 Cygwin which cooperates with Cygwin Setup and uses the same repository.
 
