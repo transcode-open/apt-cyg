@@ -162,14 +162,18 @@ Ex.) Merging to the GPL from the MIT is possible. But merging to the MIT from th
 #### Official (MIT license)
 
 * [transcodes-open / apt-cyg](https://github.com/transcode-open/apt-cyg/network)
+  * [tmshn / cyg-fast](https://github.com/tmshn/cyg-fast/network)
 
 #### Unofficial (MIT license)
 
-* [digitallamb / apt-cyg](https://github.com/digitallamb/apt-cyg)
+* [digitallamb / apt-cyg](https://github.com/digitallamb/apt-cyg/network)
+* [balanx / apt-cyg](https://github.com/balanx/apt-cyg/network)
+* [langlichuan123 / apt-cyg](https://github.com/langlichuan123/apt-cyg/network)
 
 #### Unofficial (GPLv2)
 
 * [cfg / apt-cyg](https://github.com/cfg/apt-cyg/network)
+  * [Milly / apt-cyg](https://github.com/Milly/apt-cyg/network)
 * [ashumkin / apt-cyg](https://github.com/ashumkin/apt-cyg/network)
 * [svn2github / apt-cyg](https://github.com/svn2github/apt-cyg/network)
 * [nosuchuser / apt-cyg](https://github.com/nosuchuser/apt-cyg/network)
@@ -182,8 +186,9 @@ Ex.) Merging to the GPL from the MIT is possible. But merging to the MIT from th
 
 ### Derivations of non-fork on the github
 
-* [nobuyo / medy](https://github.com/nobuyo/medy)
-* [svnpenn / sage](https://github.com/svnpenn/sage)
+* [10sr / pac-cyg](https://github.com/10sr/pac-cyg/network)
+* [nobuyo / medy](https://github.com/nobuyo/medy/network)
+* [svnpenn / sage](https://github.com/svnpenn/sage/network)
 
 Todo
 ------------
