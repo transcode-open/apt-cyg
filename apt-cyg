@@ -89,6 +89,7 @@ function usage()
   echo "  \"apt-cyg dist-upgrade\" to upgrade all packages that is installed. This subcommand uses setup.exe"
   echo "  \"apt-cyg update-setup\" to update setup.exe"
   echo "  \"apt-cyg setup\" to call setup.exe"
+  echo "  \"apt-cyg packages-total-count\" count number of total packages from setup.ini"
   echo "Options:"
   echo "  --charch <arch>          : change archetecture"
   echo "  --use-setuprc            : set cache and mirror with /etc/setup/setup.rc"
@@ -1079,6 +1080,11 @@ function apt-cyg-dist-upgrade ()
   } || {
     echo "Abort."
   }
+}
+
+function apt-cyg-packages-total-count ()
+{
+  grep ^@ <"$(apt-cyg pathof setup.ini)" | wc -l
 }
 
 # Lesser Parallel for Embedding
