@@ -27,6 +27,8 @@ apt-cyg is a command-line installer for [Cygwin](http://cygwin.com/) which coope
 * "apt-cyg scriptinfo" to show script infomations."
 * "apt-cyg show-packages-busyness &lt;package names&gt; ..." to show packages are busy or noe."
 * "apt-cyg dist-upgrade" to upgrade all packages that is installed. This subcommand uses setup-*.exe
+* "apt-cyg update-setup" to update setup.exe
+* "apt-cyg setup" to call setup.exe
 
 Requirements
 ------------
