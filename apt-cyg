@@ -90,6 +90,7 @@ function usage()
   echo "  \"apt-cyg update-setup\" to update setup.exe"
   echo "  \"apt-cyg setup\" to call setup.exe"
   echo "  \"apt-cyg packages-total-count\" count number of total packages from setup.ini"
+  echo "  \"apt-cyg packages-total-size [pattern_of_section]\" count size of total packages from setup.ini"
   echo "Options:"
   echo "  --charch <arch>          : change archetecture"
   echo "  --use-setuprc            : set cache and mirror with /etc/setup/setup.rc"
@@ -1085,6 +1086,20 @@ function apt-cyg-dist-upgrade ()
 function apt-cyg-packages-total-count ()
 {
   grep ^@ <"$(apt-cyg pathof setup.ini)" | wc -l
+}
+
+# Usage: apt-cyg-packages-total-size [pattern_of_section]
+function apt-cyg-packages-total-size ()
+{
+  local section="^$"
+  (( 0 < $# )) && section="$1"
+  
+  awk -v SECTION="$section" '
+    /^@ [ -~]+ *$/ {section = ""}
+    match($0,/^\[([ -~]*)\] *$/,m) {section = m[1]}
+    match(section, SECTION) && $1 == "install:" {sum += $3}
+    END {print sum}
+  ' "$(apt-cyg pathof setup.ini)"
 }
 
 # Lesser Parallel for Embedding
