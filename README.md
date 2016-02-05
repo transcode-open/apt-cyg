@@ -32,6 +32,7 @@ apt-cyg is a command-line installer for [Cygwin](http://cygwin.com/) which coope
 * "apt-cyg packages-total-count" count number of total packages from setup.ini
 * "apt-cyg packages-total-size" count size of total packages from setup.ini
 * "apt-cyg packages-cached-count" count number of cached packages in cache/mirrordir.
+* "apt-cyg packages-cached-size" count size of cached packages in cache/mirrordir.
 
 Requirements
 ------------
