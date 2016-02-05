@@ -10,7 +10,7 @@ apt-cyg is a command-line installer for [Cygwin](http://cygwin.com/) which coope
 * "apt-cyg find &lt;pattern(s)&gt;" to find packages matching patterns
 * "apt-cyg describe &lt;pattern(s)&gt;" to describe packages matching patterns
 * "apt-cyg packageof &lt;commands or files&gt;" to locate parent packages
-* "apt-cyg pathof &lt;cache|mirror|mirrordir|cache/mirrordir|setup.ini&gt;" to show path"
+* "apt-cyg pathof &lt;cache|mirror|mirrordir|cache/mirrordir|setup.ini&gt;" to show path
 * "apt-cyg key-add &lt;files&gt; ..." to add keys contained in &lt;files&gt;
 * "apt-cyg key-del &lt;keyids&gt; ..." to remove keys &lt;keyids&gt;
 * "apt-cyg key-list" to list keys
@@ -24,8 +24,8 @@ apt-cyg is a command-line installer for [Cygwin](http://cygwin.com/) which coope
 * "apt-cyg benchmark-mirrors &lt;url&gt; ..." to benchmark mirrors.
 * "apt-cyg benchmark-parallel-mirrors &lt;url&gt; ..." to benchmark mirrors in parallel.
 * "apt-cyg benchmark-parallel-mirrors-list" to benchmark mirrors-list in parallel.
-* "apt-cyg scriptinfo" to show script infomations."
-* "apt-cyg show-packages-busyness &lt;package names&gt; ..." to show packages are busy or noe."
+* "apt-cyg scriptinfo" to show script infomations.
+* "apt-cyg show-packages-busyness &lt;package names&gt; ..." to show packages are busy or noe.
 * "apt-cyg dist-upgrade" to upgrade all packages that is installed. This subcommand uses setup-*.exe
 * "apt-cyg update-setup" to update setup.exe
 * "apt-cyg setup" to call setup.exe
