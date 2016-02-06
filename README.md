@@ -169,6 +169,7 @@ Ex.) Merging to the GPL from the MIT is possible. But merging to the MIT from th
 
 * [transcodes-open / apt-cyg](https://github.com/transcode-open/apt-cyg/network)
   * [tmshn / cyg-fast](https://github.com/tmshn/cyg-fast/network)
+  * [pi0 / cyg](https://github.com/pi0/cyg) (GPLv3)
 
 #### Unofficial (MIT license)
 
