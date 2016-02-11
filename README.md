@@ -1,6 +1,13 @@
 apt-cyg
 =======
 
+2016-02-11: current problem
+---------------------------
+It seems happenning some new problems, because the cygwin has changed the ALC mechanism, probably. 
+For example, when `apt-cyg install cygport` is executed, a permission of `/etc/X11` is not correct.
+
+apt-cyg
+-------
 apt-cyg is a command-line installer for [Cygwin](http://cygwin.com/) which cooperates with Cygwin Setup and uses the same repository. The syntax is similar to apt-get. Usage examples:
 
 * "apt-cyg install &lt;package names&gt;" to install packages
