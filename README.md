@@ -1,11 +1,6 @@
 apt-cyg
 =======
 
-2016-02-11: current problem
----------------------------
-It seems happenning some new problems, because the cygwin has changed the ALC mechanism, probably. 
-For example, when `apt-cyg install cygport` is executed, a permission of `/etc/X11` is not correct.
-
 apt-cyg
 -------
 apt-cyg is a command-line installer for [Cygwin](http://cygwin.com/) which cooperates with Cygwin Setup and uses the same repository. The syntax is similar to apt-get. Usage examples:
@@ -40,6 +35,7 @@ apt-cyg is a command-line installer for [Cygwin](http://cygwin.com/) which coope
 * "apt-cyg packages-total-size" count size of total packages from setup.ini
 * "apt-cyg packages-cached-count" count number of cached packages in cache/mirrordir.
 * "apt-cyg packages-cached-size" count size of cached packages in cache/mirrordir.
+* "apt-cyg repair-acl" repair acl.
 
 Requirements
 ------------
@@ -213,6 +209,17 @@ Todo
 
 Known Problem
 ------------
+
+### 2016-02-12: Problems about the ACL
+
+In recent version, the cygwin changed the ACL mechanism .
+So, in the cygwin current version, if it will be installed by setup.exe with -B or --no-admin option,
+the cygwin root (/) does not have correct ACL.
+
+A new subcommand `repair-acl` tries to repair it.
+But some package, that are failed to install by the ACL problem, need to be reinstalled.
+
+
 
 ### 2015-04-09: gpgv seems not work correctly on 32 bit environment
 

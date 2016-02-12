@@ -93,6 +93,7 @@ function usage()
   echo "  \"apt-cyg packages-total-size [pattern_of_section]\" count size of total packages from setup.ini"
   echo "  \"apt-cyg packages-cached-count\" count number of cached packages in cache/mirrordir."
   echo "  \"apt-cyg packages-cached-size\" count size of cached packages in cache/mirrordir."
+  echo "  \"apt-cyg repair-acl\" repair acl."
   echo "Options:"
   echo "  --charch <arch>          : change archetecture"
   echo "  --use-setuprc            : set cache and mirror with /etc/setup/setup.rc"
@@ -1117,6 +1118,46 @@ function apt-cyg-packages-cached-size ()
   find . -type f -iname '*tar*' -exec ls -l {} + \
   | awk '{sum+=$5}END{print sum}'
   popd > /dev/null
+}
+
+function apt-cyg-repair-acl ()
+{
+  local target="${1:-/}"
+  local aclbackup="/tmp/$(date +%Y%m%d_%H%M%S)_acl"
+  ask_user "$(cat <<-EOD
+	This subcommand tries to repair the ACL for "${target}".
+	Maybe it repairs a cygwin that was installed by setup.exe with -B and --no-admin options.
+	But some package, that are failed to install by the ACL problem, need to be reinstalled.
+	
+	And unfortunately, perchance, this might cause some corruptions about the ACL.
+	You can find a backup of the ACL before being rewritten by this subcommand at below:
+	  "${aclbackup}.bin"
+	  "${aclbackup}.txt"
+	
+	Are you sure ?
+	EOD
+  )" || exit 1
+  echo
+  
+  cmd /c icacls "$(cygpath -w "${target}")" /save "$(cygpath -w "${aclbackup}.bin")" > /dev/null
+  cmd /c icacls "$(cygpath -w "${target}")" | cp2utf8 > "$(cygpath -w "${aclbackup}.txt")"
+  
+  cmd /c icacls "$(cygpath -w "${target}")" \
+    /grant \
+      "%USERDOMAIN%\\%USERNAME%:F" \
+      "%USERDOMAIN%\\None:RX" \
+      "Everyone:RX" \
+      "CREATOR OWNER:(OI)(CI)(IO)F" \
+      "CREATOR GROUP:(OI)(CI)(IO)RX" \
+      "Everyone:(OI)(CI)(IO)RX" \
+    /remove \
+      "NT AUTHORITY\\Authenticated Users" \
+      "NT AUTHORITY\\SYSTEM" \
+      "BUILTIN\\Administrators" \
+      "BUILTIN\\Users" \
+      "NULL SID" \
+    /inheritance:r \
+  | cp2utf8
 }
 
 # Lesser Parallel for Embedding
