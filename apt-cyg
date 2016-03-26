@@ -133,7 +133,7 @@ function find-workspace {
   # default working directory and mirror
   
   # work wherever setup worked last, if possible
-  cache=$(awk '
+  cache=$(gawk '
   BEGIN {
     RS = "\n\\<"
     FS = "\n\t"
@@ -143,7 +143,7 @@ function find-workspace {
   }
   ' /etc/setup/setup.rc)
 
-  mirror=$(awk '
+  mirror=$(gawk '
   /last-mirror/ {
     getline
     print $1
@@ -206,7 +206,7 @@ function apt-category {
   find-workspace
   for pkg in "${pks[@]}"
   do
-    awk '
+    gawk '
     $1 == "@" {
       pck = $2
     }
@@ -222,10 +222,10 @@ function apt-list {
   for pkg in "${pks[@]}"
   do
     let sbq++ && echo
-    awk 'NR>1 && $1~pkg && $0=$1' pkg="$pkg" /etc/setup/installed.db
+    gawk 'NR>1 && $1~pkg && $0=$1' pkg="$pkg" /etc/setup/installed.db
   done
   let sbq && return
-  awk 'NR>1 && $0=$1' /etc/setup/installed.db
+  gawk 'NR>1 && $0=$1' /etc/setup/installed.db
 }
 
 function apt-listall {
@@ -235,7 +235,7 @@ function apt-listall {
   for pkg in "${pks[@]}"
   do
     let sbq++ && echo
-    awk '$1~pkg && $0=$1' RS='\n\n@ ' FS='\n' pkg="$pkg" setup.ini
+    gawk '$1~pkg && $0=$1' RS='\n\n@ ' FS='\n' pkg="$pkg" setup.ini
   done
 }
 
@@ -260,7 +260,7 @@ function apt-show {
   for pkg in "${pks[@]}"
   do
     (( notfirst++ )) && echo
-    awk '
+    gawk '
     $1 == query {
       print
       fd++
@@ -278,7 +278,7 @@ function apt-depends {
   check-packages
   for pkg in "${pks[@]}"
   do
-    awk '
+    gawk '
     @include "join"
     $1 == "@" {
       apg = $2
@@ -312,7 +312,7 @@ function apt-rdepends {
   find-workspace
   for pkg in "${pks[@]}"
   do
-    awk '
+    gawk '
     @include "join"
     $1 == "@" {
       apg = $2
@@ -358,7 +358,7 @@ function download {
   pkg=$1
   # look for package and save desc file
 
-  awk '$1 == pc' RS='\n\n@ ' FS='\n' pc=$pkg setup.ini > desc
+  gawk '$1 == pc' RS='\n\n@ ' FS='\n' pc=$pkg setup.ini > desc
   if [ ! -s desc ]
   then
     echo Unable to locate package $pkg
@@ -368,7 +368,7 @@ function download {
   # download and unpack the bz2 or xz file
 
   # pick the latest version, which comes first
-  set -- $(awk '$1 == "install:"' desc)
+  set -- $(gawk '$1 == "install:"' desc)
   if (( ! $# ))
   then
     echo 'Could not find "install" in package description: obsolete package?'
@@ -425,7 +425,7 @@ function apt-searchall {
   do
     printf -v qs 'text=1&arch=%s&grep=%s' $arch "$pkg"
     wget -O matches cygwin.com/cgi-bin2/package-grep.cgi?"$qs"
-    awk '
+    gawk '
     NR == 1 {next}
     mc[$1]++ {next}
     /-debuginfo-/ {next}
@@ -458,7 +458,7 @@ function apt-install {
   tar -x -C / -f $bn
   # update the package database
 
-  awk '
+  gawk '
   ins != 1 && pkg < $1 {
     print pkg, bz, 0
     ins = 1
@@ -467,14 +467,14 @@ function apt-install {
   END {
     if (ins != 1) print pkg, bz, 0
   }
-  ' pkg="$pkg" bz=$bn /etc/setup/installed.db > /tmp/awk.$$
+  ' pkg="$pkg" bz=$bn /etc/setup/installed.db > /tmp/gawk.$$
   mv /etc/setup/installed.db /etc/setup/installed.db-save
-  mv /tmp/awk.$$ /etc/setup/installed.db
+  mv /tmp/gawk.$$ /etc/setup/installed.db
 
   [ -v nodeps ] && continue
   # recursively install required packages
 
-  requires=$(awk '$1=="requires", $0=$2' FS=': ' desc)
+  requires=$(gawk '$1=="requires", $0=$2' FS=': ' desc)
   cd ~-
   wr=0
   if [[ $requires ]]
@@ -513,7 +513,7 @@ function apt-install {
 function apt-remove {
   check-packages
   cd /etc
-  cygcheck awk bash bunzip2 grep gzip mv sed tar xz > setup/essential.lst
+  cygcheck gawk bash bunzip2 grep gzip mv sed tar xz > setup/essential.lst
   for pkg in "${pks[@]}"
   do
 
@@ -529,7 +529,7 @@ function apt-remove {
     exit 1
   fi
   gzip -dk setup/"$pkg".lst.gz
-  awk '
+  gawk '
   NR == FNR {
     if ($NF) ess[$NF]
     next
@@ -557,7 +557,7 @@ function apt-remove {
       [ -d /$each ] && rmdir --i /$each
     done
     rm -f setup/"$pkg".lst.gz postinstall/"$pkg".sh.done
-    awk -i inplace '$1 != ENVIRON["pkg"]' setup/installed.db
+    gawk -i inplace '$1 != ENVIRON["pkg"]' setup/installed.db
     echo Package $pkg removed
   fi
   rm setup/"$pkg".lst
@@ -573,7 +573,7 @@ function apt-remove {
 function apt-mirror {
   if [ "$pks" ]
   then
-    awk -i inplace '
+    gawk -i inplace '
     1
     /last-mirror/ {
       getline
@@ -582,7 +582,7 @@ function apt-mirror {
     ' pks="$pks" /etc/setup/setup.rc
     echo Mirror set to "$pks".
   else
-    awk '
+    gawk '
     /last-mirror/ {
       getline
       print $1
@@ -595,7 +595,7 @@ function apt-cache {
   if [ "$pks" ]
   then
     vas=$(cygpath -aw "$pks")
-    awk -i inplace '
+    gawk -i inplace '
     1
     /last-cache/ {
       getline
@@ -604,7 +604,7 @@ function apt-cache {
     ' vas="${vas//\\/\\\\}" /etc/setup/setup.rc
     echo Cache set to "$vas".
   else
-    awk '
+    gawk '
     /last-cache/ {
       getline
       print $1
