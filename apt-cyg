@@ -142,6 +142,7 @@ function find-workspace {
     print $2
   }
   ' /etc/setup/setup.rc)
+  cache=${cache%/} # in case it's the root
 
   mirror=$(awk '
   /last-mirror/ {
