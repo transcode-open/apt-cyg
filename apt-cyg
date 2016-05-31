@@ -124,10 +124,22 @@ function wget {
     command wget "$@"
   else
     warn wget is not installed, using lynx as fallback
-    set "${*: -1}"
-    lynx -source "$1" > "${1##*/}"
+    of=
+    while [[ $# -gt 1 ]] ; do
+      if [[ $1 == "-O" ]] ; then
+        shift
+        of="$1"
+      fi
+      shift
+    done
+    if [[ ${#of} -eq 0 ]] ; then
+      of="${1##*/}"
+    fi
+    echo + lynx -source "$1" \> "${of}" >&2
+    lynx -source "$1" > "${of}"
   fi
 }
+export -f wget
 
 function find-workspace {
   # default working directory and mirror
@@ -424,7 +436,7 @@ function apt-searchall {
   for pkg in "${pks[@]}"
   do
     printf -v qs 'text=1&arch=%s&grep=%s' $arch "$pkg"
-    wget -O matches cygwin.com/cgi-bin2/package-grep.cgi?"$qs"
+    wget -O matches http://cygwin.com/cgi-bin2/package-grep.cgi?"$qs"
     awk '
     NR == 1 {next}
     mc[$1]++ {next}
