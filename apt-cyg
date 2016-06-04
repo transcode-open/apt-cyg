@@ -148,6 +148,12 @@ function find-workspace {
     print $2
   }
   ' /etc/setup/setup.rc)
+  if [[ ${#cache} -eq 0 ]] ; then
+    mkdir -p /install
+    cache="/install"
+  else
+    cache=$(cygpath -ua "${cache}")
+  fi
 
   mirror=$(awk '
   /last-mirror/ {
@@ -155,6 +161,10 @@ function find-workspace {
     print $1
   }
   ' /etc/setup/setup.rc)
+  if [[ ${#mirror} -eq 0 ]] ; then
+    mirror="http://mirrors.kernel.org/sourceware/cygwin/"
+  fi
+
   mirrordir=$(sed '
   s / %2f g
   s : %3a g
