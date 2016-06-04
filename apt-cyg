@@ -154,6 +154,11 @@ function find-workspace {
   else
     cache=$(cygpath -ua "${cache}")
   fi
+  if [[ "${cache%/}" == "${cache}" ]] ; then
+    cacheslash="${cache}/"
+  else
+    cacheslash="${cache}"
+  fi
 
   mirror=$(awk '
   /last-mirror/ {
@@ -170,8 +175,8 @@ function find-workspace {
   s : %3a g
   ' <<< "$mirror")
 
-  mkdir -p "$cache/$mirrordir/$arch"
-  cd "$cache/$mirrordir/$arch"
+  mkdir -p "$cacheslash$mirrordir/$arch"
+  cd "$cacheslash$mirrordir/$arch"
   if [ -e setup.ini ]
   then
     return 0
@@ -400,8 +405,8 @@ function download {
    32) hash=md5sum    ;;
   128) hash=sha512sum ;;
   esac
-  mkdir -p "$cache/$mirrordir/$dn"
-  cd "$cache/$mirrordir/$dn"
+  mkdir -p "$cacheslash$mirrordir/$dn"
+  cd "$cacheslash$mirrordir/$dn"
   if ! test -e $bn || ! $hash -c <<< "$digest $bn"
   then
     wget -O $bn $mirror/$dn/$bn
@@ -410,7 +415,7 @@ function download {
 
   tar tf $bn | gzip > /etc/setup/"$pkg".lst.gz
   cd ~-
-  mv desc "$cache/$mirrordir/$dn"
+  mv desc "$cacheslash$mirrordir/$dn"
   echo $dn $bn > /tmp/dwn
 }
 
@@ -470,7 +475,7 @@ function apt-install {
   read dn bn </tmp/dwn
   echo Unpacking...
 
-  cd "$cache/$mirrordir/$dn"
+  cd "$cacheslash$mirrordir/$dn"
   tar -x -C / -f $bn
   # update the package database
 
