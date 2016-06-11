@@ -129,7 +129,6 @@ function wget {
     if [[ ${#of} -eq 0 ]] ; then
       of="${1##*/}"
     fi
-    echo + lynx -source "$1" \> "${of}" >&2
     lynx -source "$1" > "${of}"
   fi
 }
@@ -212,7 +211,15 @@ function check-packages {
 }
 
 function warn {
-  printf '\e[1;31m%s\e[m\n' "$*" >&2
+  if test -t 2 ; then
+    {
+        tput setaf 1
+        echo -E "$*"
+        tput sgr0
+    } >&2
+  else
+    echo -E "$*" >&2
+  fi
 }
 
 function apt-update {
@@ -535,6 +542,7 @@ function apt-remove {
   check-packages
   cd /etc
   cygcheck awk bash bunzip2 grep gzip mv sed tar xz > setup/essential.lst
+  anypkgerr=0
   for pkg in "${pks[@]}"
   do
 
@@ -546,8 +554,9 @@ function apt-remove {
 
   if [ ! -e setup/"$pkg".lst.gz ]
   then
-    warn Package manifest missing, cannot remove $pkg. Exiting
-    exit 1
+    warn Package manifest missing, cannot remove $pkg, skipping
+    anypkgerr=1
+    continue
   fi
   gzip -dc setup/"$pkg".lst.gz > setup/"$pkg".lst
   awk '
@@ -584,11 +593,13 @@ function apt-remove {
   rm setup/"$pkg".lst
   if [ $esn = 1 ]
   then
-    warn apt-cyg cannot remove package $pkg, exiting
-    exit 1
+    warn apt-cyg cannot remove package $pkg, skipping
+    anypkgerr=1
+    continue
   fi
 
   done
+  return $anypkgerr
 }
 
 function apt-mirror {
