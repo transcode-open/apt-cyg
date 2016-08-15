@@ -1,22 +1,12 @@
 apt-cyg
 =======
 
-And now back to apt-cyg ;)
-
-
-apt-cyg
--------
-
 apt-cyg is a Cygwin package manager. It includes a command-line installer for
 Cygwin which cooperates with Cygwin Setup and uses the same repository.
 
 [github.com/transcode-open/apt-cyg][1]
 
-[![bountysource][3]][2]
-
 [1]:https://github.com/transcode-open/apt-cyg
-[2]:https://www.bountysource.com/teams/svnpenn
-[3]:https://api.bountysource.com/badge/team?team_id=114003&style=raised
 
 Operations
 ----------
