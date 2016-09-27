@@ -612,17 +612,49 @@ PACKAGE_DB="/etc/setup/installed.db"
 
 function package_db-version_check ()
 {
-  local ver2hdr="INSTALLED.DB 2"
+  [ -n "$PACKAGE_DB_VERSION_CHECK_DONE" ] && return
   
-  if head -n1 "${PACKAGE_DB}" | grep -Fqvx "${ver2hdr}"; then
-    echo -e "\e[33;1mWarning:\e[30;0m ${PACKAGE_DB} is not version 2. The first line is below:"
+  local vernhdr='INSTALLED\.DB [0-9]+'
+  local line1="$(head -n1 "${PACKAGE_DB}")"
+  local verhdr=( $line1 )
+  local pkgname="${verhdr[0]}"
+  local dbver
+  [ "${verhdr[0]}" = "INSTALLED.DB" ] && dbver="${verhdr[1]}" || dbver="1"
+  
+  if echo "$line1" | grep -Eqvx "${vernhdr}"; then
+    echo -e "\e[33;1mWarning:\e[30;0m ${PACKAGE_DB} does not have version header. The first line is below:" >&2
     echo -e "$(head -n1 "${PACKAGE_DB}")\n" >&2
     
-    # The previous version of apt-cyg was not treat version header correctly.
-    if grep -FHnx "${ver2hdr}" "${PACKAGE_DB}" >&2; then
+    # The earlyer version of apt-cyg was not treat version header correctly.
+    if grep -EHnx "${vernhdr}" "${PACKAGE_DB}" >&2; then
       echo -e "The above line looks like version header, but it is not the first line.\n" >&2
     fi
   fi
+  
+  if (( dbver < 3 )); then
+    echo -e "\e[33;1mWarning:\e[30;0m ${PACKAGE_DB} version is less than 3." >&2
+    echo -e "Before continuing, recommend to execute below command:" >&2
+    echo -e "    apt-cyg dist-upgrade" >&2
+    ask_user "Do you continue?" >&2 && {
+      echo "continue" >&2
+    } || {
+      echo "abort" >&2
+      exit 1
+    }
+  fi
+  
+  if (( 3 < dbver )); then
+    echo -e "\e[31;1mError:\e[30;0m ${PACKAGE_DB} has unknown version header." >&2
+    echo -e "Currently apt-cyg supports the DB of ver 3 or ealyer, but your DB is ver $dbver." >&2
+    ask_user "Do you want to continue at your own risk?" >&2 && {
+      echo "continue" >&2
+    } || {
+      echo "abort" >&2
+      exit 1
+    }
+  fi
+  
+  PACKAGE_DB_VERSION_CHECK_DONE=1
 }
 
 # Usage: package_db-is_registered PKGNAME
@@ -648,21 +680,22 @@ function package_db-list ()
   ' "${PACKAGE_DB}"
 }
 
-# Usage: package_db-register PKGFILE
+# Usage: package_db-register PKGFILE USER_PICKED=0
 function package_db-register ()
 {
   local pkgfile="${1##*/}"
   local pkgname="$(get_pkgname "$pkgfile")"
+  local user_picked="${2:-0}"
   local work="/tmp/apt-cyg.$$.${PACKAGE_DB##*/}"
   
   package_db-version_check
   
   awk '
-    function register() {print PKGNAME " " PKGFILE " 0"; registered = 1;}
+    function register() {print PKGNAME " " PKGFILE " " USER_PICKED; registered = 1;}
     !registered && PKGNAME < $1 && NF != 2 {register()}
     {print $0}
     END {if (!registered) register()}
-  ' PKGNAME="$pkgname" PKGFILE="${pkgfile}" "${PACKAGE_DB}" > "${work}"
+  ' PKGNAME="$pkgname" PKGFILE="${pkgfile}" USER_PICKED="${user_picked}" "${PACKAGE_DB}" > "${work}"
   
   mv "${PACKAGE_DB}" "${PACKAGE_DB}-save"
   mv "${work}"       "${PACKAGE_DB}"
@@ -1239,6 +1272,7 @@ function apt-cyg-help ()
 # process options
 
 noscripts=0
+OPT_USER_PICKED=1
 noupdate=0
 OPT_FILES=()
 SUBCOMMAND=""
@@ -1351,6 +1385,13 @@ function parse_args ()
       
       --noscripts)
         noscripts=1
+        shift
+        ;;
+      
+      # It will not register the user_picked flag in PACKAGE_DB.
+      # This option is for internal use only.
+      --no-user-picked)
+        OPT_USER_PICKED=0
         shift
         ;;
       
@@ -1470,6 +1511,7 @@ function apt-cyg-update ()
 
 function apt-cyg-show ()
 {
+  package_db-version_check
   [ -z "$OPT_NO_HEADER" ] && echo "The following packages are installed:"
   package_db-list
 }
@@ -1539,6 +1581,7 @@ function apt-cyg-install ()
   local pkg
   local script
   
+  package_db-version_check
   checkpackages "$@"
   findworkspace
   getsetup
@@ -1595,7 +1638,7 @@ function apt-cyg-install ()
     
     # update the package database
     
-    package_db-register "$file"
+    package_db-register "$file" "$OPT_USER_PICKED"
     
     
     # recursively install required packages
@@ -1611,7 +1654,7 @@ function apt-cyg-install ()
           verbose 0 "Package $package is already installed, skipping"
           continue
         fi
-        apt-cyg "${OPTS4INHERIT[@]}" --proxy inherit --noscripts install $package
+        apt-cyg "${OPTS4INHERIT[@]}" --proxy inherit --noscripts --no-user-picked install $package
         if [ $? -ne 0 ]; then warn=1; fi
       done
     fi
@@ -1641,6 +1684,7 @@ function apt-cyg-remove()
   local pkg
   local req
   
+  package_db-version_check
   checkpackages "$@"
   for pkg do
     if ! package_db-is_registered "$pkg"; then
