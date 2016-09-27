@@ -613,7 +613,7 @@ PACKAGE_DB="/etc/setup/installed.db"
 function package_db-version_check ()
 {
   local ver2hdr="INSTALLED.DB 2"
-  if [ $(head -n1 installed.db | cut -d ' ' -f 2) -lt 2 ]; then
+  if [ $(head -n1 ${PACKAGE_DB} | cut -d ' ' -f 2) -lt 2 ]; then
   if head -n1 "${PACKAGE_DB}" | grep -Fqvx "${ver2hdr}"; then
     echo -e "\e[33;1mWarning:\e[30;0m ${PACKAGE_DB} is not version 2. The first line is below:"
     echo -e "$(head -n1 "${PACKAGE_DB}")\n" >&2
