@@ -36,6 +36,9 @@ apt-cyg is a command-line installer for [Cygwin](http://cygwin.com/) which coope
 * "apt-cyg packages-cached-count" count number of cached packages in cache/mirrordir.
 * "apt-cyg packages-cached-size" count size of cached packages in cache/mirrordir.
 * "apt-cyg repair-acl" repair acl.
+* "apt-cyg source" download source archive.
+* "apt-cyg download" download the binary package into the current directory.
+* "apt-cyg mirror" download the binary package into the current cache/mirrordir as mirror.
 
 Requirements
 ------------

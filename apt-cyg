@@ -94,6 +94,9 @@ function usage()
   echo "  \"apt-cyg packages-cached-count\" count number of cached packages in cache/mirrordir."
   echo "  \"apt-cyg packages-cached-size\" count size of cached packages in cache/mirrordir."
   echo "  \"apt-cyg repair-acl\" repair acl."
+  echo "  \"apt-cyg source\" download source archive."
+  echo "  \"apt-cyg download\" download the binary package into the current directory."
+  echo "  \"apt-cyg mirror\" download the binary package into the current cache/mirrordir as mirror."
   echo "Options:"
   echo "  --charch <arch>          : change archetecture"
   echo "  --use-setuprc            : set cache and mirror with /etc/setup/setup.rc"
@@ -1193,6 +1196,113 @@ function apt-cyg-repair-acl ()
   | cp2utf8
 }
 
+function get_archives_list () #= section type [package_names ...]
+#? get archives list by format below:
+#?    path size digest
+#?    ...
+#? @param section takes section name like curr, prev, test and etc,,,
+#? @param type takes type name like install or source.
+{
+  local section="$1"
+  local type="$2"
+  shift 2
+  awk -v RS="\n\n@ " -v FS="\n" -v PKGS="$(join $'\x1c' "$@")" -v MIRROR="${mirror%/}/" \
+    -v SECTION="$section" -v TYPE="$type" '
+    BEGIN {
+      split(PKGS, tmp, "\x1c");
+      for (k in tmp) pkgs[tmp[k]] = k; # swap key value
+    }
+    {
+      if(pkgs[$1] == "") {
+        delete pkgs[$1];
+      } else {
+      section = "curr";
+      for (i = 2; i <= NF; i++) {
+        if (match($i, /^\[.*\]$/, m)) {
+          section = m[1];
+        } else if (match($i, TYPE ": *(.*)", m) && section == SECTION) {
+          result[0+n++]=m[1];
+          delete pkgs[$1]
+        }
+      }
+    }
+    }
+    END {
+      for (i =0; i < n; i++) {
+        print result[i];
+      }
+      if (0 < length(pkgs)) {
+        printf("\x1b[33;1mWarning:\x1b[0m following packages are not found:")>"/dev/stderr";
+        for (pkg in pkgs) printf(" %s", pkg)>"/dev/stderr";
+        printf("\n")>"/dev/stderr";
+      }
+    }
+  ' "$(apt-cyg-pathof "setup.ini")"
+}
+
+function download_packages () #= pos section type [package_names ...]
+#? download packages
+#? @param pos takes here or mirror.
+#? @param section takes section name like curr, prev, test and etc,,,
+#? @param type takes type name like install or source.
+{
+  local pos="$1"
+  local section="$2"
+  local type="$3"
+  shift 3
+  
+  case "$pos" in
+  here)
+    ;;
+  mirror)
+    cd "$(apt-cyg pathof cache/mirrordir)"
+    ;;
+  *)
+    echo -e "\e[31;1mError:\e[0m unknown param: $pos"
+    exit 1
+    ;;
+  esac
+  
+  local mirror="$(apt-cyg pathof mirror)"
+  local line
+  local pkgs="$(get_archives_list "$section" "$type" "$@")"
+  local total="$(echo "$pkgs" | awk '{sum+=$2}END{print sum;}')"
+  local n="$(echo "$pkgs" | wc -l)"
+  echo "$n packages, total $total bytes will be downloaded."
+  echo "$pkgs" | while read line; do
+    local tmp=( $line )
+    local path="${tmp[0]%/*}/"
+    local file="${tmp[0]##*/}"
+    local url="${mirror%/}/${tmp[0]}"
+    local size="${tmp[1]}"
+    local digest="${tmp[2]}"
+    if [ "$pos" = "mirror" ]; then  
+      mkdir -vp "$path"
+      pushd "$path"
+    fi
+    "${WGET[@]}" -N "$url"
+    if ! hash_check <<<"${digest} *${file}" ; then
+      verbose 1 -e "\e[31;1mError:\e[0m ${BASH_SOURCE[0]}: ${FUNCNAME[0]}: ${BASH_LINENO[0]}: hash did not match: $file"
+    fi
+    [ "$pos" = "mirror" ] && popd
+  done
+}
+
+function apt-cyg-source ()
+{
+  download_packages here curr source "$@"
+}
+
+function apt-cyg-download ()
+{
+  download_packages here curr install "$@"
+}
+
+function apt-cyg-mirror ()
+{
+  download_packages mirror curr install "$@"
+}
+
 # Lesser Parallel for Embedding
 # Copyright (c) 2014 Koichi OKADA. All rights reserved.
 # The official repository is:
@@ -1574,7 +1684,6 @@ function apt-cyg-packageof ()
     done
   done
 }
-
 
 function apt-cyg-install ()
 {
