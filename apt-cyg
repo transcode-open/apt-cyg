@@ -98,6 +98,7 @@ function usage()
   echo "  \"apt-cyg download\" download the binary package into the current directory."
   echo "  \"apt-cyg mirror\" download the binary package into the current cache/mirrordir as mirror."
   echo "Options:"
+  echo "  --ag                     : use the silver searcher (currently work only at packageof subcommand)"
   echo "  --charch <arch>          : change archetecture"
   echo "  --use-setuprc            : set cache and mirror with /etc/setup/setup.rc"
   echo "  --ignore-case, -i        : ignore case distinctions for <patterns>"
@@ -1457,6 +1458,11 @@ function parse_args ()
   while [ $# -gt 0 ]; do
     case "$1" in
       
+      --ag)
+        OPT_AG="$1"
+        shift
+        ;;
+      
       --charch)
         OPT_CHARCH="$2"
         shift 2 || break
@@ -1678,6 +1684,14 @@ verbosefor3=$(verbosefor 3)
 verbosefor4=$(verbosefor 4)
 verbosefor5=$(verbosefor 5)
 
+if [ -n "$OPT_AG" ]; then
+  AG="$( which ag 2>/dev/null )"
+  if [ -z "$AG" ]; then
+    echo -e "\e[33;1mWarning:\e[0m ag is not found."
+    unset OPT_AG
+  fi
+fi
+
 
 
 function apt-cyg-update ()
@@ -1733,8 +1747,12 @@ function apt-cyg-describe ()
 
 function apt-cyg-packageof ()
 {
-  update_packageof_cache
-  zcat "$PACKAGEOF_CACHE" | grep "$@"
+  if [ -z "$OPT_AG" ]; then
+    update_packageof_cache
+    zcat "$PACKAGEOF_CACHE" | grep "$@"
+  else
+    "$AG" -z "$@" /etc/setup/*.lst.gz
+  fi
 }
 
 function apt-cyg-install ()
