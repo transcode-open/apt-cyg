@@ -103,6 +103,8 @@ function usage()
   echo "  --ignore-case, -i        : ignore case distinctions for <patterns>"
   echo "  --force-remove           : force remove"
   echo "  --force-fetch-trustedkeys: force fetch trustedkeys"
+  echo "  --force-update-packageof-cache:"
+  echo "                             force update packageof cache"
   echo "  --no-verify, -X          : Don't verify setup.ini signatures"
   echo "  --no-check-certificate   : Don't validate the server's certificate"
   echo "  --no-update-setup        : Don't update setup.exe"
@@ -119,6 +121,7 @@ function usage()
   echo "  --file, -f <file>        : read package names from file"
   echo "  --noupdate, -u           : don't update setup.ini from mirror"
   echo "  --ipv4, -4               : wget prefer ipv4"
+  echo "  --no-progress            : hide the progress bar in any verbosity mode"
   echo "  --quiet, -q              : quiet (no output)"
   echo "  --verbose, -v            : verbose"
   echo "  --help"
@@ -1302,6 +1305,56 @@ function apt-cyg-mirror ()
   download_packages mirror curr install "$@"
 }
 
+PACKAGEOF_CACHE="/tmp/.apt-cyg-packageof.cache.gz"
+function update_packageof_cache ()
+{
+  local i=0 p q path fn
+  local chr=( "=" "-" "/" "|" "\\" )
+  local lstgz_stamp="$(find /etc/setup/ -maxdepth 1 -type f -name '*.lst.gz' -exec stat -c %Y {} + | sort | tail -n1)"
+  local cache_stamp="$(stat "$PACKAGEOF_CACHE" -c %Y 2>/dev/null || echo 0)"
+  local n="$(ls -1 /etc/setup/*.lst.gz|wc -l)"
+  
+  if (( cache_stamp < lstgz_stamp )) || [ -n "$OPT_FORCE_UPDATE_PACKAGEOF_CACHE" ]; then
+    verbose 1 "Updating packageof cache:" >&2
+    progress_init
+    for path in /etc/setup/*.lst.gz; do
+      progress_update $(( i++ )) $n
+      local fn="${path##*/}"
+      zcat "$path" | awk -v PKGNAME="${fn%.lst.gz}" '{print PKGNAME ": " $0;}'
+#      printf "p=%d q=%d i=%d n=%d path=[%s]\n" $p $q $i $n "$path"
+    done | gzip >"$PACKAGEOF_CACHE"
+    progress_finish
+  fi
+}
+
+PROGRESS_CHAR=( "=" "-" "/" "|" "\\" )
+function progress_init ()
+{
+  [ -n "$OPT_NO_PROGRESS" ] && return
+  #          0        1         2         3         4         5
+  #          12345678901234567890123456789012345678901234567890
+  echo -ne "|..................................................|\r" >"$verbosefor0"
+}
+
+function progress_update () #= current total=100
+{
+  [ -n "$OPT_NO_PROGRESS" ] && return
+  local n=${2:-100}
+  local p=$((2 + 50 * ($1    ) / $n))
+  local q=$((2 + 50 * ($1 + 1) / $n))
+  if (( q - p <= 1 )); then
+    printf "\e[%dG%s" $p "${PROGRESS_CHAR[($1 % 4 + 1) * (1 + $p - $q)]}" >"$verbosefor0"
+  else
+    printf "\e[%dG%s" $p "$(seq $((q - p))|awk '{printf "="}')" >"$verbosefor0"
+  fi
+}
+
+function progress_finish ()
+{
+  [ -n "$OPT_NO_PROGRESS" ] && return
+  echo >"$verbosefor0"
+}
+
 # Lesser Parallel for Embedding
 # Copyright (c) 2014 Koichi OKADA. All rights reserved.
 # The official repository is:
@@ -1430,6 +1483,11 @@ function parse_args ()
         shift
         ;;
       
+      --force-update-packageof-cache)
+        OPT_FORCE_UPDATE_PACKAGEOF_CACHE="$1"
+        shift
+        ;;
+      
       --no-verify|-X)
         OPTS4INHERIT+=( "$1" )
         no_verify=1
@@ -1511,6 +1569,11 @@ function parse_args ()
       
       --ipv4|-4)
         WGET=( "${WGET[@]}" "--prefer-family=IPv4" )
+        shift
+        ;;
+      
+      --no-progress)
+        OPT_NO_PROGRESS="$1"
         shift
         ;;
       
@@ -1670,23 +1733,8 @@ function apt-cyg-describe ()
 
 function apt-cyg-packageof ()
 {
-  local pkg
-  local manifest
-  
-  checkpackages "$@"
-  for pkg do
-    local key="$(which "$pkg" 2>/dev/null | sed "s:^/::")"
-    if [ -z "$key" ]; then
-      key="$pkg"
-    fi
-    for manifest in /etc/setup/*.lst.gz; do
-      local found="$(gzip -cd "$manifest" | grep -c "$key")"
-      if [ $found -gt 0 ]; then
-        local package="$(echo $manifest | sed -e "s:/etc/setup/::" -e "s/.lst.gz//")"
-        echo Found $key in the package $package
-      fi
-    done
-  done
+  update_packageof_cache
+  zcat "$PACKAGEOF_CACHE" | grep "$@"
 }
 
 function apt-cyg-install ()
