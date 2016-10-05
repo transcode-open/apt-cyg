@@ -146,8 +146,7 @@ function verbose ()
 # Usage: verbosefor [level]
 function verbosefor ()
 {
-  (( "${OPT_VERBOSE_LEVEL}" < "${1:-1}" )) && { echo "/dev/null"; return; }
-  echo "/dev/stderr"
+  (( ${OPT_VERBOSE_LEVEL} < ${1:-1} )) && echo "/dev/null" || echo "/dev/stderr"
 }
 
 function current_cygarch ()
@@ -1609,6 +1608,12 @@ wget --help | grep -- --no-verbose    &>/dev/null && HAVE_NO_VERBOSE="--no-verbo
 (( "${OPT_VERBOSE_LEVEL}" < 0 )) && WGET+=( --quiet ) || \
 (( "${OPT_VERBOSE_LEVEL}" < 1 )) && WGET+=( --quiet $HAVE_SHOW_PROGRESS ) || \
 (( "${OPT_VERBOSE_LEVEL}" < 2 )) && WGET+=( $HAVE_NO_VERBOSE $HAVE_SHOW_PROGRESS )
+verbosefor0=$(verbosefor 0)
+verbosefor1=$(verbosefor 1)
+verbosefor2=$(verbosefor 2)
+verbosefor3=$(verbosefor 3)
+verbosefor4=$(verbosefor 4)
+verbosefor5=$(verbosefor 5)
 
 
 
@@ -1662,7 +1667,6 @@ function apt-cyg-describe ()
       setup.ini
   done
 }
-
 
 function apt-cyg-packageof ()
 {
