@@ -496,9 +496,12 @@ function apt-install {
       echo some required packages did not install, continuing
     fi
 
-    # run all postinstall scripts
+    echo Package $pkg installed
 
-    [ -v noscripts ] && continue
+  done
+
+  # run all postinstall scripts after all packages installed
+  if [ ! -v noscripts ]; then
     find /etc/postinstall -name '*.*sh' | while read script # allow dash scripts
     do
       echo Running $script
@@ -506,9 +509,7 @@ function apt-install {
       # don't rename permanent first and last to run postinstall scripts
       [[ $script != /etc/postinstall/[0z]p_*.*sh ]] && mv $script $script.done
     done
-    echo Package $pkg installed
-
-  done
+  fi
 }
 
 function apt-remove {
