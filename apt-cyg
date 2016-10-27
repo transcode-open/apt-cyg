@@ -91,6 +91,10 @@ OPERATIONS
     target is considered to be a filename and searchall will return the
     package(s) which contain this file.
 
+  source
+    Retrieve package source(s) from the server into package directory created
+    under current directory and unpack under package directory.
+
   mirror
     Set the mirror; a full URL to a location where the database, packages, and
     signatures for this repository can be found. If no URL is provided, display
@@ -105,6 +109,12 @@ OPERATIONS
 OPTIONS
   --nodeps
     Specify this option to skip all dependency checks.
+
+  --download-only
+    Do not unpack source package.
+
+  --compile
+    With source, install any build dependencies, and build package.
 
   --version
     Display version and exit.
@@ -572,6 +582,106 @@ function apt-remove {
   done
 }
 
+function apt-source {
+  check-packages
+  find-workspace
+  local pkg sbq
+  for pkg in "${pks[@]}"
+  do
+    (( sbq++ )) && echo
+    cyg-source "$pkg"
+  done
+}
+
+function cyg-source {
+  local pkg digest hash dn bn
+  pkg=$1
+  # look for package and save desc file
+
+  awk '$1 == pc' RS='\n\n@ ' FS='\n' pc=$pkg setup.ini > desc
+  if [ ! -s desc ]
+  then
+    echo Unable to locate package $pkg
+    exit 1
+  fi
+
+  # download and unpack the bz2 or xz file
+
+  # pick the latest version, which comes first
+  set -- $(awk '$1 == "source:"' desc)
+  if (( ! $# ))
+  then
+    echo 'Could not find "source" in package description: obsolete package?'
+    exit 1
+  fi
+
+  dn=${2%/*}
+  bn=${2##*/}
+
+  # check the md5
+  digest=$4
+  case ${#digest} in
+   32) hash=md5sum    ;;
+  128) hash=sha512sum ;;
+  esac
+
+  pushd ~-	# back to user directory
+
+  # don't create sub-directory if not unpacking
+  if [ ! -v nounpack ]; then
+    mkdir -p $pkg
+    cd $pkg
+  fi
+
+  # download package source and check hash
+  if ! test -e $bn || ! $hash -c <<< "$digest $bn"
+  then
+    wget -O $bn $mirror/$dn/$bn
+    $hash -c <<< "$digest $bn" || exit
+  fi
+
+  if [ ! -v nounpack ]; then
+    echo Unpacking $pkg/$bn ...
+    tar -x -f $bn
+
+    # can't build unless you unpack
+    if [ -v build ]; then
+      spdn=${bn%-src.tar.*}.src
+
+      if [ -d $spdn/ ]; then
+	cd $spdn/
+
+	if [ -r $pkg*.cygport ]; then
+	  requires=$(sed '/^[^#]*DEPEND=/!d;s//cygport /;s/['\'\"']//g' $pkg*.cygport)
+	  requires=${requires:-cygport}
+	  echo Building $pkg requires the following packages, installing:
+	  echo $requires
+	  apt-cyg install $requires
+	  cygport $pkg*.cygport all
+	elif [ -r configure ]; then
+	  [ -x configure ] || chmod +x configure
+
+	  [ -x configure ]  && ./configure
+
+	  if [ -r Makefile ] || [ -r makefile ] || [ -r MAKEFILE ]; then
+	    make
+	  else
+	    echo Don\'t know how to build without Makefile
+	  fi
+	elif [ -r Makefile ] || [ -r makefile ] || [ -r MAKEFILE ]; then
+	    make
+	else
+	  echo Don\'t know how to build without $pkg.cygport or configure or Makefile
+	fi
+      else
+	echo Build can\'t find directory $pkg/$spdn/
+      fi # source dir
+    fi # -v build
+  fi # ! -v nounpack
+
+  popd
+}
+
 function apt-mirror {
   if [ "$pks" ]
   then
@@ -640,13 +750,23 @@ do
       exit
     ;;
 
+    --build | --compile)
+      build=1
+      shift
+    ;;
+
+    --download | --download-only)
+      nounpack=1
+      shift
+    ;;
+
     update)
       command=$1
       shift
     ;;
 
     list | cache  | remove | depends | listall  | download | listfiles |\
-    show | mirror | search | install | category | rdepends | searchall )
+    show | mirror | search | install | category | rdepends | searchall | source)
       if [[ $command ]]
       then
         pks+=("$1")

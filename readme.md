@@ -58,6 +58,13 @@ searchall
   Search cygwin.com to retrieve file information about packages. The provided
   target is considered to be a filename and searchall will return the
   package(s) which contain this file.
+
+source
+  Retrieve package source(s) from the server into package directory created
+  under current directory and unpack under package directory.
+
+  --compile
+    Build package and install any build dependencies if cygport build.
 ~~~
 
 Quick start
