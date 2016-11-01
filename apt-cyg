@@ -1104,25 +1104,24 @@ function apt-cyg-setup ()
 
 function apt-cyg-dist-upgrade-no-ask ()
 {
-
   local cache_string="";
   local mirror_string="";
-
+  
   pushd "$(apt-cyg-pathof cache)" > /dev/null
   if [ "$?" == "0" ]; then
     local windir_cache="$(cygpath -wa .)"
     cache_string="-l ${windir_cache} "
   fi
-
+  
   local mirror=$(apt-cyg-pathof mirror)
   if [  "$?" == "0" ]; then
     mirror_string="-s ${mirror} "
   fi
   
   ### https://cygwin.com/faq/faq.html#faq.setup.cli
-
+  
   apt-cyg-update-setup
-  cygstart cmd /c 'ECHO Press any key to start dist-upgrade for cygwin '"$(current_cygarch)"' && PAUSE && START /WAIT .\'"${SETUP_EXE}"' -B -q -n -g '"${w_cache}${mirror_string}"' && ash -c "/bin/rebaseall -v" && ECHO dist-upgrade is finished && ECHO Press any key to exit && PAUSE' # '
+  cygstart cmd /c 'ECHO Press any key to start dist-upgrade for cygwin '"$(current_cygarch)"' && PAUSE && START /WAIT .\'"${SETUP_EXE}"' -B -q -n -g '"${cache_string}${mirror_string}"'&& ash -c "/bin/rebaseall -v" && ECHO dist-upgrade is finished && ECHO Press any key to exit && PAUSE' # '
   kill_all_cygwin_process
   
   popd > /dev/null
