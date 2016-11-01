@@ -729,7 +729,7 @@ function join ()
     result="$result$sep$field"
     sep="$FS"
   done
-  echo "$result"
+  echo -n "$result"
 }
 
 # Usage: dep_check DIR ROOTPKGS ...
