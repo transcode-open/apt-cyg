@@ -101,6 +101,7 @@ function usage()
   echo "  --ag                     : use the silver searcher (currently work only at packageof subcommand)"
   echo "  --charch <arch>          : change archetecture"
   echo "  --use-setuprc            : set cache and mirror with /etc/setup/setup.rc"
+  echo "  --use-own-conf           : use own cache and mirror settings when apt-cyg calls setup.exe"
   echo "  --ignore-case, -i        : ignore case distinctions for <patterns>"
   echo "  --force-remove           : force remove"
   echo "  --force-fetch-trustedkeys: force fetch trustedkeys"
@@ -1092,22 +1093,40 @@ function apt-cyg-update-setup ()
   popd > /dev/null
 }
 
+function use_own_conf ()
+{
+  local opts=()
+  if [ -n "$OPT_USE_OWN_CONF" ]; then
+    local  cache="$(apt-cyg-pathof cache)"
+    local mirror="$(apt-cyg-pathof mirror)"
+    [ -n "$cache"  ] && opts+=( -l "$(cygpath -wa "$cache")" )
+    [ -n "$mirror" ] && opts+=( -s "$mirror" )
+  fi
+  join $'\n' "${opts[@]}"
+}
+
 function apt-cyg-setup ()
 {
   pushd "$(apt-cyg pathof cache)" > /dev/null
   
+  local opts; readarray -t opts < <(use_own_conf)
+  local setup=( "./${SETUP_EXE}" "${opts[@]}" "$@" )
+  
   apt-cyg-update-setup
-  ./"${SETUP_EXE}" "$@"
+  "${setup[@]}"
   
   popd > /dev/null
 }
 
 function apt-cyg-dist-upgrade-no-ask ()
 {
+  local opts; readarray -t opts < <(use_own_conf)
+  local setup=( ".\\${SETUP_EXE}" -B -q -n -g "${opts[@]}")
+  
   pushd "$(apt-cyg-pathof cache)" > /dev/null
   
   apt-cyg-update-setup
-  cygstart cmd /c 'ECHO Press any key to start dist-upgrade for cygwin '"$(current_cygarch)"' && PAUSE && START /WAIT .\'"${SETUP_EXE}"' -B -q -n -g && ash -c "/bin/rebaseall -v" && ECHO dist-upgrade is finished && ECHO Press any key to exit && PAUSE' # '
+  cygstart cmd /c 'ECHO Press any key to start dist-upgrade for cygwin '"$(current_cygarch)"' && PAUSE && START /WAIT '"${setup[@]}"' && ash -c "/bin/rebaseall -v" && ECHO dist-upgrade is finished && ECHO Press any key to exit && PAUSE' # '
   kill_all_cygwin_process
   
   popd > /dev/null
@@ -1471,6 +1490,11 @@ function parse_args ()
       --use-setuprc)
         "$0" -c "$(grep -aA1 '^last-cache$'  /etc/setup/setup.rc | tail -n1 | cp2utf8 | sed -r 's/^\s*|\s*$//g')" > /dev/null
         "$0" -m "$(grep -aA1 '^last-mirror$' /etc/setup/setup.rc | tail -n1           | sed -r 's/^\s*|\s*$//g')" > /dev/null
+        shift
+        ;;
+      
+      --use-own-conf)
+        OPT_USE_OWN_CONF="$1"
         shift
         ;;
       
