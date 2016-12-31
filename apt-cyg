@@ -1911,12 +1911,17 @@ function apt-cyg-remove()
     
     # run preremove scripts
     
-    if [ -e "/etc/preremove/$pkg.sh" ]; then
-      "/etc/preremove/$pkg.sh"
-    fi
+    local i postinstalls preremoves
+    readarray -t postinstalls < <(zgrep -E "^etc/postinstall/.*[.]sh$"    "/etc/setup/${pkg}.lst.gz" | awk '{print "/"$0}')
+    readarray -t preremoves   < <(zgrep -E "^etc/preremove/.*[.](da)?sh$" "/etc/setup/${pkg}.lst.gz" | awk '{print "/"$0}')
+    for i in "${preremoves[@]}"; do
+      verbose 0 "Running: ${i}"
+      "${i}"
+    done
     
-    gzip -cd "/etc/setup/$pkg.lst.gz" | awk '/[^\/]$/ {print "rm -f \"/" $0 "\""}' | sh
-    rm -f "/etc/postinstall/$pkg.sh.done" "/etc/preremove/$pkg.sh" "/etc/setup/$pkg.lst.gz"
+    gzip -cd "/etc/setup/$pkg.lst.gz" | awk '/[^\/]$/{printf("/%s\0", $0)}' | xargs -0 rm -f
+    gzip -cd "/etc/setup/$pkg.lst.gz" | awk '/[^./].*[/]$/{printf("/%s\0", $0)}' | sort -zr | xargs -0 rmdir --ignore-fail-on-non-empty
+    rm -f "${postinstalls[@]/%/.done}" "/etc/setup/$pkg.lst.gz"
     package_db-unregister "$pkg"
     verbose 0 "Package $pkg removed"
     
