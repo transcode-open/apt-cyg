@@ -545,7 +545,7 @@ function apt-cyg-upgrade-self ()
 {
   local basedir="$(dirname "$(readlink -f "$(which "$0")")")"
   if [ ! -d "$basedir/.git" ]; then
-    echo -e "\e[31;1mError:\e[30;0m apt-get is not under the git version control."
+    echo -e "\e[31;1mError:\e[30;0m apt-cyg is not under the git version control."
     exit 1
   fi
   pushd "$basedir" > /dev/null
