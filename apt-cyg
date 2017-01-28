@@ -441,73 +441,75 @@ function apt-install {
   local pkg dn bn requires wr package sbq script
   for pkg in "${pks[@]}"
   do
+    # indent package loop code
+    if grep -q "^$pkg " /etc/setup/installed.db
+    then
+      echo Package $pkg is already installed, skipping
+      continue
+    fi
+    (( sbq++ )) && echo
+    echo Installing $pkg
 
-  if grep -q "^$pkg " /etc/setup/installed.db
-  then
-    echo Package $pkg is already installed, skipping
-    continue
-  fi
-  (( sbq++ )) && echo
-  echo Installing $pkg
+    download $pkg
+    read dn bn </tmp/dwn
+    echo Unpacking...
 
-  download $pkg
-  read dn bn </tmp/dwn
-  echo Unpacking...
+    cd "$cache/$mirrordir/$dn"
+    tar -x -C / -f $bn
+    # update the package database
 
-  cd "$cache/$mirrordir/$dn"
-  tar -x -C / -f $bn
-  # update the package database
+    awk '
+    ins != 1 && pkg < $1 {
+      print pkg, bz, 0
+      ins = 1
+    }
+    1
+    END {
+      if (ins != 1) print pkg, bz, 0
+    }
+    ' pkg="$pkg" bz=$bn /etc/setup/installed.db > /tmp/awk.$$
+    mv /etc/setup/installed.db /etc/setup/installed.db-save
+    mv /tmp/awk.$$ /etc/setup/installed.db
 
-  awk '
-  ins != 1 && pkg < $1 {
-    print pkg, bz, 0
-    ins = 1
-  }
-  1
-  END {
-    if (ins != 1) print pkg, bz, 0
-  }
-  ' pkg="$pkg" bz=$bn /etc/setup/installed.db > /tmp/awk.$$
-  mv /etc/setup/installed.db /etc/setup/installed.db-save
-  mv /tmp/awk.$$ /etc/setup/installed.db
+    [ -v nodeps ] && continue
+    # recursively install required packages
 
-  [ -v nodeps ] && continue
-  # recursively install required packages
+    requires=$(awk '$1=="requires", $0=$2' FS=': ' desc)
+    cd ~-
+    wr=0
+    if [[ $requires ]]
+    then
+      echo Package $pkg requires the following packages, installing:
+      echo $requires
+      for package in $requires
+      do
+	if grep -q "^$package " /etc/setup/installed.db
+	then
+	  echo Package $package is already installed, skipping
+	  continue
+	fi
+	apt-cyg install --noscripts $package || (( wr++ ))
+      done
+    fi
+    if (( wr ))
+    then
+      echo some required packages did not install, continuing
+    fi
 
-  requires=$(awk '$1=="requires", $0=$2' FS=': ' desc)
-  cd ~-
-  wr=0
-  if [[ $requires ]]
-  then
-    echo Package $pkg requires the following packages, installing:
-    echo $requires
-    for package in $requires
+    echo Package $pkg installed
+
+  done
+
+  # run all postinstall scripts after all packages installed
+  if [ ! -v noscripts ]; then
+    find /etc/postinstall -name '*.*sh' | while read script # allow dash scripts
     do
-      if grep -q "^$package " /etc/setup/installed.db
-      then
-        echo Package $package is already installed, skipping
-        continue
-      fi
-      apt-cyg install --noscripts $package || (( wr++ ))
+      echo Running $script
+      $script
+      # don't rename permanent first and last to run postinstall scripts
+      [[ $script != /etc/postinstall/[0z]p_*.*sh ]] && mv $script $script.done
     done
   fi
-  if (( wr ))
-  then
-    echo some required packages did not install, continuing
-  fi
-
-  # run all postinstall scripts
-
-  [ -v noscripts ] && continue
-  find /etc/postinstall -name '*.sh' | while read script
-  do
-    echo Running $script
-    $script
-    mv $script $script.done
-  done
-  echo Package $pkg installed
-
-  done
 }
 
 function apt-remove {
