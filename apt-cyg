@@ -91,6 +91,10 @@ OPERATIONS
     target is considered to be a filename and searchall will return the
     package(s) which contain this file.
 
+  source
+    Retrieve package source(s) from the server into package directory created
+    under current directory and unpack under package directory.
+
   mirror
     Set the mirror; a full URL to a location where the database, packages, and
     signatures for this repository can be found. If no URL is provided, display
@@ -105,6 +109,12 @@ OPERATIONS
 OPTIONS
   --nodeps
     Specify this option to skip all dependency checks.
+
+  --download-only
+    Do not unpack source package.
+
+  --compile
+    With source, install any build dependencies, and build package.
 
   --version
     Display version and exit.
@@ -441,73 +451,75 @@ function apt-install {
   local pkg dn bn requires wr package sbq script
   for pkg in "${pks[@]}"
   do
+    # indent package loop code
+    if grep -q "^$pkg " /etc/setup/installed.db
+    then
+      echo Package $pkg is already installed, skipping
+      continue
+    fi
+    (( sbq++ )) && echo
+    echo Installing $pkg
 
-  if grep -q "^$pkg " /etc/setup/installed.db
-  then
-    echo Package $pkg is already installed, skipping
-    continue
-  fi
-  (( sbq++ )) && echo
-  echo Installing $pkg
+    download $pkg
+    read dn bn </tmp/dwn
+    echo Unpacking...
 
-  download $pkg
-  read dn bn </tmp/dwn
-  echo Unpacking...
+    cd "$cache/$mirrordir/$dn"
+    tar -x -C / -f $bn
+    # update the package database
 
-  cd "$cache/$mirrordir/$dn"
-  tar -x -C / -f $bn
-  # update the package database
+    awk '
+    ins != 1 && pkg < $1 {
+      print pkg, bz, 0
+      ins = 1
+    }
+    1
+    END {
+      if (ins != 1) print pkg, bz, 0
+    }
+    ' pkg="$pkg" bz=$bn /etc/setup/installed.db > /tmp/awk.$$
+    mv /etc/setup/installed.db /etc/setup/installed.db-save
+    mv /tmp/awk.$$ /etc/setup/installed.db
 
-  awk '
-  ins != 1 && pkg < $1 {
-    print pkg, bz, 0
-    ins = 1
-  }
-  1
-  END {
-    if (ins != 1) print pkg, bz, 0
-  }
-  ' pkg="$pkg" bz=$bn /etc/setup/installed.db > /tmp/awk.$$
-  mv /etc/setup/installed.db /etc/setup/installed.db-save
-  mv /tmp/awk.$$ /etc/setup/installed.db
+    [ -v nodeps ] && continue
+    # recursively install required packages
 
-  [ -v nodeps ] && continue
-  # recursively install required packages
+    requires=$(awk '$1=="requires", $0=$2' FS=': ' desc)
+    cd ~-
+    wr=0
+    if [[ $requires ]]
+    then
+      echo Package $pkg requires the following packages, installing:
+      echo $requires
+      for package in $requires
+      do
+	if grep -q "^$package " /etc/setup/installed.db
+	then
+	  echo Package $package is already installed, skipping
+	  continue
+	fi
+	apt-cyg install --noscripts $package || (( wr++ ))
+      done
+    fi
+    if (( wr ))
+    then
+      echo some required packages did not install, continuing
+    fi
 
-  requires=$(awk '$1=="requires", $0=$2' FS=': ' desc)
-  cd ~-
-  wr=0
-  if [[ $requires ]]
-  then
-    echo Package $pkg requires the following packages, installing:
-    echo $requires
-    for package in $requires
+    echo Package $pkg installed
+
+  done
+
+  # run all postinstall scripts after all packages installed
+  if [ ! -v noscripts ]; then
+    find /etc/postinstall -name '*.*sh' | while read script # allow dash scripts
     do
-      if grep -q "^$package " /etc/setup/installed.db
-      then
-        echo Package $package is already installed, skipping
-        continue
-      fi
-      apt-cyg install --noscripts $package || (( wr++ ))
+      echo Running $script
+      $script
+      # don't rename permanent first and last to run postinstall scripts
+      [[ $script != /etc/postinstall/[0z]p_*.*sh ]] && mv $script $script.done
     done
   fi
-  if (( wr ))
-  then
-    echo some required packages did not install, continuing
-  fi
-
-  # run all postinstall scripts
-
-  [ -v noscripts ] && continue
-  find /etc/postinstall -name '*.sh' | while read script
-  do
-    echo Running $script
-    $script
-    mv $script $script.done
-  done
-  echo Package $pkg installed
-
-  done
 }
 
 function apt-remove {
@@ -568,6 +580,106 @@ function apt-remove {
   fi
 
   done
+}
+
+function apt-source {
+  check-packages
+  find-workspace
+  local pkg sbq
+  for pkg in "${pks[@]}"
+  do
+    (( sbq++ )) && echo
+    cyg-source "$pkg"
+  done
+}
+
+function cyg-source {
+  local pkg digest hash dn bn
+  pkg=$1
+  # look for package and save desc file
+
+  awk '$1 == pc' RS='\n\n@ ' FS='\n' pc=$pkg setup.ini > desc
+  if [ ! -s desc ]
+  then
+    echo Unable to locate package $pkg
+    exit 1
+  fi
+
+  # download and unpack the bz2 or xz file
+
+  # pick the latest version, which comes first
+  set -- $(awk '$1 == "source:"' desc)
+  if (( ! $# ))
+  then
+    echo 'Could not find "source" in package description: obsolete package?'
+    exit 1
+  fi
+
+  dn=${2%/*}
+  bn=${2##*/}
+
+  # check the md5
+  digest=$4
+  case ${#digest} in
+   32) hash=md5sum    ;;
+  128) hash=sha512sum ;;
+  esac
+
+  pushd ~-	# back to user directory
+
+  # don't create sub-directory if not unpacking
+  if [ ! -v nounpack ]; then
+    mkdir -p $pkg
+    cd $pkg
+  fi
+
+  # download package source and check hash
+  if ! test -e $bn || ! $hash -c <<< "$digest $bn"
+  then
+    wget -O $bn $mirror/$dn/$bn
+    $hash -c <<< "$digest $bn" || exit
+  fi
+
+  if [ ! -v nounpack ]; then
+    echo Unpacking $pkg/$bn ...
+    tar -x -f $bn
+
+    # can't build unless you unpack
+    if [ -v build ]; then
+      spdn=${bn%-src.tar.*}.src
+
+      if [ -d $spdn/ ]; then
+	cd $spdn/
+
+	if [ -r $pkg*.cygport ]; then
+	  requires=$(sed '/^[^#]*DEPEND=/!d;s//cygport /;s/['\'\"']//g' $pkg*.cygport)
+	  requires=${requires:-cygport}
+	  echo Building $pkg requires the following packages, installing:
+	  echo $requires
+	  apt-cyg install $requires
+	  cygport $pkg*.cygport all
+	elif [ -r configure ]; then
+	  [ -x configure ] || chmod +x configure
+
+	  [ -x configure ]  && ./configure
+
+	  if [ -r Makefile ] || [ -r makefile ] || [ -r MAKEFILE ]; then
+	    make
+	  else
+	    echo Don\'t know how to build without Makefile
+	  fi
+	elif [ -r Makefile ] || [ -r makefile ] || [ -r MAKEFILE ]; then
+	    make
+	else
+	  echo Don\'t know how to build without $pkg.cygport or configure or Makefile
+	fi
+      else
+	echo Build can\'t find directory $pkg/$spdn/
+      fi # source dir
+    fi # -v build
+  fi # ! -v nounpack
+
+  popd
 }
 
 function apt-mirror {
@@ -638,13 +750,23 @@ do
       exit
     ;;
 
+    --build | --compile)
+      build=1
+      shift
+    ;;
+
+    --download | --download-only)
+      nounpack=1
+      shift
+    ;;
+
     update)
       command=$1
       shift
     ;;
 
     list | cache  | remove | depends | listall  | download | listfiles |\
-    show | mirror | search | install | category | rdepends | searchall )
+    show | mirror | search | install | category | rdepends | searchall | source)
       if [[ $command ]]
       then
         pks+=("$1")
