@@ -613,6 +613,15 @@ function apt-cache {
   fi
 }
 
+# refuse to work on bash <4.2 
+declare -a ver
+ver=( `echo "$BASH_VERSION" | sed -rn 's/^([0-9]+)\.([0-9]+)\.?.*$/\1 \2/p'` )
+if [[ ${ver[0]} -le 4 && ${ver[1]} -lt 2 ]]
+then
+    warn You have bash version - $BASH_VERSION, which is not compatible with this script
+    exit 1
+fi
+
 if [ -p /dev/stdin ]
 then
   mapfile -t pks
