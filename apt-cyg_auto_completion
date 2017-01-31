@@ -1,0 +1,44 @@
+_apt_cyg()
+{
+	local cur
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [ $COMP_CWORD -eq 1 ]; then
+		COMPREPLY=($(compgen -W 'install remove update download show depends rdepends list listall category listfiles search searchall mirror cache --version' -- "$cur"))
+		return 0
+	fi
+
+	if [ $COMP_CWORD -gt 2 ]; then
+		ignored_packages=$(printf "%s\n" "${COMP_WORDS[@]:2:COMP_CWORD-2}")
+	else
+		ignored_packages=""
+	fi
+
+	case ${COMP_WORDS[1]} in
+		install)
+			all_packages=$(apt-cyg listall ^$cur | sort)
+			all_packages=$all_packages$'\n'--nodeps
+			ignored_packages=$ignored_packages$'\n'$(apt-cyg list ^$cur | sort)
+			suggested_packages=$(comm <(echo "$all_packages" | sort) <(echo "$ignored_packages" | sort) -2 -3)
+			suggested_packages=$suggested_packages | $(tr '\n' ' ')
+			COMPREPLY=($(compgen -W "$suggested_packages" -- "$cur"))
+			return 0
+		;;
+		remove)
+			all_packages=$(apt-cyg list ^$cur | sort)
+			suggested_packages=$(comm <(echo "$all_packages" | sort) <(echo "$ignored_packages" | sort) -2 -3)
+			suggested_packages=$suggested_packages | $(tr '\n' ' ')
+			COMPREPLY=($(compgen -W "$suggested_packages" -- "$cur"))
+			return 0
+		;;
+		download|show|depends|rdepends|listfiles)
+			all_packages=$(apt-cyg listall ^$cur | sort)
+			suggested_packages=$(comm <(echo "$all_packages" | sort) <(echo "$ignored_packages" | sort) -2 -3)
+			suggested_packages=$suggested_packages | $(tr '\n' ' ')
+			COMPREPLY=($(compgen -W "$suggested_packages" -- "$cur"))
+			return 0
+		;;
+	esac
+}
+
+complete -F _apt_cyg apt-cyg
