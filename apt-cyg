@@ -122,10 +122,15 @@ function wget {
   if command wget -h &>/dev/null
   then
     command wget "$@"
-  else
+  elif
+  then
     warn wget is not installed, using lynx as fallback
     set "${*: -1}"
     lynx -source "$1" > "${1##*/}"
+  else
+    warn wget and lynx not installed, using curl as fallback
+    set "${*: -1}"
+    curl -sL "$1" > "${1##*/}"
   fi
 }
 
