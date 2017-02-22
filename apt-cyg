@@ -100,6 +100,9 @@ OPTIONS
   --nodeps
     Specify this option to skip all dependency checks.
 
+  --force
+    Ignore presence of the package when installing it.
+
   --version
     Display version and exit.
 "
@@ -472,8 +475,13 @@ function apt-install {
 
   if grep -q "^$pkg " /etc/setup/installed.db
   then
-    echo Package $pkg is already installed, skipping
-    continue
+    if [[ -n "${force+set}" ]]
+    then
+        echo Package $pkg found, reinstalling
+    else
+        echo Package $pkg is already installed, skipping
+        continue
+    fi
   fi
   (( sbq++ )) && echo
   echo Installing $pkg
@@ -548,8 +556,13 @@ function apt-remove {
 
   if ! grep -q "^$pkg " setup/installed.db
   then
-    echo Package $pkg is not installed, skipping
-    continue
+    if [[ -n "${force+set}" ]]
+    then
+        echo Package $pkg not found in the list, removing from the disk
+    else
+        echo Package $pkg is not installed, skipping
+        continue
+    fi
   fi
 
   if [ ! -e setup/"$pkg".lst.gz ]
@@ -662,6 +675,11 @@ do
 
     --noscripts)
       noscripts=1
+      shift
+    ;;
+
+    --force)
+      force=1
       shift
     ;;
 
