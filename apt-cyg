@@ -217,13 +217,8 @@ find_workspace () {
 
   mkdir -p "${cacheslash}${mirrordir}/${arch}"
   cd "${cacheslash}${mirrordir}/${arch}"
-  if [ -e setup.ini ]
-  then
-    return 0
-  else
-    get_setup
-    return 1
-  fi
+  [ ! -e setup.ini ] || [ "$1" = "--update" ] || return 0
+  get_setup
 }
 
 get_setup () {
@@ -231,7 +226,7 @@ get_setup () {
   then
     mv setup.ini setup.ini-save
   fi
-  getfile -N "${mirror}/${arch}/setup.bz2"
+  getfile -N "${mirror%/}/${arch}/setup.bz2"
   if [ -e setup.bz2 ] && bunzip2 setup.bz2
   then
     mv setup setup.ini || return 1
@@ -247,7 +242,7 @@ check_packages () {
   then
     return 0
   else
-    echo No packages found.
+    echo "No packages found."
     return 1
   fi
 }
@@ -275,10 +270,7 @@ qecho () {
 }
 
 apt_update () {
-  if find_workspace
-  then
-    get_setup
-  fi
+  find_workspace --update
 }
 
 apt_category () {
@@ -485,7 +477,7 @@ download () {
     cd "${cacheslash}${mirrordir}/${dn}"
     if ! test -e "${bn}" || ! echo "${digest} ${bn}" | "${hash}" --check ${hflags} > /dev/null 2> /dev/null
     then
-        getfile -O "${bn}" "${mirror}/${dn}/${bn}"
+        getfile -O "${bn}" "${mirror%/}/${dn}/${bn}"
         echo "$digest $bn" | "${hash}" --check ${hflags} > /dev/null 2> /dev/null \
             || error "Hash ${hash} of ${cacheslash}${mirrordir}/${dn}/${bn} did not result in ${digest}" || return 1
     else
@@ -706,7 +698,7 @@ apt_mirror () {
       print "\t" pks
     }
     ' pks="$pks" /etc/setup/setup.rc
-    echo Mirror set to "$pks".
+    echo "Mirror set to \"$pks\"."
   else
     awk '
     /last-mirror/ {
