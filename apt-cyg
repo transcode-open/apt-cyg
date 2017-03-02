@@ -470,7 +470,7 @@ download () {
   bn=$(basename $2)
   _return_download_dirname="${dn}"
   _return_download_basename="${bn}"
-  [ ! -f "${cacheslash}${mirrordir}/${dn}/${bn}.unpacked" ] || [ "${force}" != "1" ] || return 0
+  [ ! -f "${cacheslash}${mirrordir}/${dn}/${bn}.unpacked" ] || [ "${force}" = "1" ] || return 0
 
   # check the md5
   digest=$4
@@ -568,11 +568,12 @@ apt_install () {
     download "$pkg" || continue
     dn="${_return_download_dirname}"
     bn="${_return_download_basename}"
-    [ -f "${cacheslash}${mirrordir}/${dn}/${bn}.unpacked" ] || [ "${force}" != "1" ] || (
-      /bin/echo -n ", unpacking"
+    [ ! -f "${cacheslash}${mirrordir}/${dn}/${bn}.unpacked" ] || [ "${force}" = "1" ] || continue
+    /bin/echo -n ", unpacking"
+    (
       cd "$cacheslash$mirrordir/$dn"
       tar --numeric-owner -x -C / -f $bn || error "Unpacking failed" || exit 1
-    ) || continue
+    )
     touch "${cacheslash}${mirrordir}/${dn}/${bn}.unpacked"
     # update the package database
     # > Running setup does NOT attempt to re-install the packages identified by "0".
