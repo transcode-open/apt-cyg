@@ -23,7 +23,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-usage="\
+usage='
 NAME
   apt-cyg - package manager utility
 
@@ -43,6 +43,23 @@ OPERATIONS
 
   remove
     Remove package(s) from the system.
+
+  upgradesetup
+    Prepare for an upgrade by copying required files to another root such as /fw,
+        c:\cygwin64\bin\ash.exe /bin/apt-cyg upgradesetup /fw
+
+  upgradeinstall
+    Download and install all packages to another root such as /fw.  
+    This needs to run from that root, e.g. as follows,
+        c:\cygwin64\fw\bin\ash.exe /bin/apt-cyg upgradeinstall
+
+  upgradecopy
+    Replace directories of the actual root with those from the upgraded root,
+        c:\cygwin64\fw\bin\ash.exe /bin/apt-cyg upgradecopy
+
+  upgradeclean
+    Remove the secondary root,
+        c:\cygwin64\bin\ash.exe /bin/apt-cyg upgradeclean
 
   update
     Download a fresh copy of the master package list (setup.ini) from the
@@ -100,29 +117,25 @@ OPTIONS
   --nodeps
     Specify this option to skip all dependency checks.
 
-  --force
-    Ignore presence of the package when installing it.
-
   --version
     Display version and exit.
-"
+'
 
-version="\
+version='
 apt-cyg version 1
 
 The MIT License (MIT)
 
 Copyright (c) 2005-9 Stephen Jungels
-"
+'
 
 export PATH=/bin:/usr/bin
 
-wget () {
-  if command wget -h &>/dev/null
+getfile () {
+  if wget -h > /dev/null 2>&1
   then
-    command wget "$@"
+    wget --no-verbose "$@"
   else
-    warn wget is not installed, using lynx as fallback
     of=
     while [ $# -gt 1 ] ; do
       if [ "$1" = "-O" ] ; then
@@ -134,10 +147,11 @@ wget () {
     if [ ${#of} -eq 0 ] ; then
       of="${1##*/}"
     fi
+    warn "lynx -source \"$1\""
     lynx -source "$1" > "${of}"
   fi
 }
-export wget
+export getfile
 
 
 find_workspace () {
@@ -180,8 +194,8 @@ find_workspace () {
   s : %3a g
   ')
 
-  mkdir -p "$cacheslash$mirrordir/$arch"
-  cd "$cacheslash$mirrordir/$arch"
+  mkdir -p "${cacheslash}${mirrordir}/${arch}"
+  cd "${cacheslash}${mirrordir}/${arch}"
   if [ -e setup.ini ]
   then
     return 0
@@ -194,14 +208,14 @@ find_workspace () {
 get_setup () {
   touch setup.ini
   mv setup.ini setup.ini-save
-  wget -N $mirror/$arch/setup.bz2
+  getfile -N "${mirror}/${arch}/setup.bz2"
   if [ -e setup.bz2 ]
   then
     bunzip2 setup.bz2
     mv setup setup.ini
-    echo Updated setup.ini
+    echo "Updated setup.ini"
   else
-    echo Error updating setup.ini, reverting
+    echo "Error updating setup.ini, reverting" || return 1
     mv setup.ini-save setup.ini
   fi
 }
@@ -220,19 +234,23 @@ warn () {
   if test -t 2 ; then
     {
         tput setaf 1
-        echo -E "$*"
+        /bin/echo -E "$*"
         tput sgr0
     } >&2
   else
-    echo -E "$*" >&2
+    /bin/echo -E "$*" >&2
   fi
 }
 
 error () {
-    echo "$*" >&2
-    exit 1
+  warn "Error: $*"
+  return 1
 }
 export error
+
+qecho () {
+  [ "${quiet}" = "1" ] || /bin/echo -E "$@"
+}
 
 apt_update () {
   if find_workspace
@@ -264,10 +282,10 @@ apt_list () {
   do
     sbq=$((sbq + 1))
     [ $sbq -eq 1 ] || echo
-    awk 'NR>1 && $1~pkg && $0=$1' pkg="$pkg" /etc/setup/installed.db
+    awk 'NR>1 && !a[$1]++ && $1~pkg && $0=$1' pkg="$pkg" /etc/setup/installed.db
   done
   [ $sbq -eq 0 ] || return
-  awk 'NR>1 && $0=$1' /etc/setup/installed.db
+  awk 'NR>1 && !a[$1]++ && $0=$1' /etc/setup/installed.db
 }
 
 apt_listall () {
@@ -303,9 +321,12 @@ apt_listfiles () {
 apt_show () {
   find_workspace
   check_packages
+  local sbq
+  sbq=0
   for pkg in $pks
   do
-    (( notfirst++ )) && echo
+    sbq=$((sbq + 1))
+    [ $sbq -eq 1 ] || echo
     awk '
     $1 == query {
       print
@@ -402,7 +423,7 @@ apt_download () {
 }
 
 download () {
-  local pkg digest digactual desc
+  local pkg digest hflags desc
   pkg=$1
   # look for package and save desc file
 
@@ -410,8 +431,8 @@ download () {
   awk '$1 == pc' RS='\n\n@ ' FS='\n' pc=$pkg setup.ini > "${desc}"
   if [ ! -s "${desc}" ]
   then
-    echo Unable to locate package $pkg
-    exit 1
+    warn "Unable to locate package $pkg"
+    return 1
   fi
 
   # download and unpack the bz2 or xz file
@@ -420,12 +441,14 @@ download () {
   set -- $(awk '$1 == "install:"' "${desc}")
   if [ $# -eq 0 ]
   then
-    echo 'Could not find "install" in package description: obsolete package?'
-    exit 1
+    error 'Could not find "install" in package description: obsolete package?' || return 1
   fi
 
   dn=$(dirname $2)
   bn=$(basename $2)
+  _return_download_dirname="${dn}"
+  _return_download_basename="${bn}"
+  [ ! -f "${cacheslash}${mirrordir}/${dn}/${bn}.unpacked" ] || return 0
 
   # check the md5
   digest=$4
@@ -433,25 +456,27 @@ download () {
    32) hash=md5sum    ;;
   128) hash=sha512sum ;;
   esac
-  mkdir -p "$cacheslash$mirrordir/$dn"
+  hflags=""
+  [ "${quiet}" != "1" ] || hflags="${hflags} --quiet"
+  mkdir -p "${cacheslash}${mirrordir}/${dn}"
   (
-    cd "$cacheslash$mirrordir/$dn"
-    if ! test -e $bn || ! echo "$digest $bn" | $hash -c
+    cd "${cacheslash}${mirrordir}/${dn}"
+    if ! test -e "${bn}" || ! echo "${digest} ${bn}" | "${hash}" --check ${hflags}
     then
-        wget -O $bn $mirror/$dn/$bn
-        echo "$digest $bn" | $hash -c || error "Hash ${hash} of ${cacheslash}${mirrordir}/${dn}/${bn} did not result in ${digest}"
+        getfile -O "${bn}" "${mirror}/${dn}/${bn}"
+        echo "$digest $bn" | "${hash}" --check ${hflags} || error "Hash ${hash} of ${cacheslash}${mirrordir}/${dn}/${bn} did not result in ${digest}" || return 1
+    else
+        qecho "Reusing existing file ${cacheslash}${mirrordir}/${dn}/${bn}"
     fi
 
-    tar tf $bn | gzip > /etc/setup/"$pkg".lst.gz
+    tar --numeric-owner -tf "${bn}" | gzip > /etc/setup/"$pkg".lst.gz
   )
-  mv "${desc}" "$cacheslash$mirrordir/$dn"
-  _return_download_dirname="${dn}"
-  _return_download_basename="${bn}"
+  mv "${desc}" "${cacheslash}${mirrordir}/${dn}/desc"
 }
 
 apt_search () {
   check_packages
-  echo Searching downloaded packages...
+  echo "Searching downloaded packages..."
   for pkg in $pks
   do
     key=$(type -P "$pkg" | sed s./..)
@@ -464,27 +489,30 @@ apt_search () {
         s,/etc/setup/,,
         s,.lst.gz,,
         ')
-        echo $package
+        echo "$package"
       fi
     done
   done
 }
 
 apt_searchall () {
-  cd /tmp
   for pkg in $pks
   do
     printf -v qs 'text=1&arch=%s&grep=%s' $arch "$pkg"
-    wget -O matches http://cygwin.com/cgi-bin2/package-grep.cgi?"$qs"
+    getfile -O "/tmp/matches$$.txt" "http://cygwin.com/cgi-bin2/package-grep.cgi?$qs"
     awk '
     NR == 1 {next}
     mc[$1]++ {next}
     /-debuginfo-/ {next}
     /^cygwin32-/ {next}
     {print $1}
-    ' FS=-[:digit:] matches
+    ' 'FS=-[:digit:]' "/tmp/matches$$.txt"
+    rm -f "/tmp/matches$$.txt"
   done
 }
+
+indent=0
+ind=""
 
 apt_install () {
   check_packages
@@ -495,103 +523,117 @@ apt_install () {
   do
     if grep -q "^$pkg " /etc/setup/installed.db
     then
-      if [ -n "${force+set}" ]
+      if [ "${force}" = "1" ]
       then
-          echo Package $pkg found, reinstalling
+          qecho "Package $pkg found, reinstalling"
       else
-          echo Package $pkg is already installed, skipping
+          qecho "Package $pkg is already installed, skipping"
           continue
       fi
     fi
     sbq=$((sbq + 1))
-    [ $sbq -eq 1 ] || echo
-    echo Installing $pkg
+    [ $sbq -eq 1 ] || qecho
+    
+    if [ ${indent} -eq 0 ]
+    then
+      ind=""
+    else
+      ind=$(/bin/printf "%${indent}s" "")
+    fi
+    /bin/echo -n "${ind}Checking $pkg"
 
-    download $pkg
+    download "$pkg" || continue
     dn="${_return_download_dirname}"
     bn="${_return_download_basename}"
-    echo Unpacking...
-
-    (
+    [ -f "${cacheslash}${mirrordir}/${dn}/${bn}.unpacked" ] || (
+      /bin/echo -n ", unpacking"
       cd "$cacheslash$mirrordir/$dn"
-      tar -x -C / -f $bn
-    )
+      tar --numeric-owner -x -C / -f $bn || error "Unpacking failed" || exit 1
+    ) || continue
+    touch "${cacheslash}${mirrordir}/${dn}/${bn}.unpacked"
     # update the package database
+    # > Running setup does NOT attempt to re-install the packages identified by "0".
+    # https://cygwin.com/ml/cygwin/2016-09/msg00244.html
     awk '
-    ins != 1 && pkg < $1 {
+    NR == 1 {
+      print
+      next
+    }
+    a[$1]++ {
+      next
+    }
+    ins != 1 && pkg <= $1 {
       print pkg, bz, 0
       ins = 1
+    }
+    pkg == $1 {
+      next
     }
     1
     END {
       if (ins != 1) print pkg, bz, 0
     }
-    ' pkg="$pkg" bz=$bn /etc/setup/installed.db > /tmp/awk.$$
+    ' pkg="$pkg" bz="$bn" /etc/setup/installed.db > /tmp/awk.$$
     mv /etc/setup/installed.db /etc/setup/installed.db-save
     mv /tmp/awk.$$ /etc/setup/installed.db
-    [ -n "${nodeps+set}" ] && continue
+    [ "${nodeps}" != "1" ] || continue
     # recursively install required packages
     requires=$(awk '$1=="requires", $0=$2' FS=': ' "${cacheslash}${mirrordir}/${dn}/desc")
     wr=0
     if [ "$requires" ]
     then
-      echo Package $pkg requires the following packages, installing:
-      echo $requires
-      for package in $requires
-      do
-        if grep -q "^$package " /etc/setup/installed.db
-        then
-          echo Package $package is already installed, skipping
-          continue
-        fi
-        apt_cyg install --noscripts $package || (( wr++ ))
-      done
+      echo
+      qecho "${ind}Package $pkg requires $requires"
+      indent=$((indent+1))
+      ( noscripts=1 ; unset force; pks=$requires ; apt_install ) || wr=1
+      indent=$((indent-1))
+    else
+      echo
     fi
     if [ $wr -ne 0 ]
     then
-      echo some required packages did not install, continuing
+      warn "${ind}some required packages did not install, continuing"
     fi
 
     # run all postinstall scripts
 
-    [ -n "${noscripts+set}" ] && continue
-    find /etc/postinstall -name '*.sh' | while read script
+    [ "${noscripts}" != "1" ] || continue
+    find /etc/postinstall -name '*.sh' | while read -r script
     do
-      echo Running $script
-      $script
-      mv $script $script.done
+      qecho "${ind}Running $script"
+      "$script"
+      mv "$script" "$script.done"
     done
-    echo Package $pkg installed
+    qecho "${ind}Package $pkg installed"
 
   done
 }
 
 apt_remove () {
   check_packages
-  cd /etc
-  cygcheck awk bash bunzip2 grep gzip mv sed tar xz > setup/essential.lst
+  cygcheck awk bash bunzip2 grep gzip mv sed tar xz > /etc/setup/essential.lst
   anypkgerr=0
   for pkg in $pks
   do
 
-  if ! grep -q "^$pkg " setup/installed.db
+  if ! grep -q "^$pkg " /etc/setup/installed.db
   then
-    if [ -n "${force+set}" ]
+    if [ "${force}" = "1" ]
     then
-        echo Package $pkg not found in the list, removing from the disk
+        qecho "Package $pkg not found in the list, removing from the disk"
     else
-        echo Package $pkg is not installed, skipping
+        qecho "Package $pkg is not installed, skipping"
         continue
     fi
   fi
 
-  if [ ! -e setup/"$pkg".lst.gz ]
+  if [ ! -e /etc/setup/"$pkg".lst.gz ]
   then
-    warn Package manifest missing, cannot remove $pkg, skipping
+    warn "Package manifest missing, cannot remove $pkg, skipping"
     anypkgerr=1
     continue
   fi
-  gzip -dc setup/"$pkg".lst.gz > setup/"$pkg".lst
+  gzip -dc /etc/setup/"$pkg".lst.gz > /etc/setup/"$pkg".lst
   awk '
   NR == FNR {
     if ($NF) ess[$NF]
@@ -600,33 +642,29 @@ apt_remove () {
   $NF in ess {
     exit 1
   }
-  ' FS='[/\\\\]' setup/{essential,$pkg}.lst
+  ' FS='[/\\\\]' /etc/setup/essential.lst /etc/setup/"$pkg".lst
   esn=$?
   if [ $esn -eq 0 ]
   then
-    echo Removing $pkg
-    if [ -e preremove/"$pkg".sh ]
+    echo "Removing $pkg"
+    if [ -e /etc/preremove/"$pkg".sh ]
     then
-      preremove/"$pkg".sh
-      rm preremove/"$pkg".sh
+      /etc/preremove/"$pkg".sh
+      rm /etc/preremove/"$pkg".sh
     fi
-    mapfile dt < setup/"$pkg".lst
-    for each in ${dt[*]}
+    while read -r each
     do
-      [ -f /$each ] && rm /$each
-    done
-    for each in ${dt[*]}
-    do
-      [ -d /$each ] && rmdir --i /$each
-    done
-    rm -f setup/"$pkg".lst.gz postinstall/"$pkg".sh.done
-    awk -i inplace '$1 != ENVIRON["pkg"]' setup/installed.db
-    echo Package $pkg removed
+      [ ! -f "/$each" ] || rm "/$each"
+      [ ! -d "/$each" ] || rmdir --i "/$each"
+    done < /etc/setup/"$pkg".lst
+    rm -f /etc/setup/"$pkg".lst.gz /etc/postinstall/"$pkg".sh.done
+    awk -i inplace '$1 != ENVIRON["pkg"]' /etc/setup/installed.db
+    qecho "Package $pkg removed"
   fi
-  rm setup/"$pkg".lst
+  rm /etc/setup/"$pkg".lst
   if [ $esn -eq 1 ]
   then
-    warn apt_cyg cannot remove package $pkg, skipping
+    warn "apt-cyg cannot remove package $pkg, skipping"
     anypkgerr=1
     continue
   fi
@@ -655,6 +693,167 @@ apt_mirror () {
     ' /etc/setup/setup.rc
   fi
 }
+
+# TODO: Run upgrade from the actual root.  Include prepupgrade into it as well.
+# Use the other root as a prefix in all functions.
+
+apt_upgradesetup() {
+  local preproot
+  preproot=/fw
+  if [ "$pks" ]
+  then
+    preproot="$pks"
+  fi
+  if [ "${preproot}" = "/" ]
+  then
+    error "prepupgrade needs a separate root" || return 1
+  fi
+  if [ -d "${preproot}" ]
+  then
+    echo "Skipping the setup of a secondary root in ${preproot} as it already exists"
+    return
+  fi
+  local preprootnative
+  preprootnative=$(cygpath -wa "${preproot}")
+  qecho "Copying system directories to the prepared root in ${preprootnative}..."
+  mkdir -p "${preproot}" "${preproot}/dev" "${preproot}/proc"
+  mkdir -p -m a=rxwt "${preproot}/tmp"
+  ln -sf /proc/self/fd/0 "${preproot}/dev/stdin"
+  ln -sf /proc/self/fd/1 "${preproot}/dev/stdout"
+  ln -sf /proc/self/fd/2 "${preproot}/dev/stderr"
+  ln -sf /proc/self/fd "${preproot}/dev/fd"
+
+  # mkdir -p "${preproot}/bin" "${preproot}/usr" "${preproot}/etc" \
+  #   "${preproot}/sbin" "${preproot}/lib" "${preproot}/var" \
+  #   "${preproot}/tmp" "${preproot}/proc" "${preproot}/dev"
+  ## cp -av /bin/cygwin1.dll /bin/ash.exe /bin/grep.exe /bin/awk.exe /bin/cygpath.exe /bin/apt-cyg "${preproot}/bin/"
+  cp -dr /bin /usr /etc /sbin /lib /var "${preproot%/}/" || :
+  mv "${preproot%/}/etc/fstab" "${preproot%/}/etc/fstab.prep" || error "Moving ${preproot%/}/etc/fstab" || return 1
+  umount "${preproot%/}/usr/bin" || :
+  umount "${preproot%/}/usr/lib" || :
+  rm -rf "${preproot%/}/usr/bin" "${preproot%/}/usr/lib"
+  mount "${preprootnative}\\bin" "${preproot%/}/usr/bin" || error "Mounting ${preproot%/}/usr/bin" || return 1
+  mount "${preprootnative}\\lib" "${preproot%/}/usr/lib" || error "Mounting ${preproot%/}/usr/lib" || return 1
+
+  qecho "Resetting permissions to the prepared root in ${preprootnative}..."
+  local winsys
+  winsys=$(cygpath -S)
+  "${winsys}/icacls.exe" "${preprootnative}" /reset /t /c /l > /dev/null
+  cygpath -aw / > "${preproot}/origroot"
+}
+
+apt_upgradeinstall() {
+  if [ -s /origroot ]
+  then
+    origroot=$(cat /origroot)
+  fi
+  if [ ! "$origroot" ]
+  then
+    error "Could not find a reference to the actual root that needs creating with apt-cyg prepupgrade" || return 1
+  fi
+  preproot="/"
+  preprootnative=$(cygpath -wa "${preproot}")
+
+  # umount "${preproot%/}/usr/bin" || : # Operation not permitted
+  # umount "${preproot%/}/usr/lib" || : # Operation not permitted
+  ## /bin/rm -rf "${preproot%/}/usr/bin" "${preproot%/}/usr/lib"
+  # /bin/mount "${preprootnative}\\bin" "${preproot%/}/usr/bin" || : # Couldn't determine mount type [..] not permitted
+  # /bin/mount "${preprootnative}\\lib" "${preproot%/}/usr/lib" || : # Couldn't determine mount type [..] not permitted
+  if [ ! "$pks" ]
+  then
+    pks=$(awk 'NR>1 && !a[$1]++ && $0=$1' /etc/setup/installed.db)
+  fi
+  force=1 quiet=1 apt_install
+}
+
+apt_upgradecopy() {
+  if [ -s /origroot ]
+  then
+    origroot=$(cat /origroot)
+  fi
+  if [ ! "$origroot" ]
+  then
+    error "Could not find a reference to the actual root that needs creating with apt-cyg prepupgrade" || return 1
+  fi
+  local winsys
+  winsys=$(cygpath -S)
+  local cygprocs pid
+  pid=$$
+  "${winsys}/tasklist" /nh /m cygwin1.dll > "/tmp/cygprocs${pid}.txt"
+  cygprocs=$(sed -e '/^INFO:/d' -e 's/\r//g' -e 's/ \+/ /g' -e 's/ \+$//g' -e '/^$/d' -e "/ash.exe ${pid} cygwin1.dll/d" \
+    "/tmp/cygprocs${pid}.txt" \
+    | while read -r proc cpid mod ; do \
+        ticpid=$("${winsys}/tasklist" /nh /fi "pid eq ${cpid}" | sed -e '/^INFO:/d' -e 's/\r//g' -e 's/ \+/ /g' -e 's/ \+$//g' -e '/^$/d') ; \
+        if [ "${ticpid}" ] ; then \
+            echo "${proc} ${cpid}" ; \
+        fi ; \
+    done)
+  rm -f "/tmp/cygprocs${pid}.txt"
+  if [ "$cygprocs" ]
+  then
+    ps -eW
+    error "Some Cygwin processes are still running (own PID ${pid}):
+$cygprocs" || return 1
+  fi
+  /bin/echo -E "Moving the original bin, usr, etc, sbin, lib, var away to *.bak in ${origroot} ..."
+  rm -rf "${origroot}/bin.bak" "${origroot}/usr.bak" "${origroot}/etc.bak" \
+        "${origroot}/sbin.bak" "${origroot}/lib.bak" "${origroot}/var.bak"
+  mv "${origroot}/bin" "${origroot}/bin.bak" || error "Moving ${origroot}/bin" || return 1
+  mv "${origroot}/usr" "${origroot}/usr.bak" || error "Moving ${origroot}/usr" || return 1
+  mv "${origroot}/sbin" "${origroot}/sbin.bak" || error "Moving ${origroot}/sbin" || return 1
+  mv "${origroot}/lib" "${origroot}/lib.bak" || error "Moving ${origroot}/lib" || return 1
+  mv "${origroot}/var" "${origroot}/var.bak" || error "Moving ${origroot}/var" || return 1
+  mv "${origroot}/etc" "${origroot}/etc.bak" || error "Moving ${origroot}/etc" || return 1
+
+  preproot="/"
+  preprootnative=$(cygpath -wa "${preproot}")
+  # umount "${preproot%/}/usr/bin" || :
+  # umount "${preproot%/}/usr/lib" || :
+  ## rm -rf "${preproot%/}/usr/bin" "${preproot%/}/usr/lib"
+  ## mount "${preprootnative}\\bin" "${preproot%/}/usr/bin"
+  ## mount "${preprootnative}\\lib" "${preproot%/}/usr/lib"
+
+  /bin/echo -E "Copying upgraded files from ${preprootnative}/{bin,usr,etc,sbin,lib,var} to ${origroot}/ ..."
+  cp -dr "${preproot%/}/bin" "${origroot}/" || error "Copying ${preproot%/}/bin" || return 1
+  mkdir -p "${origroot}/usr"
+  local d n
+  for d in "${preproot%/}/usr/"*
+  do
+    n="${d##*/}"
+    case "${n}" in
+      (\*|bin|lib)
+        ;;
+      (*)
+        cp -dr "${d}" "${origroot}/usr/" || error "Copying ${d}" || return 1
+        ;;
+    esac
+  done
+  cp -dr "${preproot%/}/etc" "${origroot}/" || error "Copying ${preproot%/}/etc" || return 1
+  mv "${origroot}/etc/fstab.prep" "${origroot}/etc/fstab" || :
+  cp -dr "${preproot%/}/sbin" "${origroot}/" || error "Copying ${preproot%/}/sbin" || return 1
+  cp -dr "${preproot%/}/lib" "${origroot}/" || error "Copying ${preproot%/}/lib" || return 1
+  cp -dr "${preproot%/}/var" "${origroot}/" || error "Copying ${preproot%/}/var" || return 1
+}
+
+apt_upgradeclean() {
+  local preproot
+  preproot=/fw
+  if [ "$pks" ]
+  then
+    preproot="$pks"
+  fi
+  preproot=$(cygpath -ua "${preproot}")
+  if [ "${preproot}" = "/" -o ! "${preproot#/cygdrive/}" = "${preproot}" ]
+  then
+    error "Expecting another root such as /fw and not ${preproot} in this commitupgrade call" || return 1
+  fi
+
+  /bin/echo -E "Cleaning up the secondary root ${preproot} ..."
+  rm -rf "${preproot}"
+  echo "Cleaning up files stashed by the upgrade in /bin.bak, /usr.bak, /etc.bak ...."
+  rm -rf /bin.bak /usr.bak /etc.bak /sbin.bak /lib.bak /var.bak
+}
+
 
 apt_cache () {
   if [ "$pks" ]
@@ -718,10 +917,11 @@ do
     ;;
 
     list | cache  | remove | depends | listall  | download | listfiles |\
-    show | mirror | search | install | category | rdepends | searchall )
+    show | mirror | search | install | category | rdepends | searchall |\
+    upgradesetup | upgradeinstall | upgradecopy | upgradeclean)
       if [ "$command" ]
       then
-        pks="$pks $1"
+        pks="${pks}${pks:+ }$1"
       else
         command=$1
       fi
@@ -729,7 +929,7 @@ do
     ;;
 
     *)
-      pks="$pks $1"
+      pks="${pks}${pks:+ }$1"
       shift
     ;;
 
@@ -748,7 +948,8 @@ then
   else
     arch="x86_64"
   fi
-  apt_$command
+  "apt_${command}"
 else
-  error "$usage"
+  /bin/echo -E "$usage"
+  exit 1
 fi
