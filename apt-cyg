@@ -147,7 +147,13 @@ getfile () {
     if [ ${#of} -eq 0 ] ; then
       of="${1##*/}"
     fi
-    warn "lynx -source \"$1\""
+    qecho "lynx -source \"$1\""
+    # Lynx fails when it cannot access the home directory for user
+    # configuration.  Creating the home directory works this around.
+    if [ ! -d "${HOME}" ]
+    then
+      mkdir -p "${HOME}"
+    fi
     lynx -source "$1" > "${of}"
   fi
 }
