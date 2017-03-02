@@ -227,17 +227,18 @@ find_workspace () {
 }
 
 get_setup () {
-  touch setup.ini
-  mv setup.ini setup.ini-save
-  getfile -N "${mirror}/${arch}/setup.bz2"
-  if [ -e setup.bz2 ]
+  if [ -f setup.ini ]
   then
-    bunzip2 setup.bz2
-    mv setup setup.ini
-    echo "Updated setup.ini"
+    mv setup.ini setup.ini-save
+  fi
+  getfile -N "${mirror}/${arch}/setup.bz2"
+  if [ -e setup.bz2 ] && bunzip2 setup.bz2
+  then
+    mv setup setup.ini || return 1
+    /bin/echo -E "Updated setup.ini in $(cygpath -aw .)"
   else
-    echo "Error updating setup.ini, reverting" || return 1
-    mv setup.ini-save setup.ini
+    /bin/echo -E "Error updating setup.ini in $(cygpath -aw . ), reverting" || return 1
+    mv setup.ini-save setup.ini || :
   fi
 }
 
