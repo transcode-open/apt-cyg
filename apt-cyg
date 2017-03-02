@@ -150,7 +150,10 @@ repl() {
 getfile () {
   if wget -h > /dev/null 2>&1
   then
-    wget --no-verbose "$@"
+    if ! wget --no-verbose "$@"
+    then
+      error "Downloading \"$1\" to \"${of}\""
+    fi
   else
     of=
     while [ $# -gt 1 ] ; do
@@ -170,7 +173,10 @@ getfile () {
     then
       mkdir -p "${HOME}"
     fi
-    lynx -source "$1" > "${of}"
+    if ! lynx -source "$1" > "${of}"
+    then
+      error "Downloading \"$1\" to \"${of}\""
+    fi
   fi
 }
 export getfile
