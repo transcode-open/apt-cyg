@@ -173,6 +173,7 @@ getfile () {
     then
       mkdir -p "${HOME}"
     fi
+    touch "${of}" || error "Touching \"${of}\""
     if ! lynx -source "$1" > "${of}"
     then
       error "Downloading \"$1\" to \"${of}\""
@@ -491,7 +492,7 @@ download () {
     fi
 
     tar --numeric-owner -tf "${bn}" | gzip > /etc/setup/"$pkg".lst.gz
-  )
+  ) || return 1
   mv "${desc}" "${cacheslash}${mirrordir}/${dn}/desc"
 }
 
