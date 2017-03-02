@@ -467,10 +467,11 @@ download () {
   mkdir -p "${cacheslash}${mirrordir}/${dn}"
   (
     cd "${cacheslash}${mirrordir}/${dn}"
-    if ! test -e "${bn}" || ! echo "${digest} ${bn}" | "${hash}" --check ${hflags}
+    if ! test -e "${bn}" || ! echo "${digest} ${bn}" | "${hash}" --check ${hflags} > /dev/null 2> /dev/null
     then
         getfile -O "${bn}" "${mirror}/${dn}/${bn}"
-        echo "$digest $bn" | "${hash}" --check ${hflags} || error "Hash ${hash} of ${cacheslash}${mirrordir}/${dn}/${bn} did not result in ${digest}" || return 1
+        echo "$digest $bn" | "${hash}" --check ${hflags} > /dev/null 2> /dev/null \
+            || error "Hash ${hash} of ${cacheslash}${mirrordir}/${dn}/${bn} did not result in ${digest}" || return 1
     else
         qecho "Reusing existing file ${cacheslash}${mirrordir}/${dn}/${bn}"
     fi
