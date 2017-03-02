@@ -470,7 +470,7 @@ download () {
   bn=$(basename $2)
   _return_download_dirname="${dn}"
   _return_download_basename="${bn}"
-  [ ! -f "${cacheslash}${mirrordir}/${dn}/${bn}.unpacked" ] || return 0
+  [ ! -f "${cacheslash}${mirrordir}/${dn}/${bn}.unpacked" ] || [ "${force}" != "1" ] || return 0
 
   # check the md5
   digest=$4
@@ -546,7 +546,7 @@ apt_install () {
   do
     if grep -q "^$pkg " /etc/setup/installed.db
     then
-      if [ "${force}" = "1" ]
+      if [ "${force}" = "1" -o "${force_package_check}" = "1" ]
       then
           qecho "Package $pkg found, reinstalling"
       else
@@ -568,7 +568,7 @@ apt_install () {
     download "$pkg" || continue
     dn="${_return_download_dirname}"
     bn="${_return_download_basename}"
-    [ -f "${cacheslash}${mirrordir}/${dn}/${bn}.unpacked" ] || (
+    [ -f "${cacheslash}${mirrordir}/${dn}/${bn}.unpacked" ] || [ "${force}" != "1" ] || (
       /bin/echo -n ", unpacking"
       cd "$cacheslash$mirrordir/$dn"
       tar --numeric-owner -x -C / -f $bn || error "Unpacking failed" || exit 1
@@ -608,7 +608,7 @@ apt_install () {
       echo
       qecho "${ind}Package $pkg requires $requires"
       indent=$((indent+1))
-      ( noscripts=1 ; unset force; pks=$requires ; apt_install ) || wr=1
+      ( noscripts=1 ; unset force_package_check; pks=$requires ; apt_install ) || wr=1
       indent=$((indent-1))
     else
       echo
@@ -786,7 +786,7 @@ apt_upgradeinstall() {
   then
     pks=$(awk 'NR>1 && !a[$1]++ && $0=$1' /etc/setup/installed.db)
   fi
-  force=1 quiet=1 apt_install
+  force_package_check=1 quiet=1 apt_install
 }
 
 apt_upgradecopy() {
