@@ -152,7 +152,7 @@ getfile () {
   then
     if ! wget --no-verbose "$@"
     then
-      error "Downloading \"$1\" to \"${of}\""
+      error "Downloading \"$1\" to \"${of}\"" || return 1
     fi
   else
     of=
@@ -173,10 +173,10 @@ getfile () {
     then
       mkdir -p "${HOME}"
     fi
-    touch "${of}" || error "Touching \"${of}\""
-    if ! lynx -source "$1" > "${of}"
+    echo "Downloading \"$1\" ..."
+    if ! { lynx -source "$1" > "${of}" ; }
     then
-      error "Downloading \"$1\" to \"${of}\""
+      error "Downloading \"$1\" to \"${of}\"" || return 1
     fi
   fi
 }
@@ -265,6 +265,7 @@ warn () {
     /bin/echo -E "$*" >&2
   fi
 }
+export warn
 
 error () {
   warn "Error: $*"
