@@ -810,6 +810,7 @@ apt_upgradeinstall() {
   if [ "$pks" ]
   then
     preproot="$pks"
+    pks=""
   fi
   if [ "${preproot}" = "/" ]
   then
