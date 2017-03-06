@@ -756,9 +756,6 @@ apt_mirror () {
   fi
 }
 
-# TODO: Run upgrade from the actual root.  Include prepupgrade into it as well.
-# Use the other root as a prefix in all functions.
-
 apt_upgradesetup() {
   local preproot
   preproot=/fw
@@ -768,7 +765,7 @@ apt_upgradesetup() {
   fi
   if [ "${preproot}" = "/" ]
   then
-    error "prepupgrade needs a separate root" || return 1
+    error "upgradesetup needs a separate root" || return 1
   fi
   if [ -d "${preproot}" ]
   then
@@ -814,7 +811,7 @@ apt_upgradeinstall() {
   fi
   if [ "${preproot}" = "/" ]
   then
-    error "prepupgrade needs a separate root" || return 1
+    error "upgradeinstall needs a separate root" || return 1
   fi
   preprootnative=$(cygpath -wa "${preproot}")
 
@@ -841,7 +838,12 @@ apt_upgradecopy() {
   fi
   if [ ! "$origroot" ]
   then
-    error "Could not find a reference to the actual root that needs creating with apt-cyg prepupgrade" || return 1
+    error "Could not find the primary root reference created with apt-cyg upgradesetup.
+The upgradecopy command needs running from Command Prompt using the shell copied to 
+a secondary root, e.g.
+
+    c:\cygwin64\fw\bin\ash.exe /bin/apt-cyg upgradecopy
+" || return 1
   fi
   local winsys
   winsys=$(cygpath -S)
@@ -928,7 +930,7 @@ apt_upgradecomplete() {
   /bin/echo -E "Cleaning up the secondary root ${preproot} ..."
   rm -rf "${preproot}"
 
-  echo "Cleaning up files stashed by the upgrade in /bin.bak, /usr.bak, /etc.bak ...."
+  echo "Cleaning up files stashed by the upgrade in /{bin,usr,etc,sbin,lib,var}.bak ..."
   rm -rf /bin.bak /usr.bak /etc.bak /sbin.bak /lib.bak /var.bak
 }
 
