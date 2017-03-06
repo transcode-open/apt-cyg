@@ -532,7 +532,7 @@ apt_search () {
 apt_searchall () {
   for pkg in $pks
   do
-    printf -v qs 'text=1&arch=%s&grep=%s' $arch "$pkg"
+    qs="text=1&arch=${arch}&grep=${pkg}"
     getfile -O "/tmp/matches$$.txt" "http://cygwin.com/cgi-bin2/package-grep.cgi?$qs"
     awk '
     NR == 1 {next}
