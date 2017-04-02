@@ -12,59 +12,88 @@ Operations
 ----------
 
 ~~~
-install
-  Install package(s).
+list[all] [pkg...]
+    Search for package names that match regexp.  If no package names are
+    provided in the command line, all installed packages will be listed.  If
+    listall is used, searches the master package list (setup.ini).
 
-remove
-  Remove package(s) from the system.
+show pkg...
+    Display information on given package name(s).
+
+listfiles pkg...
+    List all files owned by a given package. Multiple packages can be specified
+    on the command line.
+
+install pkg...
+    Install package(s) and any dependencies.
+
+source pkg...
+    Retrieve package source(s) from the server into package directory created
+    under current directory and unpack under the package directory.
+
+download pkg...
+    Retrieve package(s) from the server, but do not install/upgrade anything.
+
+remove pkg...
+    Remove package(s) from the system.
+
+depends pkg...
+    Produce a tree of all dependencies for a package.
+
+rdepends pkg...
+    Produce a tree of packages that depend on the named package.
+
+search[all] file...
+    Search for packages that own the specified file(s).  The path can be
+    relative or absolute, and one or more files can be specified.  If searchall
+    is used searches cygwin.com for packages that own the specified file(s).
+
+category [cat...]
+    Display all packages that are members of a named category.  If no category
+    is provided in the command line, all categories used will be listed.
 
 update
-  Download a fresh copy of the master package list (setup.ini) from the
-  server defined in setup.rc.
+    Download a fresh copy of the master package list (setup.ini) from the
+    mirror.
 
-download
-  Retrieve package(s) from the server, but do not install/upgrade anything.
+mirror [URL]
+    Set the mirror: a full URL to a location where the database, packages, and
+    signatures for this repository can be found.  If no URL is provided,
+    display the current mirror.
 
-show
-  Display information on given package(s).
+cache [directory]
+    Set the package cache directory.  Unix and Windows forms are accepted, as
+    well as absolute or regular paths.  If no directory is provided, display
+    current cache.  If a package to install is not found in the cache
+    directory, it will be downloaded.
 
-depends
-  Produce a dependency tree for a package.
+  --build|--compile
+    With source: install any build dependencies; if cygport is part of the
+    package, include cygport and any of its build dependencies, and build
+    package using cygport; otherwise try to configure, then try to make; if
+    cygport is not part of the package, build dependencies may be missing, and
+    need to be installed manually.
 
-rdepends
-  Produce a tree of packages that depend on the named package.
+  --download|--download-only
+    With source: just download and do not unpack source package.
 
-list
-  Search each locally-installed package for names that match regexp. If no
-  package names are provided in the command line, all installed packages will
-  be queried.
+  --nodeps
+    Specify this option to skip all dependency checks, and not download or
+    install packages on which specified packages are dependent.
 
-listall
-  This will search each package in the master package list (setup.ini) for
-  names that match regexp.
+  --nopick
+    Internal option for install of a package dependency.
 
-category
-  Display all packages that are members of a named category.
+  --noscripts
+    Specify this option to skip running any preremove or postinstall scripts.
+    Used internally during install to defer running postinstall scripts until
+    all requested packages and dependencies have been installed.
 
-listfiles
-  List all files owned by a given package. Multiple packages can be specified
-  on the command line.
+--help
+    Display usage and exit.
 
-search
-  Search for downloaded packages that own the specified file(s). The path can
-  be relative or absolute, and one or more files can be specified.
-
-searchall
-  Search cygwin.com to retrieve file information about packages. The provided
-  target is considered to be a filename and searchall will return the
-  package(s) which contain this file.
-
-source
-  Retrieve package source(s) from the server into package directory created
-  under current directory and unpack under package directory.
-
-  --compile
-    Build package and install any build dependencies if cygport build.
+--version
+    Display version and exit.
 ~~~
 
 Quick start
