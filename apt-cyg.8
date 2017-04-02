@@ -1,0 +1,120 @@
+apt-cyg(8)                          apt-cyg                         apt-cyg(8)
+
+NAME
+       apt-cyg - package manager utility
+
+SYNOPSIS
+       apt-cyg [--help|--version] [list[all] [pkg...] | [show | listfiles |
+               install [--nodeps] [--nopick] [--noscripts] |
+               source [--build|--compile|--download|--download-only] |
+               download | remove | depends | rdepends] pkg... |
+               search[all] file... | category [cat...] | update | mirror [URL]
+               | cache [directory]]
+
+DESCRIPTION
+       apt-cyg is a package management utility that tracks installed packages
+       on a Cygwin system.  Invoking apt-cyg involves specifying an operation
+       with any potential options and targets to operate on.  A target is
+       either a package name, file name, search string, URL, or directory.
+       Targets can be provided as command line arguments.
+
+OPERATIONS
+       list[all] [pkg...]
+           Search for package names that match regexp.  If no package names
+           are provided in the command line, all installed packages will be
+           listed.  If listall is used, searches the master package list
+           (setup.ini).
+
+       show pkg...
+           Display information on given package name(s).
+
+       listfiles pkg...
+           List all files owned by a given package. Multiple packages can be
+           specified on the command line.
+
+       install pkg...
+           Install package(s) and any dependencies.
+
+       source pkg...
+           Retrieve package source(s) from the server into package directory
+           created under current directory and unpack under the package
+           directory.
+
+       download pkg...
+           Retrieve package(s) from the server, but do not install/upgrade
+           anything.
+
+       remove pkg...
+           Remove package(s) from the system.
+
+       depends pkg...
+           Produce a tree of all dependencies for a package.
+
+       rdepends pkg...
+           Produce a tree of packages that depend on the named package.
+
+       search[all] file...
+           Search for packages that own the specified file(s).  The path can
+           be relative or absolute, and one or more files can be specified.
+           If searchall is used searches cygwin.com for packages that own the
+           specified file(s).
+
+       category [cat...]
+           Display all packages that are members of a named category.  If no
+           category is provided in the command line, all categories used will
+           be listed.
+
+       update
+           Download a fresh copy of the master package list (setup.ini) from
+           the mirror.
+
+       mirror [URL]
+           Set the mirror: a full URL to a location where the database,
+           packages, and signatures for this repository can be found.  If no
+           URL is provided, display the current mirror.
+
+       cache [directory]
+           Set the package cache directory.  Unix and Windows forms are
+           accepted, as well as absolute or regular paths.  If no directory is
+           provided, display current cache.  If a package to install is not
+           found in the cache directory, it will be downloaded.
+
+OPTIONS
+       --build|--compile
+           With source: install any build dependencies; if cygport is part of
+           the package, include cygport and any of its build dependencies, and
+           build package using cygport; otherwise try to configure, then try
+           to make; if cygport is not part of the package, build dependencies
+           may be missing, and need to be installed manually.
+
+       --download|--download-only
+           With source: just download and do not unpack source package.
+
+       --nodeps
+           Specify this option to skip all dependency checks, and not download
+           or install packages on which specified packages are dependent.
+
+       --nopick
+           Internal option for install of a package dependency.
+
+       --noscripts
+           Specify this option to skip running any preremove or postinstall
+           scripts.  Used internally during install to defer running
+           postinstall scripts until all requested packages and dependencies
+           have been installed.
+
+       --help
+           Display usage and exit.
+
+       --version
+           Display version and exit.
+
+DIAGNOSTICS
+       apt-cyg returns zero on normal operation, non-zero on error.
+
+AUTHOR
+       Stephen Jungels - original code @
+       https://github.com/transcode-open/apt-cyg
+       Brian Inglis - updates and man page
+
+apt-cyg 1.0                     9 November 2016                     apt-cyg(8)
