@@ -1,3 +1,48 @@
+2017-04-13 Brian Inglis
+----------
+* [5779d50](http://github.com/transcode-open/apt-cyg/commit/5779d50)
+  ChangeLog.md, README.md: add markup,
+  apt-cyg: speed up by using sed -i instead of awk inplace, sed instead of awk,
+  parameter substitution instead of sed, ensure standard collating sequence in
+  commands, change some messages to warnings, change uses of script name to $0,
+  add blank lines for readability, reorder command checking to put more general
+  queries before actions and developer and maintenance commands after,
+  apt-cyg(usage): reorder usage commands to put more general queries before
+  actions and developer and maintenance commands after, add command arguments,
+  OPTIONS, DIAGNOSTICS, and contributors to AUTHORS,
+  apt-cyg(wget): fallback from wget to curl to lynx and complain if none
+  available,
+  apt-cyg(get-setup): support getting setup.xz, .bz2, or .ini if available,
+  apt-cyg(apt-category): add show-categories and call if no category given,
+  apt-cyg(download): don't replace /etc/setup/<pkg>.lst.gz,
+  apt-cyg(apt-searchall): combine wget arg building into statement url, combine
+  awk skips into one conditional skip,
+  apt-cyg(apt-install): create/replace /etc/setup/<pkg>.lst.gz after successful
+  download, create temp installed db in /etc/setup/ instead of /tmp/, support
+  all specified permanent postinstall script names,
+  apt-cyg(apt-remove): check for more useful commands whose packages should not
+  be removed
+
+2017-04-02 Brian Inglis
+----------
+* [9ec42b5](http://github.com/transcode-open/apt-cyg/commit/9ec42b5)
+  add apt-cyg man page
+
+2017-04-01 Brian Inglis
+----------
+* [9fe833f](http://github.com/transcode-open/apt-cyg/commit/9fe833f)
+  rename ChangeLog and add history
+
+2017-04-01 Brian Inglis
+----------
+* [db90916](http://github.com/transcode-open/apt-cyg/commit/db90916)
+  rename README and update to match man page
+
+2017-04-01 Brian Inglis
+----------
+* [69d8c26](http://github.com/transcode-open/apt-cyg/commit/69d8c26)
+  add apt-cyg man page
+
 2016-10-26 Brian Inglis
 ----------
 
