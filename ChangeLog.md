@@ -1,4 +1,24 @@
 2017-04-13 Brian Inglis
+* [2afd9f7](http://github.com/transcode-open/apt-cyg/commit/2afd9f7)
+    apt-cyg: add function upgradable as an awk script wrapper to compare
+    <cache>/<mirror>/setup.ini to /etc/setup/installed.db and display the
+    number of, and details about, packages where the versions differ, and the
+    size of the archives to be download, call at end of apt-update, make output
+    more like Debian apt, change wrapped awk indentation, use zcat, zgrep
+    instead of unpacking /etc/setup/<pkg>.lst.gz, change wget calls to remove
+    wget-only output file option;
+    apt-cyg(apt-list): change to list nothing unless (a) package(s) specified,
+    or --upgradable or --installed requested, like Debian apt, and with similar
+    output, support glob patterns and convert to regexps, scan with one pass
+    over setup.ini instead of one per package, call apt-listall if no packages
+    found;
+    apt-cyg(apt-listall): support glob patterns and convert to regexps, scan
+    with one pass over setup.ini instead of one per package, output similar to
+    Debian apt,
+    apt-cyg(wget): if two args passed, use first as output file adapted to
+    command issued.
+
+2017-04-13 Brian Inglis
 ----------
 * [5779d50](http://github.com/transcode-open/apt-cyg/commit/5779d50)
   ChangeLog.md, README.md: add markup,
