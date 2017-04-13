@@ -133,9 +133,11 @@
   both apt-get and pacman. Note this does mean some situations may require extra
   commands. For example if you want to temporarily change the mirror, you will
   need to do
-      apt-cyg mirror http://alpha.com
-      apt-cyg install bravo
-      apt-cyg mirror http://charlie.com
+```
+    apt-cyg mirror http://alpha.com
+    apt-cyg install bravo
+    apt-cyg mirror http://charlie.com
+```
 
 2015-04-17 Steven Penny
 ----------
@@ -496,7 +498,7 @@
   Use sed to print blocks of text
   The array method works fine, but sed method uses less characters and is easier
   to read. Also it does support indenting, it would just need to be modified to
-      sed '1d;$d;s/  //'
+    `sed '1d;$d;s/  //'`
   or similar.
 
 2014-05-31 Steven Penny
