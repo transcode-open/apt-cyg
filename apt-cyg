@@ -445,12 +445,15 @@ function apt-listfiles {
   do
     let sbq++ && echo
 
-    if [ ! -e /etc/setup/"$pkg".lst.gz ]
+    if [ -r /etc/setup/"$pkg".lst.gz ]
     then
+      zcat /etc/setup/"$pkg".lst.gz
+    else
       download "$pkg"
+      read dn bn < /tmp/dwn
+      tar tf "$cache/$mirrordir/$dn/$bn"
     fi
 
-    zcat /etc/setup/"$pkg".lst.gz
   done
 }
 
@@ -463,7 +466,7 @@ function apt-show {
     (( notfirst++ )) && echo
     awk '
       $1 == query {
-	print
+	print $0
 	fd++
       }
 
@@ -571,7 +574,7 @@ function download {
     exit 1
   fi
 
-  # download and unpack the bz2 or xz file
+  # download the bz2 or xz file
 
   # pick the latest version, which comes first
   set -- $(awk '$1 == "install:"' desc)
