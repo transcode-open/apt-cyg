@@ -130,6 +130,7 @@ Copyright (c) 2005-9 Stephen Jungels
 '
 
 export PATH=/bin:/usr/bin
+mirrorsource="http://mirrors.kernel.org/sourceware/cygwin/"
 
 repl() {
   local n m
@@ -215,7 +216,7 @@ find_workspace () {
   }
   ' "${setup}")
   if [ ${#mirror} -eq 0 ] ; then
-    mirror="http://mirrors.kernel.org/sourceware/cygwin/"
+    mirror="${mirrorsource}"
   fi
 
   repl "${mirror}" "/" "%2f"
@@ -229,18 +230,19 @@ find_workspace () {
 }
 
 get_setup () {
-  if [ -f setup.ini ]
+  u="${mirrorsource%/}/${arch}/setup.xz"
+  d="$(cygpath -aw .)"
+  getfile -N "${u}"
+  if [ -e setup.xz ] && unxz setup.xz
   then
-    mv setup.ini setup.ini-save
-  fi
-  getfile -N "${mirror%/}/${arch}/setup.bz2"
-  if [ -e setup.bz2 ] && bunzip2 setup.bz2
-  then
+    if [ -f setup.ini ]
+    then
+      mv setup.ini setup.ini-save
+    fi
     mv setup setup.ini || return 1
-    /bin/echo -E "Updated setup.ini in $(cygpath -aw .)"
+    /bin/echo -E "Updated setup.ini from ${u} in ${d}"
   else
-    /bin/echo -E "Error updating setup.ini in $(cygpath -aw . ), reverting" || return 1
-    mv setup.ini-save setup.ini || :
+    /bin/echo -E "Error updating setup.ini from ${u} in ${d}" || return 1
   fi
 }
 
