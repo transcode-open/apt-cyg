@@ -149,11 +149,11 @@ repl() {
 }
 
 getfile () {
-  if wget -h > /dev/null 2>&1
+  if wget --version > /dev/null 2>&1
   then
     if ! wget --no-verbose "$@"
     then
-      error "Downloading \"$1\" to \"${of}\"" || return 1
+      error "wget --no-verbose $*" || return 1
     fi
   else
     of=
@@ -167,17 +167,28 @@ getfile () {
     if [ ${#of} -eq 0 ] ; then
       of="${1##*/}"
     fi
-    qecho "lynx -source \"$1\""
-    # Lynx fails when it cannot access the home directory for user
-    # configuration.  Creating the home directory works this around.
-    if [ ! -d "${HOME}" ]
+    if curl --version > /dev/null 2>&1
     then
-      mkdir -p "${HOME}"
-    fi
-    echo "Downloading \"$1\" ..."
-    if ! { lynx -source "$1" > "${of}" ; }
-    then
-      error "Downloading \"$1\" to \"${of}\"" || return 1
+      if ! curl -s -o "${of}" "$1"
+      then
+        error "curl -s -o \"${of}\" \"$1\"" || return 1
+      fi
+    else
+      if type lynx > /dev/null 2>&1
+      then
+        # Lynx fails when it cannot access the home directory for user
+        # configuration.  Creating the home directory works this around.
+        if [ ! -d "${HOME}" ]
+        then
+          mkdir -p "${HOME}"
+        fi
+        if ! { lynx -source "$1" > "${of}" ; }
+        then
+          error "lynx -source \"$1\" > \"${of}\"" || return 1
+        fi
+      else
+        error "No wget, lynx or curl found" || return 1
+      fi
     fi
   fi
 }
@@ -232,7 +243,7 @@ find_workspace () {
 get_setup () {
   u="${mirrorsource%/}/${arch}/setup.xz"
   d="$(cygpath -aw .)"
-  getfile -N "${u}"
+  getfile -N "${u}" || return 1
   if [ -e setup.xz ] && unxz setup.xz
   then
     if [ -f setup.ini ]
@@ -497,7 +508,7 @@ download () {
     cd "${cacheslash}${mirrordir}/${dn}"
     if ! test -e "${bn}" || ! echo "${digest} ${bn}" | "${hash}" --check ${hflags} > /dev/null 2> /dev/null
     then
-        getfile -O "${bn}" "${mirror%/}/${dn}/${bn}"
+        getfile -O "${bn}" "${mirror%/}/${dn}/${bn}" || return 1
         rm -f "${bn}.unpacked"
         echo "$digest $bn" | "${hash}" --check ${hflags} > /dev/null 2> /dev/null \
             || error "Hash ${hash} of ${cacheslash}${mirrordir}/${dn}/${bn} did not result in ${digest}" || return 1
@@ -535,7 +546,7 @@ apt_searchall () {
   for pkg in $pks
   do
     qs="text=1&arch=${arch}&grep=${pkg}"
-    getfile -O "/tmp/matches$$.txt" "http://cygwin.com/cgi-bin2/package-grep.cgi?$qs"
+    getfile -O "/tmp/matches$$.txt" "http://cygwin.com/cgi-bin2/package-grep.cgi?$qs" || return 1
     awk '
     NR == 1 {next}
     mc[$1]++ {next}
