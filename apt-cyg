@@ -526,8 +526,8 @@ apt_search () {
   echo "Searching downloaded packages..."
   for pkg in $pks
   do
-    key=$(type -P "$pkg" | sed s./..)
-    [ "$key" ] || key=$pkg
+    key="bin/${pkg##*/}"
+    [ -x "/usr/$key" ] || key="${pkg}"
     for manifest in /etc/setup/*.lst.gz
     do
       if gzip -cd $manifest | grep -q "$key"
