@@ -122,6 +122,9 @@ function wget {
   if command wget -h &>/dev/null
   then
     command wget "$@"
+  elif command curl -h &>/dev/null
+  then
+    curl -O "$@"
   else
     warn wget is not installed, using lynx as fallback
     set "${*: -1}"
