@@ -1121,7 +1121,7 @@ function apt-cyg-setup ()
 function apt-cyg-dist-upgrade-no-ask ()
 {
   local opts; readarray -t opts < <(use_own_conf)
-  local setup=( ".\\${SETUP_EXE}" -B -q -n -g "${opts[@]}")
+  local setup=( ".\\${SETUP_EXE}" -R "$(cygpath -wa /)" -B -q -n -g "${opts[@]}")
   
   pushd "$(apt-cyg-pathof cache)" > /dev/null
   
