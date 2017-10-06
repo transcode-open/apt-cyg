@@ -1335,7 +1335,7 @@ function apt-cyg-listfiles ()
       echo "apt-cyg-listfiles: package '${i}' is not installed"
       continue
     fi
-    zcat "${lst}"
+    zcat "${lst}" | sed -e 's:^:/:g'
     [ -n "$sep" ] && echo
     sep=1
   done
