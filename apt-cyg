@@ -97,6 +97,7 @@ function usage()
   echo "  \"apt-cyg source\" download source archive."
   echo "  \"apt-cyg download\" download the binary package into the current directory."
   echo "  \"apt-cyg mirror\" download the binary package into the current cache/mirrordir as mirror."
+  echo "  \"apt-cyg listfiles\" List files 'owned' by package(s)."
   echo "Options:"
   echo "  --ag                     : use the silver searcher (currently work only at packageof subcommand)"
   echo "  --charch <arch>          : change archetecture"
@@ -1323,6 +1324,21 @@ function apt-cyg-download ()
 function apt-cyg-mirror ()
 {
   download_packages mirror curr install "$@"
+}
+
+function apt-cyg-listfiles ()
+{
+  local lst i sep
+  for i; do
+    lst="/etc/setup/${i}.lst.gz"
+    if [ ! -e "$lst" ]; then
+      echo "apt-cyg-listfiles: package '${i}' is not installed"
+      continue
+    fi
+    zcat "${lst}"
+    [ -n "$sep" ] && echo
+    sep=1
+  done
 }
 
 PACKAGEOF_CACHE="/tmp/.apt-cyg-packageof.cache.gz"
