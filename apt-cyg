@@ -882,12 +882,12 @@ $cygprocs" || return 1
   /bin/echo -E "Moving the original bin, usr, etc, sbin, lib, var away to *.bak in ${origroot} ..."
   rm -rf "${origroot}/bin.bak" "${origroot}/usr.bak" "${origroot}/etc.bak" \
         "${origroot}/sbin.bak" "${origroot}/lib.bak" "${origroot}/var.bak"
-  mv "${origroot}/bin" "${origroot}/bin.bak" || error "Moving ${origroot}/bin" || return 1
-  mv "${origroot}/usr" "${origroot}/usr.bak" || error "Moving ${origroot}/usr" || return 1
-  mv "${origroot}/sbin" "${origroot}/sbin.bak" || error "Moving ${origroot}/sbin" || return 1
-  mv "${origroot}/lib" "${origroot}/lib.bak" || error "Moving ${origroot}/lib" || return 1
-  mv "${origroot}/var" "${origroot}/var.bak" || error "Moving ${origroot}/var" || return 1
-  mv "${origroot}/etc" "${origroot}/etc.bak" || error "Moving ${origroot}/etc" || return 1
+  mv "${origroot}/bin" "${origroot}/bin.bak" || :
+  mv "${origroot}/usr" "${origroot}/usr.bak" || :
+  mv "${origroot}/sbin" "${origroot}/sbin.bak" || :
+  mv "${origroot}/lib" "${origroot}/lib.bak" || :
+  mv "${origroot}/var" "${origroot}/var.bak" || :
+  mv "${origroot}/etc" "${origroot}/etc.bak" || :
 
   preproot="/"
   preprootnative=$(cygpath -wa "${preproot}")
@@ -980,6 +980,9 @@ then
 fi
 
 # process options
+nodeps=
+noscripts=
+force=
 until [ $# = 0 ]
 do
   case "$1" in
