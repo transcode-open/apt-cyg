@@ -1,6 +1,8 @@
 apt-cyg
 =======
 
+**Update:** This package is deprecated in favor of [Sage](https://github.com/svnpenn/sage).
+
 apt-cyg is a Cygwin package manager. It includes a command-line installer for
 Cygwin which cooperates with Cygwin Setup and uses the same repository.
 
