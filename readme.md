@@ -63,7 +63,15 @@ searchall
 Quick start
 -----------
 
-apt-cyg is a simple script. To install:
+apt-cyg is a simple script. To install first make sure you have lynx and/or wget installed. In Cygwin run:
+
+  cygcheck -c
+
+If they are not installed, open a terminal (cmd,powershell or Cmder) then find your Cygwin installation .exe file (i.e. setup-x86_64.exe) then run:
+
+    setup-x86_64.exe -q -P lynx wget
+    
+Then you can install apt-cyg:
 
     lynx -source rawgit.com/transcode-open/apt-cyg/master/apt-cyg > apt-cyg
     install apt-cyg /bin
