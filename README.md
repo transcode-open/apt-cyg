@@ -39,6 +39,8 @@ apt-cyg is a command-line installer for [Cygwin](http://cygwin.com/) which coope
 * "apt-cyg source" download source archive.
 * "apt-cyg download" download the binary package into the current directory.
 * "apt-cyg mirror" download the binary package into the current cache/mirrordir as mirror.
+* "apt-cyg listfiles" List files 'owned' by package(s).
+* "apt-cyg get-proxy" Get proxies for eval.
 
 Requirements
 ------------
