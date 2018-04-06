@@ -98,6 +98,7 @@ function usage()
   echo "  \"apt-cyg download\" download the binary package into the current directory."
   echo "  \"apt-cyg mirror\" download the binary package into the current cache/mirrordir as mirror."
   echo "  \"apt-cyg listfiles\" List files 'owned' by package(s)."
+  echo "  \"apt-cyg get-proxy\" Get proxies for eval."
   echo "Options:"
   echo "  --ag                     : use the silver searcher (currently work only at packageof subcommand)"
   echo "  --charch <arch>          : change archetecture"
@@ -603,6 +604,11 @@ function proxy_setup ()
       proxy_set "$OPT_PROXY"
       ;;
   esac
+}
+
+function apt-cyg-get-proxy ()
+{
+  declare -p ftp_proxy http_proxy https_proxy
 }
 
 # Usage: get_pkgname PKGFILE
