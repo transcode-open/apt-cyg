@@ -169,7 +169,7 @@ function mirror_to_mirrordir ()
 function findworkspace()
 {
   # default working directory, mirror and architecture
-
+  
   mirror=http://ftp.jaist.ac.jp/pub/cygwin
   arch="$(current_cygarch)"
   cache=/setup
@@ -1086,17 +1086,23 @@ function kill_all_cygwin_process ()
 function apt-cyg-update-setup ()
 {
   [ -n "$OPT_NO_UPDATE_SETUP" ] && return
+  local TARGETS=( "${SETUP_EXE}" "${SETUP_EXE}.sig" )
   
+  pushd . > /dev/null
+  findworkspace
+  popd > /dev/null
   pushd "$(apt-cyg-pathof cache)" > /dev/null
-  
-  if "${WGET[@]}" -N "https://cygwin.com/${SETUP_EXE}"; then
+  files_backup "${TARGETS[@]}"
+  if download_and_verify "https://cygwin.com/${SETUP_EXE}"; then
+    files_backup_clean "${TARGETS[@]}"
     chmod +x "${SETUP_EXE}"
     ls -l "${SETUP_EXE}" > $(verbosefor 2)
   else
-    echo -e "\e[31;1mError:\e[30;0m ${SETUP_EXE} could not be downloaded."
+    files_restore "${TARGETS[@]}"
+    echo -e "\e[31;1mError:\e[30;0m ${SETUP_EXE} could not be downloaded: Rollbacked it and aborted." >&2
     exit 1
   fi
-  
+
   popd > /dev/null
 }
 
