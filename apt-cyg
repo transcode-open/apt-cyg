@@ -25,6 +25,17 @@
 # THE SOFTWARE.
 # 
 
+(( 5 <= "${DEBUG:-0}" )) && set -x
+
+SCRIPT_PATH="$(which "$0")"
+SCRIPT_FILE="${SCRIPT_PATH##*/}"
+SCRIPT_NAME="${SCRIPT_FILE%.*}"
+SCRIPT_DIR="${SCRIPT_PATH%/*}"
+SCRIPT_REALPATH="$(realpath "$(which "$0")")"
+SCRIPT_REALFILE="${SCRIPT_REALPATH##*/}"
+SCRIPT_REALNAME="${SCRIPT_REALFILE%.*}"
+SCRIPT_REALDIR="${SCRIPT_REALPATH%/*}"
+
 TRUSTEDKEYS=( CYGWIN CYGWINPORTS );
 # ./pubring.asc
 # ------------
@@ -42,8 +53,6 @@ TRUSTEDKEY_CYGWIN_URL_LATEST="https://cygwin.com/key/pubring.asc"
 TRUSTEDKEY_CYGWINPORTS_SUM="ccf174d1e6ec20e50ff954e3d4a0c3de478032a100d26789c0190587ae80128e842ff5404ed3b48f8693c8803c88a3acbf8dca339edfdaab0f3c247fb6091e42"
 TRUSTEDKEY_CYGWINPORTS_FPR="45600BB98CA878AA97A70119FF20AF9A66EE1F94"
 TRUSTEDKEY_CYGWINPORTS_URL_LATEST="http://cygwinports.org/ports.gpg"
-
-(( 5 <= "${DEBUG:-0}" )) && set -x
 
 # this script requires some packages
 
@@ -134,12 +143,29 @@ function usage()
 
 
 
-function version()
+function git_status ()
 {
-  echo "apt-cyg version 0.57"
-  echo "Written by Stephen Jungels"
-  echo ""
-  echo "Copyright (c) 2005-9 Stephen Jungels.  Released under the GPL."
+  local origin stauts
+  [ ! -d "${SCRIPT_REALDIR%/}/.git" ] && return 1
+  pushd "${SCRIPT_REALDIR}" >/dev/null
+  echo
+  origin="$(git config --get remote.origin.url)" && echo "origin: $origin"
+  echo "commit: $(git log -1 --pretty=format:"%ai %h%d")"
+  status="$(git status --short "${SCRIPT_REALNAME}")"
+  [ -n "$status" ] && echo "status: $status"
+  popd >/dev/null
+}
+
+function version ()
+{
+  cat<<-EOD
+	kou1okada/apt-cyg
+	forked from transcode-open/apt-cyg$(git_status)
+	
+	This script is based on apt-cyg version 0.57
+	Copyright (c) 2005-9 Stephen Jungels. Released under the GPL.
+	Copyright (c) 2013-7 Stephen Jungels. Republished under the MIT license.
+	EOD
 }
 
 # Usage: verbose [level [msg ...]]
@@ -1968,15 +1994,6 @@ function invoke_subcommand ()
     exit 1
   fi
 }
-
-SCRIPT_PATH="$(which "$0")"
-SCRIPT_FILE="${SCRIPT_PATH##*/}"
-SCRIPT_NAME="${SCRIPT_FILE%.*}"
-SCRIPT_DIR="${SCRIPT_PATH%/*}"
-SCRIPT_REALPATH="$(realpath "$(which "$0")")"
-SCRIPT_REALFILE="${SCRIPT_REALPATH##*/}"
-SCRIPT_REALNAME="${SCRIPT_REALFILE%.*}"
-SCRIPT_REALDIR="${SCRIPT_REALPATH%/*}"
 
 proxy_setup
 invoke_subcommand "$SUBCOMMAND" "${ARGS[@]}"
