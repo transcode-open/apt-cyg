@@ -116,6 +116,7 @@ apt-cyg version 1
 The MIT License (MIT)
 
 Copyright (c) 2005-9 Stephen Jungels
+                       This APT has Super Cow Powers.
 "
 
 function wget {
