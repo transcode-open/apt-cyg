@@ -613,6 +613,18 @@ function apt-cache {
   fi
 }
 
+function apt-moo {
+  echo "\
+         (__) 
+         (oo) 
+   /------\/ 
+  / |    ||   
+ *  /\---/\ 
+    ~~   ~~   
+...."Have you mooed today?"...
+  "
+}
+
 if [ -p /dev/stdin ]
 then
   mapfile -t pks
@@ -644,7 +656,8 @@ do
     ;;
 
     list | cache  | remove | depends | listall  | download | listfiles |\
-    show | mirror | search | install | category | rdepends | searchall )
+    show | mirror | search | install | category | rdepends | searchall |\
+    moo)
       if [[ $command ]]
       then
         pks+=("$1")
