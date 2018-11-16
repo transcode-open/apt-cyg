@@ -1,48 +1,55 @@
 apt-cyg
 =======
 
-apt-cyg
--------
-apt-cyg is a command-line installer for [Cygwin](http://cygwin.com/) which cooperates with Cygwin Setup and uses the same repository. The syntax is similar to apt-get. Usage examples:
+apt-cyg is a command-line installer for [Cygwin](http://cygwin.com/) which cooperates with Cygwin Setup and uses the same repository. The syntax is similar to apt-get.
 
-| Command | Description |
+Usage
+-----
+
+### Command line
+
+    apt-cyg [OPTIONS ...] [SUBCOMMAND [PARAMETERS ...]]
+
+### Sub commands
+
+| Sub command | Description |
 |:------- |:----------- |
-| `apt-cyg install <package names>` |  to install packages |
-| `apt-cyg remove <package names>` |  to remove packages |
-| `apt-cyg update` |  to update *setup.ini* |
-| `apt-cyg show` |  to show installed packages |
-| `apt-cyg find <pattern(s)>` |  to find packages matching patterns |
-| `apt-cyg describe <pattern(s)>` |  to describe packages matching patterns |
-| `apt-cyg packageof <commands or files>` |  to locate parent packages |
-| `apt-cyg pathof <cache\|mirror\|mirrordir\|cache/mirrordir\|setup.ini>` |  to show path |
-| `apt-cyg key-add <files> ...` |  to add keys contained in `<files>` |
-| `apt-cyg key-del <keyids> ...` |  to remove keys `<keyids>` |
-| `apt-cyg key-list` |  to list keys |
-| `apt-cyg key-finger` |  to list fingerprints |
-| `apt-cyg upgrade-self` |  to upgrade apt-cyg |
-| `apt-cyg depends <package names>` |  to show forward dependency information for packages with depth. |
-| `apt-cyg rdepends <package names>` |  to show reverse dependency information for packages with depth. |
-| `apt-cyg completion-install` |  to install completion. |
-| `apt-cyg completion-uninstall` |  to uninstall completion. |
-| `apt-cyg mirrors-list` |  to show list of mirrors. |
-| `apt-cyg benchmark-mirrors <url> ...` |  to benchmark mirrors. |
-| `apt-cyg benchmark-parallel-mirrors <url> ...` |  to benchmark mirrors in parallel. |
-| `apt-cyg benchmark-parallel-mirrors-list` |  to benchmark mirrors-list in parallel. |
-| `apt-cyg scriptinfo` |  to show script infomations. |
-| `apt-cyg show-packages-busyness <package names> ...` |  to show if packages are busy or not. |
-| `apt-cyg dist-upgrade` |  to upgrade all packages that is installed. This subcommand uses **`setup-*.exe`** |
-| `apt-cyg update-setup` |  to update setup.exe |
-| `apt-cyg setup` |  to call setup.exe |
-| `apt-cyg packages-total-count` |  count number of total packages from setup.ini |
-| `apt-cyg packages-total-size` |  count size of total packages from setup.ini |
-| `apt-cyg packages-cached-count` |  count number of cached packages in cache/mirrordir. |
-| `apt-cyg packages-cached-size` |  count size of cached packages in cache/mirrordir. |
-| `apt-cyg repair-acl` |  repair the windows ACL (Access Control List). |
-| `apt-cyg source` |  download source archive. |
-| `apt-cyg download` |  download the binary package into the current directory. |
-| `apt-cyg mirror` |  download the binary package into the current cache/mirrordir as mirror. |
-| `apt-cyg listfiles` |  List files 'owned' by package(s). |
-| `apt-cyg get-proxy` |  Get proxies for eval. |
+| `install <package names>` |  to install packages |
+| `remove <package names>` |  to remove packages |
+| `update` |  to update *setup.ini* |
+| `show` |  to show installed packages |
+| `find <pattern(s)>` |  to find packages matching patterns |
+| `describe <pattern(s)>` |  to describe packages matching patterns |
+| `packageof <commands or files>` |  to locate parent packages |
+| `pathof <cache\|mirror\|mirrordir\|cache/mirrordir\|setup.ini>` |  to show path |
+| `key-add <files> ...` |  to add keys contained in `<files>` |
+| `key-del <keyids> ...` |  to remove keys `<keyids>` |
+| `key-list` |  to list keys |
+| `key-finger` |  to list fingerprints |
+| `upgrade-self` |  to upgrade apt-cyg |
+| `depends <package names>` |  to show forward dependency information for packages with depth. |
+| `rdepends <package names>` |  to show reverse dependency information for packages with depth. |
+| `completion-install` |  to install completion. |
+| `completion-uninstall` |  to uninstall completion. |
+| `mirrors-list` |  to show list of mirrors. |
+| `benchmark-mirrors <url> ...` |  to benchmark mirrors. |
+| `benchmark-parallel-mirrors <url> ...` |  to benchmark mirrors in parallel. |
+| `benchmark-parallel-mirrors-list` |  to benchmark mirrors-list in parallel. |
+| `scriptinfo` |  to show script infomations. |
+| `show-packages-busyness <package names> ...` |  to show if packages are busy or not. |
+| `dist-upgrade` |  to upgrade all packages that is installed. This subcommand uses **`setup-*.exe`** |
+| `update-setup` |  to update setup.exe |
+| `setup` |  to call setup.exe |
+| `packages-total-count` |  count number of total packages from setup.ini |
+| `packages-total-size` |  count size of total packages from setup.ini |
+| `packages-cached-count` |  count number of cached packages in cache/mirrordir. |
+| `packages-cached-size` |  count size of cached packages in cache/mirrordir. |
+| `repair-acl` |  repair the windows ACL (Access Control List). |
+| `source` |  download source archive. |
+| `download` |  download the binary package into the current directory. |
+| `mirror` |  download the binary package into the current cache/mirrordir as mirror. |
+| `listfiles` |  List files 'owned' by package(s). |
+| `get-proxy` |  Get proxies for eval. |
 
 ### Options
 
