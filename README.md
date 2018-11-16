@@ -68,7 +68,7 @@ Choose one of below settings.
 
 Remarks:
 Above additional settings for wget is not required for 64bit version of cygwin.
-But, as of 2014-01-17, perhaps ca-certificates package makes fail of certification in 64bit version of cygwin with Windows 8. See below:
+But, as of 2014-01-17, perhaps `ca-certificates` package makes fail of certification in 64bit version of cygwin with Windows 8. See below:
 
 * Known Problem / [2014-01-17: ca-certificates package is not setup correct at x86_64 with Windows 8.](#2014-01-17-ca-certificates-package-is-not-setup-correct-at-x86_64-with-windows-8)
 
@@ -93,7 +93,7 @@ New features
 
 ### dist-upgrade support
 
-This fork has achieved dist-upgrade command by using `setup-x86.exe` and `setup-x86_64.exe` as a backend.
+This fork has achieved `dist-upgrade` command by using `setup-x86.exe` and `setup-x86_64.exe` as a backend.
 Note that all of running tasks on the cygwin will be killed before starting dist-upgrade.
 
 ### Multiple hash algorithms support
@@ -117,13 +117,13 @@ Of course, you must install both environments of x86_64 and x86, beforehand.
 ### Signature check and key management by GnuPG
 
 The default action of apt-cyg has been changed to check signature for 'setup.ini'.
-Of course you can also avoid signature check by using --no-verify or -X options.
+Of course you can also avoid signature check by using `--no-verify` or `-X` options.
 Public keys of cygwin and cygwinports are already registered to trusted keys of embeded.
-If you want to use some other public keys, please use key-* subcommands.
+If you want to use some other public keys, please use `key-*` subcommands.
 
 ### Upgrade apt-cyg
 
-If apt-cyg is under the git version control, this fork can upgrade itself by "upgrade-self" subcommand.
+If apt-cyg is under the git version control, this fork can upgrade itself by `upgrade-self` subcommand.
 Therefore, the most recommended way to deploy this fork is below:
 
     git clone HTTPS_clone_URL
@@ -134,7 +134,7 @@ It can be found from the right side menu in each fork pages on github.
     
 ### Proxy support
 
-Use --proxy, -p option.
+Use `--proxy`, `-p` option.
 This option must take a parameter from one of "auto", "inherit", "none" and URL.
 
 * "auto" will determine a proxy using a part of the [Web Proxy Auto-Discovery Protocol (WPAD)](http://en.wikipedia.org/wiki/Web_Proxy_Autodiscovery_Protocol).
@@ -221,7 +221,7 @@ Known Problem
 ### 2016-02-12: Problems about the ACL
 
 In recent version, the cygwin changed the ACL mechanism .
-So, in the cygwin current version, if it will be installed by setup.exe with -B or --no-admin option,
+So, in the cygwin current version, if it will be installed by `setup.exe` with `-B` or `--no-admin` option,
 the cygwin root (/) does not have correct ACL.
 
 A new subcommand `repair-acl` tries to repair it.
@@ -236,7 +236,7 @@ thienhv reported this problem [#14](https://github.com/kou1okada/apt-cyg/issues/
 
 ### 2014-01-17: ca-certificates package is not setup correct at x86_64 with Windows 8.
 
-After clean installing with setup-x86_64, there are something wrong about ca-certificate package as below:
+After clean installing with `setup-x86_64.exe`, there are something wrong about ca-certificate package as below:
 
     $ ls -lnG \
          /cygdrive/c/cygwin/etc/pki/ca-trust/extracted/openssl/ca-bundle.trust.crt \
@@ -251,7 +251,7 @@ After clean installing with setup-x86_64, there are something wrong about ca-cer
 
 The x86 environment seems no problem except that need an additional setting for wget and ca-certificate. Hmm,,,    
 
-It seems that /usr/bin/update-ca-trust is failed at x86_64.
+It seems that `/usr/bin/update-ca-trust` is failed at x86_64.
 
 It's ad hoc, but effective way to fix it, is to copy files from cygwin32 to cygwin64, as below:
 
@@ -269,6 +269,7 @@ For more details, see a thread of below:
 * Cygwin mailing list / cygwin / [Re: Is there someone who have a same problem ?](http://cygwin.com/ml/cygwin/2014-01/msg00368.html)
 
 ### 2014-01-15: Signature check failed at cygwinports x86_64.
+
 Oops, setup.bz2 is newer than setup.bz2.sig.
 And it seems to be corrupted.
 
@@ -295,9 +296,10 @@ And it seems to be corrupted.
 
 As of 2014-01-24, above problem is recovered at least.
 
-### FIXED: Check setup (cygcheck -c) can not detect .tar.xz packages
+### FIXED: Check setup (`cygcheck -c`) can not detect .tar.xz packages
+
 At cygwin 1.7.25, cygcheck is hardcoded for .tar.gz and .tar.bz2.
-So check setup (cygcheck -c) can not detect .tar.xz packages.
+So check setup (`cygcheck -c`) can not detect .tar.xz packages.
 This bug was already fixed with [src/winsup/utils/dump_setup.cc#rev1.28](http://cygwin.com/cgi-bin/cvsweb.cgi/src/winsup/utils/dump_setup.cc?cvsroot=src#rev1.28).
 Please wait a release of cygwin 1.7.26.
 
