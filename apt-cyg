@@ -68,77 +68,101 @@ fi
 
 function usage()
 {
-  echo apt-cyg: Installs and removes Cygwin packages.
-  echo "  \"apt-cyg install <package names>\" to install packages"
-  echo "  \"apt-cyg remove <package names>\" to remove packages"
-  echo "  \"apt-cyg update\" to update setup.ini"
-  echo "  \"apt-cyg show\" to show installed packages"
-  echo "  \"apt-cyg find <patterns>\" to find packages matching patterns"
-  echo "  \"apt-cyg describe <patterns>\" to describe packages matching patterns"
-  echo "  \"apt-cyg packageof <commands or files>\" to locate parent packages"
-  echo "  \"apt-cyg pathof <cache|mirror|mirrordir|cache/mirrordir|setup.ini>\""
-  echo "                                                          to show path"
-  echo "  \"apt-cyg key-add <files> ...\" to add keys contained in <files>"
-  echo "  \"apt-cyg key-del <keyids> ...\" to remove keys <keyids>"
-  echo "  \"apt-cyg key-list\" to list keys"
-  echo "  \"apt-cyg key-finger\" to list fingerprints"
-  echo "  \"apt-cyg upgrade-self\" to upgrade apt-cyg"
-  echo "  \"apt-cyg depends <package names>\""
-  echo "         to show forward dependency information for packages with depth."
-  echo "  \"apt-cyg rdepends <package names>\""
-  echo "         to show reverse dependency information for packages with depth."
-  echo "  \"apt-cyg completion-install\" to install completion."
-  echo "  \"apt-cyg completion-uninstall\" to uninstall completion."
-  echo "  \"apt-cyg mirrors-list\" to show list of mirros."
-  echo "  \"apt-cyg benchmark-mirrors <url> ...\" to benchmark mirrors."
-  echo "  \"apt-cyg benchmark-parallel-mirrors <url> ...\" to benchmark mirrors in parallel."
-  echo "  \"apt-cyg benchmark-parallel-mirrors-list\" to benchmark mirrors-list in parallel."
-  echo "  \"apt-cyg scriptinfo\" to show script infomations."
-  echo "  \"apt-cyg show-packages-busyness <package names> ...\" to show packages are busy or noe."
-  echo "  \"apt-cyg dist-upgrade\" to upgrade all packages that is installed. This subcommand uses setup.exe"
-  echo "  \"apt-cyg update-setup\" to update setup.exe"
-  echo "  \"apt-cyg setup\" to call setup.exe"
-  echo "  \"apt-cyg packages-total-count\" count number of total packages from setup.ini"
-  echo "  \"apt-cyg packages-total-size [pattern_of_section]\" count size of total packages from setup.ini"
-  echo "  \"apt-cyg packages-cached-count\" count number of cached packages in cache/mirrordir."
-  echo "  \"apt-cyg packages-cached-size\" count size of cached packages in cache/mirrordir."
-  echo "  \"apt-cyg repair-acl\" repair acl."
-  echo "  \"apt-cyg source\" download source archive."
-  echo "  \"apt-cyg download\" download the binary package into the current directory."
-  echo "  \"apt-cyg mirror\" download the binary package into the current cache/mirrordir as mirror."
-  echo "  \"apt-cyg listfiles\" List files 'owned' by package(s)."
-  echo "  \"apt-cyg get-proxy\" Get proxies for eval."
-  echo "Options:"
-  echo "  --ag                     : use the silver searcher (currently work only at packageof subcommand)"
-  echo "  --charch <arch>          : change archetecture"
-  echo "  --use-setuprc            : set cache and mirror with /etc/setup/setup.rc"
-  echo "  --use-own-conf           : use own cache and mirror settings when apt-cyg calls setup.exe"
-  echo "  --ignore-case, -i        : ignore case distinctions for <patterns>"
-  echo "  --force-remove           : force remove"
-  echo "  --force-fetch-trustedkeys: force fetch trustedkeys"
-  echo "  --force-update-packageof-cache:"
-  echo "                             force update packageof cache"
-  echo "  --no-verify, -X          : Don't verify setup.ini signatures"
-  echo "  --no-check-certificate   : Don't validate the server's certificate"
-  echo "  --no-update-setup        : Don't update setup.exe"
-  echo "  --no-header              : Don't print header"
-  echo "  --proxy, -p <auto|inherit|none|URL> :"
-  echo "                             set proxy (default: \${APT_CYG_PROXY:-auto})"
-  echo "  --completion-get-subcommand:"
-  echo "                             get subcommand (for completion internal use)"
-  echo "  --completion-disable-autoupdate:"
-  echo "                             disable completion autoupdate"
-  echo "  --max-jobs, -j <n>       : Run n jobs in parallel"
-  echo "  --mirror, -m <url>       : set mirror"
-  echo "  --cache, -c <dir>        : set cache"
-  echo "  --file, -f <file>        : read package names from file"
-  echo "  --noupdate, -u           : don't update setup.ini from mirror"
-  echo "  --ipv4, -4               : wget prefer ipv4"
-  echo "  --no-progress            : hide the progress bar in any verbosity mode"
-  echo "  --quiet, -q              : quiet (no output)"
-  echo "  --verbose, -v            : verbose"
-  echo "  --help                   : Display help and exit"
-  echo "  --version                : Display version and exit"
+  cat<<-EOD
+	Usage: apt-cyg [OPTIONS ...] [SUBCOMMAND [PARAMETERS ...]]
+	  Installs and removes Cygwin packages.
+	Sub Commands:
+	  install PACKAGE_NAMES    : to install packages
+	  remove PACKAGE_NAMES     : to remove packages
+	  update                   : to update setup.ini
+	  show                     : to show installed packages
+	  find PATTERNS ...        : to find packages matching PATTERNS
+	  describe PATTERNS ...    : to describe packages matching PATTERNS
+	  packageof COMMAND_OR_FILE_NAMES ... :
+	                             to locate parent packages
+	  pathof "cache"|"mirror"|"mirrordir"|"cache/mirrordir"|"setup.ini" :
+	                             to show path
+	  key-add FILES ...        : to add keys contained in FILES
+	  key-del KEYIDS ...       : to remove keys KEYIDS
+	  key-list                 : to list keys
+	  key-finger               : to list fingerprints
+	  upgrade-self             : to upgrade apt-cyg
+	  depends PACKAGE_NAMES ... :
+	                             to show forward dependency information
+	                             for packages with depth.
+	  rdepends PACKAGE_NAMES ... :
+	                             to show reverse dependency information
+	                             for packages with depth.
+	  completion-install       : to install completion.
+	  completion-uninstall     : to uninstall completion.
+	  mirrors-list             : to show list of mirros.
+	  benchmark-mirrors URLs ... :
+	                             to benchmark mirrors.
+	  benchmark-parallel-mirrors URLs ... :
+	                             to benchmark mirrors in parallel.
+	  benchmark-parallel-mirrors-list :
+	                             to benchmark mirrors-list in parallel.
+	  scriptinfo               : to show script infomations.
+	  show-packages-busyness PACKAGE_NAMES ... :
+	                             to show packages are busy or noe.
+	  dist-upgrade             : to upgrade all packages that is installed.
+	                             This subcommand uses setup.exe
+	  update-setup             : to update setup.exe
+	  setup [PARAMS ...]       : to call setup.exe
+	  packages-total-count     : count number of total packages from setup.ini
+	  packages-total-size [PATTERN_OF_SECTION] :
+	                             count size of total packages from setup.ini
+	  packages-cached-count    : count number of cached packages
+	                             in cache/mirrordir.
+	  packages-cached-size     : count size of cached packages
+	                             in cache/mirrordir.
+	  repair-acl               : repair acl.
+	  source PACKAGE_NAMES ... :
+	                             download source archive.
+	  download PACKAGE_NAMES ... :
+	                             download the binary package
+	                             into the current directory.
+	  mirror PACKAGE_NAMES ... :
+	                             download the binary package
+	                             into the current cache/mirrordir as mirror.
+	  listfiles PACKAGE_NAMES ... :
+	                             List files 'owned' by package(s).
+	  get-proxy                : Get proxies for eval.
+	Options:
+	  --ag                     : use the silver searcher
+	                             (currently work only at packageof subcommand)
+	  --charch ARCH            : change archetecture
+	  --use-setuprc            : set cache and mirror with /etc/setup/setup.rc
+	  --use-own-conf           : use own cache and mirror settings
+	                             when apt-cyg calls setup.exe
+	  --ignore-case, -i        : ignore case distinctions for <patterns>
+	  --force-remove           : force remove
+	  --force-fetch-trustedkeys :
+	                             force fetch trustedkeys
+	  --force-update-packageof-cache :
+	                             force update packageof cache
+	  --no-verify, -X          : Don't verify setup.ini signatures
+	  --no-check-certificate   : Don't validate the server's certificate
+	  --no-update-setup        : Don't update setup.exe
+	  --no-header              : Don't print header
+	  --proxy, -p "auto"|"inherit"|"none"|URL :
+	                             set proxy (default: \${APT_CYG_PROXY:-auto})
+	  --completion-get-subcommand :
+	                             get subcommand (for completion internal use)
+	  --completion-disable-autoupdate :
+	                             disable completion autoupdate
+	  --max-jobs, -j N         : Run N jobs in parallel
+	  --mirror, -m URL         : set mirror
+	  --cache, -c DIR          : set cache
+	  --file, -f FILE          : read package names from file
+	  --noupdate, -u           : don't update setup.ini from mirror
+	  --ipv4, -4               : wget prefer ipv4
+	  --no-progress            : hide the progress bar in any verbosity mode
+	  --quiet, -q              : quiet (no output)
+	  --verbose, -v            : verbose
+	  --help                   : Display help and exit
+	  --version                : Display version and exit
+	EOD
 }
 
 

@@ -14,41 +14,41 @@ Usage
 
 | Sub command | Description |
 |:------- |:----------- |
-| `install <package names>` |  to install packages |
-| `remove <package names>` |  to remove packages |
+| `install PACKAGE_NAMES` |  to install packages |
+| `remove PACKAGE_NAMES` |  to remove packages |
 | `update` |  to update *setup.ini* |
 | `show` |  to show installed packages |
-| `find <pattern(s)>` |  to find packages matching patterns |
-| `describe <pattern(s)>` |  to describe packages matching patterns |
-| `packageof <commands or files>` |  to locate parent packages |
-| `pathof <cache\|mirror\|mirrordir\|cache/mirrordir\|setup.ini>` |  to show path |
-| `key-add <files> ...` |  to add keys contained in `<files>` |
-| `key-del <keyids> ...` |  to remove keys `<keyids>` |
+| `find PATTERNS` |  to find packages matching patterns |
+| `describe PATTERNS` |  to describe packages matching patterns |
+| `packageof COMMAND_OR_FILE_NAMES ...` |  to locate parent packages |
+| `pathof "cache"\|"mirror"\|"mirrordir"\|"cache/mirrordir"\|"setup.ini"` |  to show path |
+| `key-add FILES ...` |  to add keys contained in FILES |
+| `key-del KEYIDS ...` |  to remove keys `KEYIDS` |
 | `key-list` |  to list keys |
 | `key-finger` |  to list fingerprints |
 | `upgrade-self` |  to upgrade apt-cyg |
-| `depends <package names>` |  to show forward dependency information for packages with depth. |
-| `rdepends <package names>` |  to show reverse dependency information for packages with depth. |
+| `depends PACKAGE_NAMES ...` |  to show forward dependency information for packages with depth. |
+| `rdepends PACKAGE_NAMES ...` |  to show reverse dependency information for packages with depth. |
 | `completion-install` |  to install completion. |
 | `completion-uninstall` |  to uninstall completion. |
 | `mirrors-list` |  to show list of mirrors. |
-| `benchmark-mirrors <url> ...` |  to benchmark mirrors. |
-| `benchmark-parallel-mirrors <url> ...` |  to benchmark mirrors in parallel. |
+| `benchmark-mirrors URLs ...` |  to benchmark mirrors. |
+| `benchmark-parallel-mirrors URLs ...` |  to benchmark mirrors in parallel. |
 | `benchmark-parallel-mirrors-list` |  to benchmark mirrors-list in parallel. |
 | `scriptinfo` |  to show script infomations. |
-| `show-packages-busyness <package names> ...` |  to show if packages are busy or not. |
+| `show-packages-busyness PACKAGE_NAMES ...` |  to show if packages are busy or not. |
 | `dist-upgrade` |  to upgrade all packages that is installed. This subcommand uses **`setup-*.exe`** |
 | `update-setup` |  to update setup.exe |
-| `setup` |  to call setup.exe |
+| `setup [PARAMS ...]` |  to call setup.exe |
 | `packages-total-count` |  count number of total packages from setup.ini |
-| `packages-total-size` |  count size of total packages from setup.ini |
+| `packages-total-size [PATTERN_OF_SECTION]` |  count size of total packages from setup.ini |
 | `packages-cached-count` |  count number of cached packages in cache/mirrordir. |
 | `packages-cached-size` |  count size of cached packages in cache/mirrordir. |
 | `repair-acl` |  repair the windows ACL (Access Control List). |
-| `source` |  download source archive. |
-| `download` |  download the binary package into the current directory. |
-| `mirror` |  download the binary package into the current cache/mirrordir as mirror. |
-| `listfiles` |  List files 'owned' by package(s). |
+| `source PACKAGE_NAMES ...` |  download source archive. |
+| `download PACKAGE_NAMES ...` |  download the binary package into the current directory. |
+| `mirror PACKAGE_NAMES ...` |  download the binary package into the current cache/mirrordir as mirror. |
+| `listfiles PACKAGE_NAMES ...` |  List files 'owned' by package(s). |
 | `get-proxy` |  Get proxies for eval. |
 
 ### Options
@@ -56,7 +56,7 @@ Usage
 | Option | Description |
 |:------ |:----------- |
 | `--ag` | use the silver searcher (currently work only at packageof subcommand) |
-| `--charch <arch>` | change archetecture |
+| `--charch ARCH` | change archetecture |
 | `--use-setuprc` | set cache and mirror with /etc/setup/setup.rc |
 | `--use-own-conf` | use own cache and mirror settings when apt-cyg calls setup.exe |
 | `--ignore-case`, `-i` | ignore case distinctions for `<patterns>` |
@@ -67,13 +67,13 @@ Usage
 | `--no-check-certificate` | Don't validate the server's certificate |
 | `--no-update-setup` | Don't update setup.exe
 | `--no-header` | Don't print header |
-| `--proxy`, `-p <auto\|inherit\|none\|URL>` | set proxy (default: ${APT_CYG_PROXY:-auto}) |
+| `--proxy`, `-p "auto"\|"inherit"\|"none"\|URL` | set proxy (default: ${APT_CYG_PROXY:-auto}) |
 | `--completion-get-subcommand` | get subcommand (for completion internal use) |
 | `--completion-disable-autoupdate` | disable completion autoupdate |
-| `--max-jobs`, `-j <n>` | Run n jobs in parallel |
-| `--mirror`, `-m <url>` | set mirror
-| `--cache`, `-c <dir>` | set cache |
-| `--file`, `-f <file>` | read package names from file |
+| `--max-jobs`, `-j N` | Run N jobs in parallel |
+| `--mirror`, `-m URL` | set mirror
+| `--cache`, `-c DIR` | set cache |
+| `--file`, `-f FILE` | read package names from file |
 | `--noupdate`, `-u` | don't update setup.ini from mirror |
 | `--ipv4`, `-4` | wget prefer ipv4 |
 | `--no-progress` | hide the progress bar in any verbosity mode |
