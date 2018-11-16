@@ -15,8 +15,8 @@ apt-cyg is a command-line installer for [Cygwin](http://cygwin.com/) which coope
 | `apt-cyg describe <pattern(s)>` |  to describe packages matching patterns |
 | `apt-cyg packageof <commands or files>` |  to locate parent packages |
 | `apt-cyg pathof <cache\|mirror\|mirrordir\|cache/mirrordir\|setup.ini>` |  to show path |
-| `apt-cyg key-add <files> ...` |  to add keys contained in <files> |
-| `apt-cyg key-del <keyids> ...` |  to remove keys <keyids> |
+| `apt-cyg key-add <files> ...` |  to add keys contained in `<files>` |
+| `apt-cyg key-del <keyids> ...` |  to remove keys `<keyids>` |
 | `apt-cyg key-list` |  to list keys |
 | `apt-cyg key-finger` |  to list fingerprints |
 | `apt-cyg upgrade-self` |  to upgrade apt-cyg |
@@ -50,7 +50,7 @@ Requirements
 
 `apt-cyg` requires the Cygwin default environment and the additional *Cygwin* packages:
 
-`wget, ca-certificates, gnupg`
+`wget`, `ca-certificates`, `gnupg`
 
 In **32bit** version of cygwin, `wget` requires an additional setting for the `ca-certificates` package.
 Choose one of below settings.
