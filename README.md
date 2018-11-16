@@ -44,6 +44,36 @@ apt-cyg is a command-line installer for [Cygwin](http://cygwin.com/) which coope
 | `apt-cyg listfiles` |  List files 'owned' by package(s). |
 | `apt-cyg get-proxy` |  Get proxies for eval. |
 
+### Options
+
+| Option | Description |
+|:------ |:----------- |
+| `--ag` | use the silver searcher (currently work only at packageof subcommand) |
+| `--charch <arch>` | change archetecture |
+| `--use-setuprc` | set cache and mirror with /etc/setup/setup.rc |
+| `--use-own-conf` | use own cache and mirror settings when apt-cyg calls setup.exe |
+| `--ignore-case`, `-i` | ignore case distinctions for `<patterns>` |
+| `--force-remove` | force remove
+| `--force-fetch-trustedkeys` | force fetch trustedkeys |
+| `--force-update-packageof-cache` | force update packageof cache |
+| `--no-verify`, `-X` | Don't verify setup.ini signatures |
+| `--no-check-certificate` | Don't validate the server's certificate |
+| `--no-update-setup` | Don't update setup.exe
+| `--no-header` | Don't print header |
+| `--proxy`, `-p <auto\|inherit\|none\|URL>` | set proxy (default: ${APT_CYG_PROXY:-auto}) |
+| `--completion-get-subcommand` | get subcommand (for completion internal use) |
+| `--completion-disable-autoupdate` | disable completion autoupdate |
+| `--max-jobs`, `-j <n>` | Run n jobs in parallel |
+| `--mirror`, `-m <url>` | set mirror
+| `--cache`, `-c <dir>` | set cache |
+| `--file`, `-f <file>` | read package names from file |
+| `--noupdate`, `-u` | don't update setup.ini from mirror |
+| `--ipv4`, `-4` | wget prefer ipv4 |
+| `--no-progress` | hide the progress bar in any verbosity mode |
+| `--quiet`, `-q` | quiet (no output) |
+| `--verbose`, `-v` | verbose |
+| `--help` | Display help and exit |
+| `--version` | Display version and exit |
 
 Requirements
 ------------
