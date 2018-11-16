@@ -137,8 +137,8 @@ function usage()
   echo "  --no-progress            : hide the progress bar in any verbosity mode"
   echo "  --quiet, -q              : quiet (no output)"
   echo "  --verbose, -v            : verbose"
-  echo "  --help"
-  echo "  --version"
+  echo "  --help                   : Display help and exit"
+  echo "  --version                : Display version and exit"
 }
 
 
