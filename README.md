@@ -93,7 +93,7 @@ New features
 
 ### dist-upgrade support
 
-This fork has achieved dist-upgrade command by using `setup-x86.exe` and `setup-x96_64.exe` as a backend.
+This fork has achieved dist-upgrade command by using `setup-x86.exe` and `setup-x86_64.exe` as a backend.
 Note that all of running tasks on the cygwin will be killed before starting dist-upgrade.
 
 ### Multiple hash algorithms support
