@@ -5,51 +5,54 @@ apt-cyg
 -------
 apt-cyg is a command-line installer for [Cygwin](http://cygwin.com/) which cooperates with Cygwin Setup and uses the same repository. The syntax is similar to apt-get. Usage examples:
 
-* "apt-cyg install &lt;package names&gt;" to install packages
-* "apt-cyg remove &lt;package names&gt;" to remove packages
-* "apt-cyg update" to update setup.ini
-* "apt-cyg show" to show installed packages
-* "apt-cyg find &lt;pattern(s)&gt;" to find packages matching patterns
-* "apt-cyg describe &lt;pattern(s)&gt;" to describe packages matching patterns
-* "apt-cyg packageof &lt;commands or files&gt;" to locate parent packages
-* "apt-cyg pathof &lt;cache|mirror|mirrordir|cache/mirrordir|setup.ini&gt;" to show path
-* "apt-cyg key-add &lt;files&gt; ..." to add keys contained in &lt;files&gt;
-* "apt-cyg key-del &lt;keyids&gt; ..." to remove keys &lt;keyids&gt;
-* "apt-cyg key-list" to list keys
-* "apt-cyg key-finger" to list fingerprints
-* "apt-cyg upgrade-self" to upgrade apt-cyg
-* "apt-cyg depends &lt;package names&gt;" to show forward dependency information for packages with depth.
-* "apt-cyg rdepends &lt;package names&gt;" to show reverse dependency information for packages with depth.
-* "apt-cyg completion-install" to install completion.
-* "apt-cyg completion-uninstall" to uninstall completion.
-* "apt-cyg mirrors-list" to show list of mirrors.
-* "apt-cyg benchmark-mirrors &lt;url&gt; ..." to benchmark mirrors.
-* "apt-cyg benchmark-parallel-mirrors &lt;url&gt; ..." to benchmark mirrors in parallel.
-* "apt-cyg benchmark-parallel-mirrors-list" to benchmark mirrors-list in parallel.
-* "apt-cyg scriptinfo" to show script infomations.
-* "apt-cyg show-packages-busyness &lt;package names&gt; ..." to show packages are busy or noe.
-* "apt-cyg dist-upgrade" to upgrade all packages that is installed. This subcommand uses setup-*.exe
-* "apt-cyg update-setup" to update setup.exe
-* "apt-cyg setup" to call setup.exe
-* "apt-cyg packages-total-count" count number of total packages from setup.ini
-* "apt-cyg packages-total-size" count size of total packages from setup.ini
-* "apt-cyg packages-cached-count" count number of cached packages in cache/mirrordir.
-* "apt-cyg packages-cached-size" count size of cached packages in cache/mirrordir.
-* "apt-cyg repair-acl" repair acl.
-* "apt-cyg source" download source archive.
-* "apt-cyg download" download the binary package into the current directory.
-* "apt-cyg mirror" download the binary package into the current cache/mirrordir as mirror.
-* "apt-cyg listfiles" List files 'owned' by package(s).
-* "apt-cyg get-proxy" Get proxies for eval.
+| Command | Description |
+|:------- |:----------- |
+| `apt-cyg install <package names>` |  to install packages |
+| `apt-cyg remove <package names>` |  to remove packages |
+| `apt-cyg update` |  to update *setup.ini* |
+| `apt-cyg show` |  to show installed packages |
+| `apt-cyg find <pattern(s)>` |  to find packages matching patterns |
+| `apt-cyg describe <pattern(s)>` |  to describe packages matching patterns |
+| `apt-cyg packageof <commands or files>` |  to locate parent packages |
+| `apt-cyg pathof <cache\|mirror\|mirrordir\|cache/mirrordir\|setup.ini>` |  to show path |
+| `apt-cyg key-add <files> ...` |  to add keys contained in <files> |
+| `apt-cyg key-del <keyids> ...` |  to remove keys <keyids> |
+| `apt-cyg key-list` |  to list keys |
+| `apt-cyg key-finger` |  to list fingerprints |
+| `apt-cyg upgrade-self` |  to upgrade apt-cyg |
+| `apt-cyg depends <package names>` |  to show forward dependency information for packages with depth. |
+| `apt-cyg rdepends <package names>` |  to show reverse dependency information for packages with depth. |
+| `apt-cyg completion-install` |  to install completion. |
+| `apt-cyg completion-uninstall` |  to uninstall completion. |
+| `apt-cyg mirrors-list` |  to show list of mirrors. |
+| `apt-cyg benchmark-mirrors <url> ...` |  to benchmark mirrors. |
+| `apt-cyg benchmark-parallel-mirrors <url> ...` |  to benchmark mirrors in parallel. |
+| `apt-cyg benchmark-parallel-mirrors-list` |  to benchmark mirrors-list in parallel. |
+| `apt-cyg scriptinfo` |  to show script infomations. |
+| `apt-cyg show-packages-busyness <package names> ...` |  to show if packages are busy or not. |
+| `apt-cyg dist-upgrade` |  to upgrade all packages that is installed. This subcommand uses **`setup-*.exe`** |
+| `apt-cyg update-setup` |  to update setup.exe |
+| `apt-cyg setup` |  to call setup.exe |
+| `apt-cyg packages-total-count` |  count number of total packages from setup.ini |
+| `apt-cyg packages-total-size` |  count size of total packages from setup.ini |
+| `apt-cyg packages-cached-count` |  count number of cached packages in cache/mirrordir. |
+| `apt-cyg packages-cached-size` |  count size of cached packages in cache/mirrordir. |
+| `apt-cyg repair-acl` |  repair the windows ACL (Access Control List). |
+| `apt-cyg source` |  download source archive. |
+| `apt-cyg download` |  download the binary package into the current directory. |
+| `apt-cyg mirror` |  download the binary package into the current cache/mirrordir as mirror. |
+| `apt-cyg listfiles` |  List files 'owned' by package(s). |
+| `apt-cyg get-proxy` |  Get proxies for eval. |
+
 
 Requirements
 ------------
 
-apt-cyg requires the cygwin default environment and optional packages below.
+`apt-cyg` requires the Cygwin default environment and the additional *Cygwin* packages:
 
-* wget,ca-certificates,gnupg
+`wget, ca-certificates, gnupg`
 
-In 32bit version of cygwin, wget requires an additional setting for ca-certificates package.
+In **32bit** version of cygwin, `wget` requires an additional setting for the `ca-certificates` package.
 Choose one of below settings.
 
     # 1. Create symbolic link for the default ca-directory of wget. 
