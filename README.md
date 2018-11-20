@@ -50,6 +50,7 @@ Usage
 | `mirror PACKAGE_NAMES ...` |  download the binary package into the current cache/mirrordir as mirror. |
 | `listfiles PACKAGE_NAMES ...` |  List files 'owned' by package(s). |
 | `get-proxy` |  Get proxies for eval. |
+| `ls-categories` |  List categories. |
 
 ### Options
 
