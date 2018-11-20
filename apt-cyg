@@ -104,7 +104,7 @@ function usage()
 	                             to benchmark mirrors-list in parallel.
 	  scriptinfo               : to show script infomations.
 	  show-packages-busyness PACKAGE_NAMES ... :
-	                             to show packages are busy or noe.
+	                             to show packages are busy or not.
 	  dist-upgrade             : to upgrade all packages that is installed.
 	                             This subcommand uses setup.exe
 	  update-setup             : to update setup.exe
