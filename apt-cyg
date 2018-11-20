@@ -128,7 +128,7 @@ function usage()
 	  listfiles PACKAGE_NAMES ... :
 	                             List files 'owned' by package(s).
 	  get-proxy                : Get proxies for eval.
-      ls-categories            : List categories.
+	  ls-categories            : List categories.
 	Options:
 	  --ag                     : use the silver searcher
 	                             (currently work only at packageof subcommand)
