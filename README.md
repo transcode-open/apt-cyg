@@ -200,15 +200,19 @@ If you don't want to update it automatically, execute `completion-install` subco
 
 Some other forks, [Milly / apt-cyg](https://github.com/Milly/apt-cyg) under the cfg / apt-cyg fork, [ashumkin / apt-cyg](https://github.com/ashumkin/apt-cyg) and etc, are also supported it.
 
-Contributing
-------------
 
-This project has been re-published on GitHub to make contributing easier. Feel free to fork and modify this script.
+---
+
+### Contributing
+
+This project has been re-published on GitHub to make contributing easier.  
+Feel free to fork and modify this script.
 
 The [Google Code project](https://code.google.com/p/apt-cyg/) has a list of open issues.
 
-### Forks on the github
+#### Forks on the github
 
+See [known_forks.md](known_forks.md)
 
 #### Todo
 
