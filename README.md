@@ -3,7 +3,7 @@
 [![Average time to resolve an issue](http://isitmaintained.com/badge/resolution/kou1okada/apt-cyg.svg)](http://isitmaintained.com//project/kou1okada/apt-cyg "Average time to resolve an issue")
 
 
-`**apt-cyg**` is your friendly [Cygwin](http://cygwin.com/) package manager. The syntax is similar to *apt-get* and is a feature improved wrapper to the native Cygwin `setup.exe`.
+**`apt-cyg`** is your friendly [Cygwin](http://cygwin.com/) package manager. The syntax is similar to *apt-get* and is a feature improved wrapper to the native Cygwin `setup.exe`.
 
 
 | STATUS: | Version | Date | Maintained? |
