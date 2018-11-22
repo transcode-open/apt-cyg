@@ -1,3 +1,6 @@
+apt-cyg
+=======
+
 [![GitHub last commit](https://img.shields.io/github/last-commit/kou1okada/apt-cyg.svg)](https://github.com/kou1okada/apt-cyg)
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://GitHub.com/kou1okada/apt-cyg/graphs/commit-activity)
 [![Average time to resolve an issue](http://isitmaintained.com/badge/resolution/kou1okada/apt-cyg.svg)](http://isitmaintained.com//project/kou1okada/apt-cyg "Average time to resolve an issue")
@@ -12,13 +15,6 @@
 
 ---
 
-
-
-
-apt-cyg
-=======
-
-apt-cyg is a command-line installer for [Cygwin](http://cygwin.com/) which cooperates with Cygwin Setup and uses the same repository. The syntax is similar to apt-get.
 
 Usage
 -----
