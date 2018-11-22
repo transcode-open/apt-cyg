@@ -1,3 +1,20 @@
+[![GitHub last commit](https://img.shields.io/github/last-commit/kou1okada/apt-cyg.svg)](https://github.com/kou1okada/apt-cyg)
+[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://GitHub.com/kou1okada/apt-cyg/graphs/commit-activity)
+[![Average time to resolve an issue](http://isitmaintained.com/badge/resolution/kou1okada/apt-cyg.svg)](http://isitmaintained.com//project/kou1okada/apt-cyg "Average time to resolve an issue")
+
+
+`**apt-cyg**` is your friendly [Cygwin](http://cygwin.com/) package manager. The syntax is similar to *apt-get* and is a feature improved wrapper to the native Cygwin `setup.exe`.
+
+
+| STATUS: | Version | Date | Maintained? |
+|:------- |:------- |:---- |:----------- |
+| Working | `1.0.58` | 2018-11-22 | YES |
+
+---
+
+
+
+
 apt-cyg
 =======
 
@@ -223,3 +240,18 @@ See [known_forks.md](known_forks.md)
 #### Known Problems
 
 For older known problems see: [**`known problems`**](known_problems.md)
+
+---
+
+#### Credits
+
+Most grateful thanks to:
+* [---](https://github.com/---/) - for clarifying and fixing XXXX
+
+---
+
+#### License
+
+[![GitHub license](https://img.shields.io/github/license/kou1okada/apt-cyg.svg)](https://github.com/kou1okada/apt-cyg/blob/master/LICENSE) 
+A license to :sparkling_heart:!
+
