@@ -225,7 +225,7 @@ The [Google Code project](https://code.google.com/p/apt-cyg/) has a list of open
 
 #### Forks on the github
 
-See [known_forks.md](known_forks.md)
+See [other_forks.md](other_forks.md)
 
 #### Todo
 
