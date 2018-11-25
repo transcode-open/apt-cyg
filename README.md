@@ -227,3 +227,8 @@ Known Problems
 ------------
 
 For older known problems see [known_problems.md](known_problems.md).
+
+License
+-------
+
+[![The MIT license](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE) 
