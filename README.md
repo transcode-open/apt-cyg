@@ -10,9 +10,9 @@ Usage
 
     apt-cyg [<options>] [<subcommand> [<parameters> ...]]
 
-### Sub commands
+### Subcommands
 
-| Sub command | Description |
+| Subcommand | Description |
 |:------- |:----------- |
 | `install <package names>` |  to install packages |
 | `remove <package names>` |  to remove packages |
@@ -35,7 +35,7 @@ Usage
 | `benchmark-mirrors <urls> ...` |  to benchmark mirrors. |
 | `benchmark-parallel-mirrors <urls> ...` |  to benchmark mirrors in parallel. |
 | `benchmark-parallel-mirrors-list` |  to benchmark mirrors-list in parallel. |
-| `scriptinfo` |  to show script infomations. |
+| `scriptinfo` |  to show script information. |
 | `show-packages-busyness <package names> ...` |  to show if packages are busy or not. |
 | `dist-upgrade` |  to upgrade all packages that is installed. This subcommand uses **`setup-*.exe`** |
 | `update-setup` |  to update setup.exe |

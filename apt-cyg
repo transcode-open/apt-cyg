@@ -71,7 +71,7 @@ function usage()
   cat<<-EOD
 	Usage: apt-cyg [<options>] [<subcommand> [<parameters> ...]]
 	  Installs and removes Cygwin packages.
-	Sub Commands:
+	Subcommands:
 	  install <package names>  : to install packages
 	  remove <package names>   : to remove packages
 	  update                   : to update setup.ini
@@ -102,7 +102,7 @@ function usage()
 	                             to benchmark mirrors in parallel.
 	  benchmark-parallel-mirrors-list :
 	                             to benchmark mirrors-list in parallel.
-	  scriptinfo               : to show script infomations.
+	  scriptinfo               : to show script information.
 	  show-packages-busyness <package names> ... :
 	                             to show packages are busy or not.
 	  dist-upgrade             : to upgrade all packages that is installed.
