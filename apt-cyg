@@ -1922,7 +1922,7 @@ function apt-cyg-install ()
     fi
     
     verbose 0 "Unpacking..."
-    tar > "/etc/setup/$pkg.lst" xvf "$file" -C /
+    tar > "/etc/setup/$pkg.lst" xvf "$file" -C / --numeric-owner
     gzip -f "/etc/setup/$pkg.lst"
     cd ../..
     
