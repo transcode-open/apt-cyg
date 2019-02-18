@@ -58,8 +58,6 @@ Usage
 |:------ |:----------- |
 | `--ag` | use the silver searcher (currently work only at packageof subcommand) |
 | `--charch <arch>` | change archetecture |
-| `--use-setuprc` | set cache and mirror with /etc/setup/setup.rc |
-| `--use-own-conf` | use own cache and mirror settings when apt-cyg calls setup.exe |
 | `--ignore-case`, `-i` | ignore case distinctions for `<patterns>` |
 | `--force-remove` | force remove
 | `--force-fetch-trustedkeys` | force fetch trustedkeys |
