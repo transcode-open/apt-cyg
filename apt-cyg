@@ -207,6 +207,31 @@ function verbosefor ()
   (( ${OPT_VERBOSE_LEVEL} < ${1:-1} )) && echo "/dev/null" || echo "/dev/stderr"
 }
 
+function is_official_mirrors_of_cygwin () # <mirrors> ...
+# Check <mirrors> whether are listed in official mirrors list of cygwin.
+# Official mirros list provides on https://cygwin.com/mirrors.html.
+# Args:
+#   <mirrors> : URLs of the cygwin mirror.
+# Return:
+#   Return zero if all mirrors are known, non-zero otherwise.
+{
+  local mirror
+  local result=0
+  local local_list="$(apt-cyg-mirrors-list)"
+  local online_list="$(wget -qO- https://cygwin.com/mirrors.lst)"
+  for mirror; do
+    if ! grep -q "$mirror" <<< "$local_list"; then
+      echo -e "\e[33;1mWarning:\e[0m /etc/setup/setup.rc doesn't know your mirror: \e[1m$mirror\e[0m" >&2
+      result=1
+    fi
+    if ! grep -q "$mirror" <<< "$online_list"; then
+      echo -e "\e[33;1mWarning:\e[0m Official mirrors.lst doesn't know your mirror: \e[1m$mirror\e[0m" >&2
+      result=1
+    fi
+  done
+  return $result
+}
+
 function current_cygarch ()
 {
   arch | sed -e 's/^i686$/x86/g'
@@ -312,6 +337,7 @@ function setupini_download ()
 
 function getsetup ()
 {
+  is_official_mirrors_of_cygwin "$mirror"
   setupini_download || return 1
 }
 
