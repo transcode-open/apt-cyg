@@ -1063,7 +1063,6 @@ function apt-cyg-benchmark-parallel-mirrors ()
   echo Sorted result.
   sort -rV "$result"
   rm "$result"
-
 }
 
 function apt-cyg-benchmark-parallel-mirrors-list ()
@@ -1075,16 +1074,16 @@ function apt-cyg-benchmark-parallel-mirrors-list ()
 
 function apt-cyg-scriptinfo ()
 {
-cat<<EOD
-SCRIPT_PATH     = "$SCRIPT_PATH"
-SCRIPT_FILE     = "$SCRIPT_FILE"
-SCRIPT_NAME     = "$SCRIPT_NAME"
-SCRIPT_DIR      = "$SCRIPT_DIR"
-SCRIPT_REALPATH = "$SCRIPT_REALPATH"
-SCRIPT_REALFILE = "$SCRIPT_REALFILE"
-SCRIPT_REALNAME = "$SCRIPT_REALNAME"
-SCRIPT_REALDIR  = "$SCRIPT_REALDIR"
-EOD
+  cat<<-EOD
+	SCRIPT_PATH     = "$SCRIPT_PATH"
+	SCRIPT_FILE     = "$SCRIPT_FILE"
+	SCRIPT_NAME     = "$SCRIPT_NAME"
+	SCRIPT_DIR      = "$SCRIPT_DIR"
+	SCRIPT_REALPATH = "$SCRIPT_REALPATH"
+	SCRIPT_REALFILE = "$SCRIPT_REALFILE"
+	SCRIPT_REALNAME = "$SCRIPT_REALNAME"
+	SCRIPT_REALDIR  = "$SCRIPT_REALDIR"
+	EOD
 }
 
 # Usage: isbusy [file ...]
