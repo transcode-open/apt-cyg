@@ -247,8 +247,7 @@ function mirror_to_mirrordir ()
 
 function setuprc_get_section () # <section>
 {
-  cat /etc/setup/setup.rc \
-  | cp2utf8 \
+  cp2utf8 /etc/setup/setup.rc \
   | awk -vRS='\n\\<|\n\\'\' -vFS='\n\t' -vsection="${1//\\/\\\\}" '
     $1 == section {for(i = 2; i <= NF; i++) print $i;}
   '
@@ -262,15 +261,13 @@ function setuprc_set_section () # <section> [<values> ...]
   
   cp -a "$setuprc" "$setuprc_bak"
   
-  cat "$setuprc_bak" \
-  | cp2utf8 \
+  cp2utf8 "$setuprc_bak" \
   | awk -vRS='\n\\<|\n\\'\' -vFS='\n\t' -vsection="${1//\\/\\\\}" -vs="${s//\\/\\\\}" '
     $1 != section
     $1 == section {print s; done=1;}
     END {if(!done) print s;}
   ' \
-  | utf82cp \
-  > "$setuprc"
+  | utf82cp > "$setuprc"
 }
 
 function findworkspace()
@@ -1112,19 +1109,21 @@ function apt-cyg-show-packages-busyness ()
   done
 }
 
+unset CODEPAGE
+
 function get_codepage ()
 {
-  cmd.exe /c chcp | awk '{printf $NF;}' | sed -re 's/^[^0-9]*([0-9]+).*$/CP\1/g'
+  echo -n "${CODEPAGE:=$(cmd.exe /c chcp | awk '{printf $NF;}' | sed -re 's/^[^0-9]*([0-9]+).*$/CP\1/g')}"
 }
 
-function cp2utf8 ()
+function cp2utf8 () # [<iconv_args> ...]
 {
-  iconv -f $(get_codepage) -t UTF-8
+  iconv -f $(get_codepage) -t UTF-8 "$@"
 }
 
-function utf82cp ()
+function utf82cp () # [<iconv_args> ...]
 {
-  iconv -f UTF-8 -t $(get_codepage)
+  iconv -f UTF-8 -t $(get_codepage) "$@"
 }
 
 # dummy command for unknown sum.
