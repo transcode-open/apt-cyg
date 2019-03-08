@@ -922,6 +922,35 @@ function apt-cyg-rdepends ()
   dep_check rdepends "$@"
 }
 
+function get_module_line () # <pattern> [<file>]
+# Return line numbers of module about begin and end.
+{
+  grep -nE "^#\s*(BEGIN|END)_MODULE\s*:\s*${1}" "${@:2:1}" | grep -Eo '^[0-9]+'
+}
+
+function headtail () # <first_line> <last_line> [<file>]
+# Split lines from <first_line> to <last_line>.
+{
+  head -n+$2 "${@:3:1}" | tail -n+$1
+}
+
+function replace_range # <first_line> <last_line> <content> [<file>]
+{
+  awk -vl1=$1 -vl2=$2 -vs="${3//\\/\\\\}" '
+    NR < l1 || l2 < NR
+    !done && l1 <= NR {print s;done=1;}
+  ' "${@:4:1}"
+}
+
+function replace_module # <pattern> <src> <dst>
+{
+  local tmpfile="$(mktemp -u)"
+  local srclines=( $(get_module_line "bash completion for apt-cyg" "$2") )
+  local dstlines=( $(get_module_line "bash completion for apt-cyg" "$3") )
+  replace_range "${dstlines[@]}" "$(headtail "${srclines[@]}" "$2")" "$3" > "$tmpfile"
+  mv "$tmpfile" "$3"
+}
+
 function apt-cyg-completion-install ()
 {
   if [ ! -d "/etc/bash_completion.d" ]; then
@@ -933,13 +962,14 @@ function apt-cyg-completion-install ()
     exit 1
   fi
   
-  local SUBCMDS
-  local OPTIONS
-  local SCRIPTFILE="$(realpath "$(which apt-cyg)")"
-  local SCRIPTDIR="${SCRIPTNAME%/*}"
+  local __APT_CYG_SUBCMDS
+  local __APT_CYG_OPTIONS
+  local __APT_CYG_SCRIPTPATH="$(realpath "$(which apt-cyg)")"
+  local __APT_CYG_SCRIPTDIR="${__APT_CYG_SCRIPTPATH%/*}"
+  local __APT_CYG_COMPLETION_DISABLE_AUTOUPDATE="$OPT_COMPLETION_DISABLE_AUTOUPDATE"
   
-  readarray -t -O ${#SUBCMDS[@]} SUBCMDS < <(grep "^function " "$SCRIPTFILE" | awk 'match($2, /apt-cyg-([-_0-9A-Za-z]+)/,m){print m[1]}')
-  readarray -t -O ${#OPTIONS[@]} OPTIONS < <(
+  readarray -t __APT_CYG_SUBCMDS < <(grep "^function " "$__APT_CYG_SCRIPTPATH" | awk 'match($2, /apt-cyg-([-_0-9A-Za-z]+)/,m){print m[1]}')
+  readarray -t __APT_CYG_OPTIONS < <(
     awk '
       /^function *parse_args *\(\)/ {proc=1}
       /^} *# *\/parse_args( |$)/    {proc=0}
@@ -947,17 +977,32 @@ function apt-cyg-completion-install ()
         split(m[1], x, "|");
         for (i in x) print x[i];
       }
-      ' "$SCRIPTFILE"
+      ' "$__APT_CYG_SCRIPTPATH"
     )
+  
   cat <<-EOD > /etc/bash_completion.d/apt-cyg
-# bash completion for apt-cyg
+		$(declare -p __APT_CYG_{SUBCMDS,OPTIONS,SCRIPTPATH,SCRIPTDIR,COMPLETION_DISABLE_AUTOUPDATE} )
+		
+		# BEGIN_MODULE: bash completion for apt-cyg
+		# END_MODULE:   bash completion for apt-cyg
+		
+		complete -F __apt-cyg apt-cyg
+		EOD
+  
+  replace_module "bash completion for apt-cyg" "${BASH_SOURCE}" /etc/bash_completion.d/apt-cyg
+  touch -r "$__APT_CYG_SCRIPTPATH" "/etc/bash_completion.d/apt-cyg"
+
+  echo "A bash completion /etc/bash_completion.d/apt-cyg is installed"
+}
+
+# BEGIN_MODULE: bash completion for apt-cyg
 
 function __apt-cyg ()
 {
   local cur prev getsubcmd subcmd
   
   # Auto update for completion script.
-  if [ -z "$OPT_COMPLETION_DISABLE_AUTOUPDATE" -a "$SCRIPTFILE" -nt "/etc/bash_completion.d/apt-cyg" ]; then
+  if [ -z "$__APT_CYG_COMPLETION_DISABLE_AUTOUPDATE" -a "$__APT_CYG_SCRIPTPATH" -nt "/etc/bash_completion.d/apt-cyg" ]; then
     apt-cyg completion-install >/dev/null 2>&1
     . /etc/bash_completion.d/apt-cyg
     __apt-cyg "$@"
@@ -966,63 +1011,61 @@ function __apt-cyg ()
   
   _get_comp_words_by_ref -n : cur prev
   
-  getsubcmd=( apt-cyg --completion-get-subcommand \$(echo "\${COMP_LINE}" | sed -r -e 's/^[^ \t]+//g' -e 's/[^ \t]+\$//g') )
-  subcmd="\$( "\${getsubcmd[@]}" )"
+  getsubcmd=( apt-cyg --completion-get-subcommand $(echo "${COMP_LINE}" | sed -r -e 's/^[^ \t]+//g' -e 's/[^ \t]+$//g') )
+  subcmd="$( "${getsubcmd[@]}" )"
   
-  case "\$subcmd" in
+  case "$subcmd" in
     install|depends|rdepends|describe|find)
-      COMPREPLY=( \$(awk '/^@ /{print \$2}' "$(apt-cyg pathof setup.ini)") )
+      COMPREPLY=( $(awk '/^@ /{print $2}' "$(apt-cyg pathof setup.ini)") )
       ;;
     remove)
-      COMPREPLY=( \$(apt-cyg show 2>/dev/null) )
+      COMPREPLY=( $(apt-cyg --no-header show 2>/dev/null | awk '$0=$1') )
       ;;
     pathof)
       COMPREPLY=( cache mirror mirrordir cache/mirrordir setup.ini )
       ;;
     "")
-      COMPREPLY=( "${SUBCMDS[*]}" )
+      COMPREPLY=( "${__APT_CYG_SUBCMDS[*]}" )
       ;;
   esac
-  case "\$prev" in
+  case "$prev" in
     --charch)
       COMPREPLY=( x86 x86_64 )
       ;;
     --cache|-c)
-      COMPREPLY=( \$(compgen -d -- "\$cur") )
+      COMPREPLY=( $(compgen -d -- "$cur") )
       ;;
     --mirror|-m)
-      COMPREPLY=( \$(awk '/^[^ \t]+/{section=\$1}section=="mirrors-lst"&&match(\$0,/^[ \t]+([^;]+);/,m){print "\""m[1]"\""}' "/etc/setup/setup.rc") )
+      COMPREPLY=( $(awk '/^[^ \t]+/{section=\$1}section=="mirrors-lst"&&match(\$0,/^[ \t]+([^;]+);/,m){print "\""m[1]"\""}' "/etc/setup/setup.rc") )
       ;;
     --file|-f)
-      COMPREPLY=( \$(compgen -f -- "\$cur") )
+      COMPREPLY=( $(compgen -f -- "$cur") )
       ;;
     --proxy|-p)
       COMPREPLY=( auto inherit none http:// )
       ;;
     *)
-      COMPREPLY+=( "${OPTIONS[*]}" )
+      COMPREPLY+=( "${__APT_CYG_OPTIONS[*]}" )
       ;;
   esac
-  if [ -n "\$DEBUG_COMPLETION" ]; then
+  if [ -n "$DEBUG_COMPLETION" ]; then
     echo
-    echo "COMP_WORDBREAKS: \$COMP_WORDBREAKS"
-    echo "getsubcmd: '\${getsubcmd[@]}'"
-    echo "subcmd: '\${subcmd[@]}'"
-    echo "COMP_LINE: '\${COMP_LINE}'"
-    echo "cur: \$cur"
-    echo "prev: \$prev"
-    echo "COMP_WORDS: \${COMP_WORDS[@]}"
+    echo "COMP_WORDBREAKS: $COMP_WORDBREAKS"
+    echo "getsubcmd: '${getsubcmd[@]}'"
+    echo "subcmd: '${subcmd[@]}'"
+    echo "COMP_LINE: '${COMP_LINE}'"
+    echo "cur: $cur"
+    echo "prev: $prev"
+    echo "COMP_WORDS: ${COMP_WORDS[@]}"
     echo
-    echo -n "\${COMP_LINE}"
+    echo -n "${COMP_LINE}"
+
   fi
-  COMPREPLY=( \$(compgen -W "\${COMPREPLY[*]}" -- "\$cur") )
-  __ltrim_colon_completions "\$cur"
+  COMPREPLY=( $(compgen -W "${COMPREPLY[*]}" -- "$cur") )
+  __ltrim_colon_completions "$cur"
 }
-complete -F __apt-cyg apt-cyg
-EOD
-  touch -r "$SCRIPTFILE" "/etc/bash_completion.d/apt-cyg"
-  echo "A bash completion /etc/bash_completion.d/apt-cyg is installed"
-}
+
+# END_MODULE:   bash completion for apt-cyg
 
 function apt-cyg-completion-uninstall ()
 {
