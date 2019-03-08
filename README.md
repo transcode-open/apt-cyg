@@ -51,6 +51,9 @@ Usage
 | `listfiles <package names> ...` |  List files 'owned' by package(s). |
 | `get-proxy` |  Get proxies for eval. |
 | `ls-categories` |  List categories. |
+| `setuprc-get <section>` | Get section from **`setup.rc`**. |
+| `set-cache [<cache>]` | Set cache. |
+| `set-mirror [<mirrors> ...]` | Set mirrors. Note: `setup-x86{,_64}.exe` uses all of them but currently `apt-cyg` uses the first one only. |
 
 ### Options
 

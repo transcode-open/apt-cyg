@@ -129,6 +129,12 @@ function usage()
 	                             List files 'owned' by package(s).
 	  get-proxy                : Get proxies for eval.
 	  ls-categories            : List categories.
+	  setuprc-get <section>    : Get section from 'setup.rc'.
+	  set-cache [<cache>]      : Set cache.
+	  set-mirror [<mirrors> ...] :
+	                             Set mirror.
+	                             Note: setup-x86{,_64}.exe uses all of them
+	                             but currently `apt-cyg` uses the first one only.
 	Options:
 	  --ag                     : use the silver searcher
 	                             (currently work only at packageof subcommand)
@@ -150,8 +156,8 @@ function usage()
 	  --completion-disable-autoupdate :
 	                             disable completion autoupdate
 	  --max-jobs, -j <n>       : Run <n> jobs in parallel
-	  --mirror, -m <url>       : set mirror (currently, not work)
-	  --cache, -c <dir>        : set cache  (currently, not work)
+	  --mirror, -m <url>       : set mirror
+	  --cache, -c <dir>        : set cache
 	  --file, -f <file>        : read package names from <file>
 	  --noupdate, -u           : don't update setup.ini from mirror
 	  --ipv4, -4               : wget prefer ipv4
@@ -214,19 +220,38 @@ function mirror_to_mirrordir ()
   echo "$1" | sed -e "s/:/%3a/g" -e "s:/:%2f:g"
 }
 
-function setuprc_query () # SECTION
+function setuprc_get_section () # <section>
 {
   cat /etc/setup/setup.rc \
   | cp2utf8 \
-  | awk -vRS='\n\\<' -vFS='\n\t' -vsection="$1" '
+  | awk -vRS='\n\\<|\n\\'\' -vFS='\n\t' -vsection="${1//\\/\\\\}" '
     $1 == section {for(i = 2; i <= NF; i++) print $i;}
   '
 }
 
+function setuprc_set_section () # <section> [<values> ...]
+{
+  local s="$(join $'\n\t' "${@}")"
+  local setuprc="/etc/setup/setup.rc"
+  local setuprc_bak="${setuprc},$(date -r "$setuprc" "+%Y%m%d_%H%M%S")"
+  
+  cp -a "$setuprc" "$setuprc_bak"
+  
+  cat "$setuprc_bak" \
+  | cp2utf8 \
+  | awk -vRS='\n\\<|\n\\'\' -vFS='\n\t' -vsection="${1//\\/\\\\}" -vs="${s//\\/\\\\}" '
+    $1 != section
+    $1 == section {print s; done=1;}
+    END {if(!done) print s;}
+  ' \
+  | utf82cp \
+  > "$setuprc"
+}
+
 function findworkspace()
 {
-  readarray -t last_mirror < <(setuprc_query last-mirror)
-  readarray -t last_cache  < <(setuprc_query last-cache)
+  readarray -t last_mirror < <(setuprc_get_section last-mirror)
+  readarray -t last_cache  < <(setuprc_get_section last-cache)
   mirror="$last_mirror"
   cache="$(cygpath -au "$last_cache")"
   arch="$(current_cygarch)"
@@ -1071,6 +1096,11 @@ function cp2utf8 ()
   iconv -f $(get_codepage) -t UTF-8
 }
 
+function utf82cp ()
+{
+  iconv -f UTF-8 -t $(get_codepage)
+}
+
 # dummy command for unknown sum.
 # Usage: unknownsum
 function unknownsum ()
@@ -1397,6 +1427,22 @@ function apt-cyg-ls-categories ()
   | uniq
 }
 
+function apt-cyg-setuprc-get () # <section>
+{
+  setuprc_get_section "$1"
+}
+
+function apt-cyg-set-cache () # [<cache>]
+{
+  (( 0 <$# )) && setuprc_set_section last-cache "$(cygpath -aw "$1")"
+}
+
+function apt-cyg-set-mirror () # [<mirrors> ...]
+{
+  set -- "${@%/}"
+  (( 0 < $# )) && setuprc_set_section last-mirror "${@/%/\/}"
+}
+
 PACKAGEOF_CACHE="/tmp/.apt-cyg-packageof.cache.gz"
 function update_packageof_cache ()
 {
@@ -1632,13 +1678,11 @@ function parse_args ()
         ;;
       
       --mirror|-m)
-        # TODO: update imprementation for -m option
-        OPT_MIRROR="$2"
+        OPT_MIRROR+=( "$2" )
         shift 2 || break
         ;;
       
       --cache|-c)
-        # TODO: update imprementation for -c option
         OPT_CACHE="$2"
         shift 2 || break
         ;;
@@ -1743,8 +1787,8 @@ parse_args "$@"
 
 [ -n "$OPT_CHARCH" ] && charch "$OPT_CHARCH" "${INITIAL_ARGS[@]}"
 
-[ "${#OPT_MIRROR[@]}" -gt 0 ] && echo "${OPT_MIRROR%/}/"             > /etc/setup/last-mirror
-[ "${#OPT_CACHE[@]}"  -gt 0 ] && echo "$(cygpath -aw "$OPT_CACHE")"  > /etc/setup/last-cache
+[ "${#OPT_MIRROR[@]}" -gt 0 ] && apt-cyg-set-mirror "${OPT_MIRROR[@]}"
+[ "${#OPT_CACHE[@]}"  -gt 0 ] && apt-cyg-set-cache  "${OPT_CACHE}"
 
 if [ -z "$GPGV" -a -z "$no_verify" ]; then
   echo -e "\e[31;1mError:\e[30;0m GnuPG is not installed. Prease install gnupg package or use -X option."
