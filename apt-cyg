@@ -1057,6 +1057,7 @@ function __apt-cyg ()
     echo "cur: $cur"
     echo "prev: $prev"
     echo "COMP_WORDS: ${COMP_WORDS[@]}"
+    echo "#COMPREPLY[@]: ${#COMPREPLY[@]}"
     echo
     echo -n "${COMP_LINE}"
 
