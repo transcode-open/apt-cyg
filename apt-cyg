@@ -1024,7 +1024,7 @@ function __apt-cyg ()
     pathof)
       COMPREPLY=( cache mirror mirrordir cache/mirrordir setup.ini )
       ;;
-    "")
+    *)
       COMPREPLY=( "${__APT_CYG_SUBCMDS[*]}" )
       ;;
   esac
