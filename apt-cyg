@@ -129,13 +129,16 @@ function usage()
 	                             List files 'owned' by package(s).
 	  get-proxy                : Get proxies for eval.
 	  ls-categories            : List categories.
+	  setuprc-get <section>    : Get section from 'setup.rc'.
+	  set-cache [<cache>]      : Set cache.
+	  set-mirror [<mirrors> ...] :
+	                             Set mirror.
+	                             Note: setup-x86{,_64}.exe uses all of them
+	                             but currently `apt-cyg` uses the first one only.
 	Options:
 	  --ag                     : use the silver searcher
 	                             (currently work only at packageof subcommand)
 	  --charch <arch>          : change archetecture
-	  --use-setuprc            : set cache and mirror with /etc/setup/setup.rc
-	  --use-own-conf           : use own cache and mirror settings
-	                             when apt-cyg calls setup.exe
 	  --ignore-case, -i        : ignore case distinctions for <patterns>
 	  --force-remove           : force remove
 	  --force-fetch-trustedkeys :
@@ -242,25 +245,45 @@ function mirror_to_mirrordir ()
   echo "$1" | sed -e "s/:/%3a/g" -e "s:/:%2f:g"
 }
 
+function setuprc_get_section () # <section>
+{
+  cat /etc/setup/setup.rc \
+  | cp2utf8 \
+  | awk -vRS='\n\\<|\n\\'\' -vFS='\n\t' -vsection="${1//\\/\\\\}" '
+    $1 == section {for(i = 2; i <= NF; i++) print $i;}
+  '
+}
+
+function setuprc_set_section () # <section> [<values> ...]
+{
+  local s="$(join $'\n\t' "${@}")"
+  local setuprc="/etc/setup/setup.rc"
+  local setuprc_bak="${setuprc},$(date -r "$setuprc" "+%Y%m%d_%H%M%S")"
+  
+  cp -a "$setuprc" "$setuprc_bak"
+  
+  cat "$setuprc_bak" \
+  | cp2utf8 \
+  | awk -vRS='\n\\<|\n\\'\' -vFS='\n\t' -vsection="${1//\\/\\\\}" -vs="${s//\\/\\\\}" '
+    $1 != section
+    $1 == section {print s; done=1;}
+    END {if(!done) print s;}
+  ' \
+  | utf82cp \
+  > "$setuprc"
+}
+
 function findworkspace()
 {
-  # default working directory, mirror and architecture
-  
-  mirror=http://ftp.jaist.ac.jp/pub/cygwin
+  readarray -t last_mirror < <(setuprc_get_section last-mirror)
+  readarray -t last_cache  < <(setuprc_get_section last-cache)
+  mirror="$last_mirror"
+  cache="$(cygpath -au "$last_cache")"
   arch="$(current_cygarch)"
-  cache=/setup
   
-  # work wherever setup worked last, if possible
-  
-  if [ -e /etc/setup/last-cache ]; then
-    cache="$(cygpath -au "$(head -1 /etc/setup/last-cache)")"
-  fi
   cache="${cache%/}"
-  
-  if [ -e /etc/setup/last-mirror ]; then
-    mirror="$(head -1 /etc/setup/last-mirror)"
-  fi
   mirror="${mirror%/}"
+  
   mirrordir="$(mirror_to_mirrordir "$mirror/")"
   
   verbose 1 "Cache directory is $cache"
@@ -1099,6 +1122,11 @@ function cp2utf8 ()
   iconv -f $(get_codepage) -t UTF-8
 }
 
+function utf82cp ()
+{
+  iconv -f UTF-8 -t $(get_codepage)
+}
+
 # dummy command for unknown sum.
 # Usage: unknownsum
 function unknownsum ()
@@ -1183,24 +1211,11 @@ function apt-cyg-update-setup ()
   popd > /dev/null
 }
 
-function use_own_conf ()
-{
-  local opts=()
-  if [ -n "$OPT_USE_OWN_CONF" ]; then
-    local  cache="$(apt-cyg-pathof cache)"
-    local mirror="$(apt-cyg-pathof mirror)"
-    [ -n "$cache"  ] && opts+=( -l "$(cygpath -wa "$cache")" )
-    [ -n "$mirror" ] && opts+=( -s "$mirror" )
-  fi
-  join $'\n' "${opts[@]}"
-}
-
 function apt-cyg-setup ()
 {
   pushd "$(apt-cyg pathof cache)" > /dev/null
   
-  local opts; readarray -t opts < <(use_own_conf)
-  local setup=( "./${SETUP_EXE}" "${opts[@]}" "$@" )
+  local setup=( "./${SETUP_EXE}" "$@" )
   
   apt-cyg-update-setup
   "${setup[@]}"
@@ -1210,8 +1225,7 @@ function apt-cyg-setup ()
 
 function apt-cyg-dist-upgrade-no-ask ()
 {
-  local opts; readarray -t opts < <(use_own_conf)
-  local setup=( ".\\${SETUP_EXE}" -R "$(cygpath -wa /)" -B -q -n -g "${opts[@]}")
+  local setup=( ".\\${SETUP_EXE}" -R "$(cygpath -wa /)" -B -q -n -g)
   
   pushd "$(apt-cyg-pathof cache)" > /dev/null
   
@@ -1439,6 +1453,22 @@ function apt-cyg-ls-categories ()
   | uniq
 }
 
+function apt-cyg-setuprc-get () # <section>
+{
+  setuprc_get_section "$1"
+}
+
+function apt-cyg-set-cache () # [<cache>]
+{
+  (( 0 <$# )) && setuprc_set_section last-cache "$(cygpath -aw "$1")"
+}
+
+function apt-cyg-set-mirror () # [<mirrors> ...]
+{
+  set -- "${@%/}"
+  (( 0 < $# )) && setuprc_set_section last-mirror "${@/%/\/}"
+}
+
 PACKAGEOF_CACHE="/tmp/.apt-cyg-packageof.cache.gz"
 function update_packageof_cache ()
 {
@@ -1601,17 +1631,6 @@ function parse_args ()
         shift 2 || break
         ;;
       
-      --use-setuprc)
-        "$0" -c "$(grep -aA1 '^last-cache$'  /etc/setup/setup.rc | tail -n1 | cp2utf8 | sed -r 's/^\s*|\s*$//g')" > /dev/null
-        "$0" -m "$(grep -aA1 '^last-mirror$' /etc/setup/setup.rc | tail -n1           | sed -r 's/^\s*|\s*$//g')" > /dev/null
-        shift
-        ;;
-      
-      --use-own-conf)
-        OPT_USE_OWN_CONF="$1"
-        shift
-        ;;
-      
       --ignore-case|-i)
         ignore_case="$1"
         shift
@@ -1685,7 +1704,7 @@ function parse_args ()
         ;;
       
       --mirror|-m)
-        OPT_MIRROR="$2"
+        OPT_MIRROR+=( "$2" )
         shift 2 || break
         ;;
       
@@ -1794,8 +1813,8 @@ parse_args "$@"
 
 [ -n "$OPT_CHARCH" ] && charch "$OPT_CHARCH" "${INITIAL_ARGS[@]}"
 
-[ "${#OPT_MIRROR[@]}" -gt 0 ] && echo "${OPT_MIRROR%/}/"             > /etc/setup/last-mirror
-[ "${#OPT_CACHE[@]}"  -gt 0 ] && echo "$(cygpath -aw "$OPT_CACHE")"  > /etc/setup/last-cache
+[ "${#OPT_MIRROR[@]}" -gt 0 ] && apt-cyg-set-mirror "${OPT_MIRROR[@]}"
+[ "${#OPT_CACHE[@]}"  -gt 0 ] && apt-cyg-set-cache  "${OPT_CACHE}"
 
 if [ -z "$GPGV" -a -z "$no_verify" ]; then
   echo -e "\e[31;1mError:\e[30;0m GnuPG is not installed. Prease install gnupg package or use -X option."
