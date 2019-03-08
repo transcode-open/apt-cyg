@@ -1036,10 +1036,7 @@ function apt-cyg-completion-uninstall ()
 
 function apt-cyg-mirrors-list ()
 {
-  awk '
-    /^[^ \t]+/ {section = $1}
-    section=="mirrors-lst" && match($0, /^[ \t]+([^;]+);/, m) {print m[1]}
-  ' "/etc/setup/setup.rc"
+  setuprc_get_section mirrors-lst | sed -re 's/;.*//g'
 }
 
 function apt-cyg-benchmark-mirrors ()
