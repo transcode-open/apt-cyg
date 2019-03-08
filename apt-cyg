@@ -134,7 +134,7 @@ function usage()
 	  set-mirror [<mirrors> ...] :
 	                             Set mirror.
 	                             Note: setup-x86{,_64}.exe uses all of them
-	                             but currently `apt-cyg` uses the first one only.
+	                             but currently apt-cyg uses the first one only.
 	Options:
 	  --ag                     : use the silver searcher
 	                             (currently work only at packageof subcommand)
