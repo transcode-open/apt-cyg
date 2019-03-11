@@ -210,6 +210,32 @@ function verbosefor ()
   (( ${OPT_VERBOSE_LEVEL} < ${1:-1} )) && echo "/dev/null" || echo "/dev/stderr"
 }
 
+function detect_field_width ()
+# Read stdin and detect field width.
+# Return NF+2 values as follorwing:
+# w(0) w(1) w(2) ... w(NF) sum(w(1),w(2), ..., w(NF))+NF-1
+# Now NF is a number of fields,
+# w(x) is a function of maxium width of field x th
+# (note that 0 does not mean the field but the whole line) 
+# and sum(v1,v2, ..., vn) is a function to sum all arguments.
+{
+  awk '
+    function max(a,b){return a<b?b:a}
+    {for(i=0;i<=NF;i++)w[i]=max(w[i],length($i));nf=max(nf,NF)}
+    END{for(i=0;i<=nf;i++){wall+=w[i];printf("%s%d",i?" ":"",w[i])};print " "wall-w[0]+nf-1}
+  '
+}
+
+function align_columns ()
+# Read stdin and aligne columns indent.
+{
+  local lines w fmt
+  readarray -t lines
+  w=( $(IFS=$'\n'; printf "%s" "${lines[*]}" | detect_field_width) )
+  fmt="$(printf " %%-%ds" "${w[@]:1:${#w[@]}-2}")"
+  printf "${fmt:1}\n" ${lines[@]}
+}
+
 function is_official_mirrors_of_cygwin () # <mirrors> ...
 # Check <mirrors> whether are listed in official mirrors list of cygwin.
 # Official mirros list provides on https://cygwin.com/mirrors.html.
@@ -786,7 +812,7 @@ function package_db-list ()
   awk '
     NF == 3 {
       version = gensub(/^(.*)\.(tgz|tbz|tbz2|tb2|taz|tz|tlz|txz|tar\.(gz|bz2|Z|lz|lzma|xz))$/, "\\1", 1, substr($2, length($1) + 2));
-      printf("%-45s %s\n", $1, version);
+      printf("%s %s %s\n", $1, version, $3);
     }
   ' "${PACKAGE_DB}"
 }
@@ -1901,7 +1927,7 @@ function apt-cyg-show ()
 {
   package_db-version_check
   [ -z "$OPT_NO_HEADER" ] && echo "The following packages are installed:"
-  package_db-list
+  package_db-list | awk '($3="")||1' | align_columns
 }
 
 
