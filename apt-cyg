@@ -1047,7 +1047,7 @@ function apt-cyg-completion-install ()
     )
   
   cat <<-EOD > /etc/bash_completion.d/apt-cyg
-		$(declare -p __APT_CYG_{SUBCMDS,OPTIONS,SCRIPTPATH,SCRIPTDIR,COMPLETION_DISABLE_AUTOUPDATE} )
+		$(declare -p __APT_CYG_{SUBCMDS,OPTIONS,SCRIPTPATH,SCRIPTDIR,COMPLETION_DISABLE_AUTOUPDATE} | sed -re 's/^declare/\0 -g/g')
 		
 		# BEGIN_MODULE: bash completion for apt-cyg
 		# END_MODULE:   bash completion for apt-cyg
