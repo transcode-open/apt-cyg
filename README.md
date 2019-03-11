@@ -54,6 +54,10 @@ Usage
 | `setuprc-get <section>` | Get section from **`setup.rc`**. |
 | `set-cache [<cache>]` | Set cache. |
 | `set-mirror [<mirrors> ...]` | Set mirrors. Note: `setup-x86{,_64}.exe` uses all of them but currently `apt-cyg` uses the first one only. |
+| `mark-auto [<packages> ...]` | Mark the given packages as automatically installed. |
+| `mark-manual [<packages> ...]` | Mark the given packages as manually installed. |
+| `mark-showauto` |Print the list of automatically installed packages. |
+| `mark-showmanual` | Print the list of manually installed packages. |
 
 ### Options
 

@@ -135,6 +135,14 @@ function usage()
 	                             Set mirror.
 	                             Note: setup-x86{,_64}.exe uses all of them
 	                             but currently apt-cyg uses the first one only.
+	  mark-auto [<packages> ...] :
+	                             Mark the given packages
+	                             as automatically installed.
+	  mark-manual [<packages> ...] :
+	                             Mark the given packages as manually installed.
+	  mark-showauto            : Print the list of
+	                             automatically installed packages.
+	  mark-showmanual          : Print the list of manually installed packages.
 	Options:
 	  --ag                     : use the silver searcher
 	                             (currently work only at packageof subcommand)
@@ -838,6 +846,38 @@ function package_db-register ()
   mv "${work}"       "${PACKAGE_DB}"
 }
 
+function package_db_change_mark () # <user_picked> [<package_names> ...]
+# Change marks of package in PACKAGE_DB.
+# <user_picked> means that 0 was automatically installed
+# and 1 was manually installed.
+{
+  local user_picked="$1"
+  local PACKAGE_NAMES="$(join $'\x1c' "${@:2}")"
+  local work="/tmp/apt-cyg.$$.${PACKAGE_DB##*/}"
+  
+  package_db-version_check
+  
+  awk -vPACKAGE_NAMES="$PACKAGE_NAMES" -vUSER_PICKED="$user_picked" '
+    BEGIN {
+      split(PACKAGE_NAMES, package_names, "\x1c");
+      for(i in package_names) target[package_names[i]]=1;
+      label = USER_PICKED ? "manually" : "automatically";
+    }
+    NF==2
+    NF!=2&&!target[$1]
+    NF!=2&& target[$1] {
+      msg = $1 " was " ($3==USER_PICKED?"already ":"") "set to " label " installed.";
+      $3 = USER_PICKED;
+      print $0;
+      print msg > "/dev/stderr"
+    }
+  ' "${PACKAGE_DB}" 2>&1 >"${work}"
+  
+  mv "${PACKAGE_DB}" "${PACKAGE_DB}-save"
+  mv "${work}"       "${PACKAGE_DB}"
+}
+
+
 # Usage: package_db-unregister PKGNAME
 function package_db-unregister ()
 {
@@ -1532,6 +1572,26 @@ function apt-cyg-set-mirror () # [<mirrors> ...]
 {
   set -- "${@%/}"
   (( 0 < $# )) && setuprc_set_section last-mirror "${@/%/\/}"
+}
+
+function apt-cyg-mark-auto () # [<packages> ...]
+{
+  package_db_change_mark 0 "$@"
+}
+
+function apt-cyg-mark-manual () # [<packages> ...]
+{
+  package_db_change_mark 1 "$@"
+}
+
+function apt-cyg-mark-showauto ()
+{
+  package_db-list | awk '!$3{print $1}'
+}
+
+function apt-cyg-mark-showmanual ()
+{
+  package_db-list | awk  '$3{print $1}'
 }
 
 PACKAGEOF_CACHE="/tmp/.apt-cyg-packageof.cache.gz"
