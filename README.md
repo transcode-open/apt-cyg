@@ -58,6 +58,7 @@ Usage
 | `mark-manual [<packages> ...]` | Mark the given packages as manually installed. |
 | `mark-showauto` |Print the list of automatically installed packages. |
 | `mark-showmanual` | Print the list of manually installed packages. |
+| `call [<internal_function> [<args> ...]]` | Call internal function in apt-cyg. |
 
 ### Options
 

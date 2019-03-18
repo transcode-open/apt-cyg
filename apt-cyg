@@ -143,6 +143,8 @@ function usage()
 	  mark-showauto            : Print the list of
 	                             automatically installed packages.
 	  mark-showmanual          : Print the list of manually installed packages.
+	  call [<internal_function> [<args> ...]] :
+	                             Call internal function in apt-cyg.
 	Options:
 	  --ag                     : use the silver searcher
 	                             (currently work only at packageof subcommand)
@@ -1627,6 +1629,12 @@ function apt-cyg-mark-showauto ()
 function apt-cyg-mark-showmanual ()
 {
   package_db-list | awk  '$3{print $1}'
+}
+
+function apt-cyg-call () # [<internal_function> [<args> ...]]
+# Call internal function in apt-cyg.
+{
+  "$@"
 }
 
 PACKAGEOF_CACHE="/tmp/.apt-cyg-packageof.cache.gz"
