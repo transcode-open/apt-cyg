@@ -244,6 +244,41 @@ function align_columns ()
   printf "${fmt:1}\n" ${lines[@]}
 }
 
+function join_to_head () # <joined_strings> <separator> [<values> ...]
+# Append values to head of joined strings.
+{
+  local str="$1"
+  local sep="$2"
+  local values="$(IFS="$sep"; printf "%s" "${*:3}")"
+  local value
+  for value in "${@:3}"; do
+    str="${str:+$sep$str$sep}"
+    str="${str//$sep$value$sep/$sep}"
+    str="${str#$sep}"
+    str="${str%$sep}"
+  done
+   [ -z "$values" -o -z "$str" ] && sep=""
+  printf "%s\n" "$values$sep$str"
+}
+
+function init_comspec ()
+{
+  : ${SYSTEMPATH:=$(join_to_head "$PATH" : "$(cygpath -u "${SYSTEMROOT:-$WINDIR}")"{/system32,})}
+}
+
+function comspec () # [<parameters> ...]
+# Call $COMSPEC.
+{
+  init_comspec
+  PATH="$SYSTEMPATH" "${COMSPEC//\\//}" "$@"
+}
+
+function cygstart () # [<parameters> ...]
+{
+  init_comspec
+  PATH="$SYSTEMPATH" cygstart.exe "$@"
+}
+
 function is_official_mirrors_of_cygwin () # <mirrors> ...
 # Check <mirrors> whether are listed in official mirrors list of cygwin.
 # Official mirros list provides on https://cygwin.com/mirrors.html.
@@ -1219,7 +1254,7 @@ unset CODEPAGE
 
 function get_codepage ()
 {
-  echo -n "${CODEPAGE:=$(cmd.exe /c chcp | awk '{printf $NF;}' | sed -re 's/^[^0-9]*([0-9]+).*$/CP\1/g')}"
+  echo -n "${CODEPAGE:=$(comspec /c chcp.com | awk '{printf $NF;}' | sed -re 's/^[^0-9]*([0-9]+).*$/CP\1/g')}"
 }
 
 function cp2utf8 () # [<iconv_args> ...]
@@ -1335,7 +1370,7 @@ function apt-cyg-dist-upgrade-no-ask ()
   pushd "$(apt-cyg-pathof cache)" > /dev/null
   
   apt-cyg-update-setup
-  cygstart cmd /c 'ECHO Press any key to start dist-upgrade for cygwin '"$(current_cygarch)"' && PAUSE && START /WAIT '"${setup[@]}"' && ash -c "/bin/rebaseall -v" && ECHO dist-upgrade is finished && ECHO Press any key to exit && PAUSE' # '
+  cygstart "$COMSPEC" /c 'ECHO Press any key to start dist-upgrade for cygwin '"$(current_cygarch)"' && PAUSE && START /WAIT '"${setup[@]}"' && ash -c "/bin/rebaseall -v" && ECHO dist-upgrade is finished && ECHO Press any key to exit && PAUSE' # '
   kill_all_cygwin_process
   
   popd > /dev/null
@@ -1406,10 +1441,10 @@ function apt-cyg-repair-acl ()
   )" || exit 1
   echo
   
-  cmd /c icacls "$(cygpath -w "${target}")" /save "$(cygpath -w "${aclbackup}.bin")" > /dev/null
-  cmd /c icacls "$(cygpath -w "${target}")" | cp2utf8 > "$(cygpath -w "${aclbackup}.txt")"
+  comspec /c icacls.exe "$(cygpath -w "${target}")" /save "$(cygpath -w "${aclbackup}.bin")" > /dev/null
+  comspec /c icacls.exe "$(cygpath -w "${target}")" | cp2utf8 > "$(cygpath -w "${aclbackup}.txt")"
   
-  cmd /c icacls "$(cygpath -w "${target}")" \
+  comspec /c icacls.exe "$(cygpath -w "${target}")" \
     /grant \
       "%USERDOMAIN%\\%USERNAME%:F" \
       "*S-1-3-1:RX" \
