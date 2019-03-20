@@ -125,7 +125,7 @@ function usage()
 	  mirror <package names> ... :
 	                             download the binary package
 	                             into the current cache/mirrordir as mirror.
-	  listfiles <package names> ... :
+	  listfiles [<package names> ...] :
 	                             List files 'owned' by package(s).
 	  get-proxy                : Get proxies for eval.
 	  ls-categories            : List categories.
@@ -1571,18 +1571,18 @@ function apt-cyg-mirror ()
   download_packages mirror curr install "$@"
 }
 
-function apt-cyg-listfiles ()
+function apt-cyg-listfiles () # [<package names> ...]
+# List files 'owned' by package(s).
 {
   local lst i sep
   for i; do
+    echo -en "$sep"; sep="\n"
     lst="/etc/setup/${i}.lst.gz"
     if [ ! -e "$lst" ]; then
       echo "apt-cyg-listfiles: package '${i}' is not installed"
       continue
     fi
     zcat "${lst}" | sed -e 's:^:/:g'
-    [ -n "$sep" ] && echo
-    sep=1
   done
 }
 
