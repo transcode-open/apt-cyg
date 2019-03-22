@@ -480,7 +480,6 @@ function init_gnupg ()
       exit 1
     fi
   fi
-  GPG_KEYRING=( --keyring pubring.kbx )
 }
 
 # Usage: ask_user [MESSAGE [OPTIONS]]
@@ -643,7 +642,7 @@ function fetch_trustedkeys ()
 function verify_signatures ()
 {
   while [ $# -gt 0 ]; do
-    if ! "${GPG[@]}" --no-default-keyring "${GPG_KEYRING[@]}" --verify "$1" &> $(verbosefor 2); then
+    if ! "${GPG[@]}" --verify "$1" &> $(verbosefor 2); then
       echo -e "\e[31;1mError:\e[30;0m BAD signature: $1" >&2
       return 1
     else
