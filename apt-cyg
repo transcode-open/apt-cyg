@@ -25,16 +25,118 @@
 # THE SOFTWARE.
 # 
 
-(( 5 <= "${DEBUG:-0}" )) && set -x
+# EMBED_BEGIN: hhs_embed
 
-SCRIPT_PATH="$(which "$0")"
+(( 5 <= DEBUG )) && set -x
+
+SCRIPT_PATH="$0"
 SCRIPT_FILE="${SCRIPT_PATH##*/}"
 SCRIPT_NAME="${SCRIPT_FILE%.*}"
 SCRIPT_DIR="${SCRIPT_PATH%/*}"
-SCRIPT_REALPATH="$(realpath "$(which "$0")")"
+SCRIPT_REALPATH="$(readlink -f "$SCRIPT_PATH")"
 SCRIPT_REALFILE="${SCRIPT_REALPATH##*/}"
 SCRIPT_REALNAME="${SCRIPT_REALFILE%.*}"
 SCRIPT_REALDIR="${SCRIPT_REALPATH%/*}"
+
+# EMBED_BEGIN: hhs_sgr.bash
+
+function init_SGR ()
+{
+  if [ -n "$COLORIZE" ]; then
+    SGR_reset="\e[0m"
+    SGR_bold="\e[1m"
+    SGR_fg_red="\e[31m"
+    SGR_fg_green="\e[32m"
+    SGR_fg_yellow="\e[33m"
+    SGR_fg_blue="\e[34m"
+    SGR_fg_magenta="\e[35m"
+  else
+    unset SGR_reset SGR_bold SGR_red SGR_green SGR_yellow SGR_blue SGR_magenta
+  fi
+  FATAL_COLOR="${SGR_fg_magenta}${SGR_bold}"
+  ERROR_COLOR="${SGR_fg_red}${SGR_bold}"
+  WARNING_COLOR="${SGR_fg_yellow}${SGR_bold}"
+  INFO_COLOR="${SGR_fg_green}${SGR_bold}"
+  DEBUG_COLOR="${SGR_fg_blue}${SGR_bold}"
+}
+
+# EMBED_END: hhs_sgr.bash
+# EMBED_BEGIN: hhs_debug.bash
+
+THRESHOLD_OF_FATAL=0
+THRESHOLD_OF_ERROR=1
+THRESHOLD_OF_WARNING=3
+THRESHOLD_OF_INFO=4
+THRESHOLD_OF_DEBUG=4
+
+function abort () #= [EXITCODE=1 [CALLSTACKSKIP=0]]
+{
+  dump_callstack $(( 2 + ${2:-0} ))
+  exit "${1:-1}"
+}
+
+function dump_callstack () #= [N=1]
+#? N is a depth to skip the callstack.
+#? $CALLSTACK_SKIP is depth to skip the callstack too.
+#? N and CALLSTACK_SKIP is summed before skipping.
+#? The default value is N = 1 and CALLSTACK_SKIP = 0.
+{
+  local i
+  echo "Callstack:"
+  for i in `seq "$(( ${#FUNCNAME[@]} - 1 ))" -1 $(( ${1:-1} + ${CALLSTACK_SKIP:-0} ))`; do
+    echo -e "\t${BASH_SOURCE[i]}: ${FUNCNAME[i]}: ${BASH_LINENO[i-1]}"
+  done
+} #/dump_callstack
+
+function source_at () #= [N=1]
+{
+  local i=${1:-1}
+  echo -e "${DEBUG_COLOR}at :${SGR_reset} ${BASH_SOURCE[i-1]}: ${FUNCNAME[i]}: ${BASH_LINENO[i-1]}"
+}
+
+function fatal () #= [MESSAGES ...]
+{
+  (( THRESHOLD_OF_FATAL <= ${VERBOSE:-0} )) || return 1
+  echo -e "${FATAL_COLOR}Fatal:${SGR_reset} $@"
+  (( THRESHOLD_OF_FATAL <= SOURCE_AT )) && source_at 2
+} >&2 #/fatal
+
+function error () #= [MESSAGES ...]
+{
+  (( THRESHOLD_OF_ERROR <= ${VERBOSE:-0} )) || return 1
+  echo -e "${ERROR_COLOR}Error:${SGR_reset} $@"
+  (( THRESHOLD_OF_ERROR <= SOURCE_AT )) && source_at 2
+} >&2 #/error
+
+function warning () #= [MESSAGES ...]
+{
+  (( THRESHOLD_OF_WARNING <= ${VERBOSE:-0} )) || return 1
+  echo -e "${WARNING_COLOR}Warning:${SGR_reset} $@"
+  (( THRESHOLD_OF_WARNIGN <= SOURCE_AT )) && source_at 2
+} >&2 #/warning
+
+function info () #= [MESSAGES ...]
+{
+  (( THRESHOLD_OF_INFO <= ${VERBOSE:-0} )) || return 1
+  echo -e "${INFO_COLOR}Info:${SGR_reset} $@"
+  (( THRESHOLD_OF_INFO <= SOURCE_AT )) && source_at 2
+} >&2 #/info
+
+function debug () #= [MESSAGES ...]
+{
+  (( THRESHOLD_OF_DEBUG <= ${VERBOSE:-0} )) || return 1
+  echo -e "${DEBUG_COLOR}Debug:${SGR_reset} $@"
+  (( THRESHOLD_OF_DEBUG <= SOURCE_AT )) && source_at 2
+} >&2 #/debug
+
+# EMBED_END: hhs_debug.bash
+
+: ${VERBOSE:=1}
+: ${SOURCE_AT:=1}
+: ${COLORIZE:=1}
+init_SGR
+
+# EMBED_END: hhs_embed
 
 TRUSTEDKEYS=( CYGWIN CYGWINPORTS );
 # ./pubring.asc
@@ -295,11 +397,11 @@ function is_official_mirrors_of_cygwin () # <mirrors> ...
   local online_list="$(wget -qO- https://cygwin.com/mirrors.lst)"
   for mirror; do
     if ! grep -q "$mirror" <<< "$local_list"; then
-      echo -e "\e[33;1mWarning:\e[0m /etc/setup/setup.rc doesn't know your mirror: \e[1m$mirror\e[0m" >&2
+      warning "/etc/setup/setup.rc doesn't know your mirror: ${SGR_bold}$mirror${SGR_reset}" >&2
       result=1
     fi
     if ! grep -q "$mirror" <<< "$online_list"; then
-      echo -e "\e[33;1mWarning:\e[0m Official mirrors.lst doesn't know your mirror: \e[1m$mirror\e[0m" >&2
+      warning "Official mirrors.lst doesn't know your mirror: ${SGR_bold}$mirror${SGR_reset}" >&2
       result=1
     fi
   done
@@ -403,7 +505,7 @@ function files_backup_clean ()
 function setupini_download ()
 {
   local BASEDIR="$cache/$mirrordir/$arch"
-  mkdir -p "$BASEDIR" || { echo -e "\e[31;1mError:\e[30;0m mkdir \"$BASEDIR\" failed."; exit 1; }
+  mkdir -p "$BASEDIR" || { error "mkdir failed: $BASEDIR"; exit 1; }
   
   [ $noscripts -ne 0 -o $noupdate -ne 0 ] && return
   
@@ -422,7 +524,7 @@ function setupini_download ()
   done
   files_restore setup.ini setup.ini.sig setup.bz2 setup.bz2.sig
   popd > /dev/null
-  echo -e "\e[31;1mError:\e[30;0m updating setup.ini, reverting." >&2
+  error "updating setup.ini failed, reverting."
   return 1
 }
 
@@ -449,7 +551,7 @@ function getrootdir ()
     x86_64)
       cygpath -u "$(< /proc/registry64/HKEY_LOCAL_MACHINE/SOFTWARE/Cygwin/setup/rootdir)" ;;
     *)
-      echo -e "\e[31;1mError:\e[30;0m unknown arch $1" >&2 ;;
+      error "unknown arch: $1" ;;
   esac
 }
 
@@ -458,7 +560,7 @@ function charch ()
 {
   local rootdir
   if [ "$(current_cygarch)" != "$1" ]; then
-    echo -e "\e[32;1mcharch to:\e[30;0m $1"
+    echo -e "${SGR_fg_green}${SGR_bold}charch to:${SGR_reset} $1"
     rootdir="$(getrootdir "$1")"
     shift
     chroot "$rootdir" "$rootdir/bin/bash" -lc \
@@ -476,7 +578,7 @@ function init_gnupg ()
   export GNUPGHOME="$cache/.apt-cyg"
   if [ ! -d "$GNUPGHOME" ]; then
     if ! { mkdir -p "$GNUPGHOME" && chmod 700 "$GNUPGHOME"; } then
-      echo -e "\e[31;1mError:\e[30;0m cannot initialize directory $GNUPGHOME"
+      error "Cannot initialize directory: $GNUPGHOME"
       exit 1
     fi
   fi
@@ -607,30 +709,30 @@ function fetch_trustedkeys ()
         "${GPG[@]}" --import "$FILE"
         ;;
       02)
-        echo "Warning: ${LABEL} has been updated."
+        warning "${LABEL} has been updated."
         "${GPG[@]}" --import "$FILE"
         ;;
       -0)
         "${GPG[@]}" --import "$FILE_LATEST"
         ;;
       10|20)
-        echo -e "\e[31;1mError:\e[30;0m ${LABEL} has miss configuration."
+        error "${LABEL} has miss configuration."
         exit 1
         ;;
       11|1-|-1)
-        echo -e "\e[31;1mError:\e[30;0m Could not download ${LABEL}."
+        error "Could not download ${LABEL}."
         exit 1
         ;;
       12|-2)
-        echo -e "\e[31;1mError:\e[30;0m ${LABEL} has been updated, maybe. But sometimes it may has been cracked. Be careful !!!"
+        error "${LABEL} has been updated, maybe. But sometimes it may has been cracked. Be careful !!!"
         exit 1
         ;;
       21|22|2-)
-        echo -e "\e[31;1mError:\e[30;0m ${LABEL} has been cracked, maybe"
+        error "${LABEL} has been cracked, maybe"
         exit 1
         ;;
       --)
-        echo -e "\e[31;1mError:\e[30;0m ${LABEL} has no URL."
+        error "${LABEL} has no URL."
         exit 1
         ;;
     esac
@@ -643,10 +745,10 @@ function verify_signatures ()
 {
   while [ $# -gt 0 ]; do
     if ! "${GPG[@]}" --verify "$1" &> $(verbosefor 2); then
-      echo -e "\e[31;1mError:\e[30;0m BAD signature: $1" >&2
+      error "BAD signature: $1"
       return 1
     else
-      verbose 0 -e "\e[32;1msignature verified\e[30;0m: $1"
+      verbose 0 -e "${SGR_fg_green}${SGR_bold}signature verified:${SGR_reset} $1"
     fi
     shift
   done
@@ -655,7 +757,7 @@ function verify_signatures ()
 # Usage: apt-cyg-key-add pkey ...
 function apt-cyg-key-add ()
 {
-  [ -z "$GPG" ] && { echo -e "\e[31;1mError:\e[30;0m GnuPG is not installed. Prease install gnupg package"; exit 1; }
+  [ -z "$GPG" ] && { error "GnuPG is not installed. Prease install gnupg package"; exit 1; }
   local pkeys
   for pkey; do
     pkeys+=( "$(cygpath -a "$pkey" )" )
@@ -669,7 +771,7 @@ function apt-cyg-key-add ()
 # Usage: apt-cyg-key-add keyid ...
 function apt-cyg-key-del ()
 {
-  [ -z "$GPG" ] && { echo -e "\e[31;1mError:\e[30;0m GnuPG is not installed. Prease install gnupg package"; exit 1; }
+  [ -z "$GPG" ] && { error "GnuPG is not installed. Prease install gnupg package"; exit 1; }
   local keyid
   findworkspace
   for keyid; do
@@ -679,14 +781,14 @@ function apt-cyg-key-del ()
 
 function apt-cyg-key-list ()
 {
-  [ -z "$GPG" ] && { echo -e "\e[31;1mError:\e[30;0m GnuPG is not installed. Prease install gnupg package"; exit 1; }
+  [ -z "$GPG" ] && { error "GnuPG is not installed. Prease install gnupg package"; exit 1; }
   findworkspace
   "${GPG[@]}" --list-keys
 }
 
 function apt-cyg-key-finger ()
 {
-  [ -z "$GPG" ] && { echo -e "\e[31;1mError:\e[30;0m GnuPG is not installed. Prease install gnupg package"; exit 1; }
+  [ -z "$GPG" ] && { error "GnuPG is not installed. Prease install gnupg package"; exit 1; }
   findworkspace
   "${GPG[@]}" --fingerprint
 }
@@ -702,7 +804,7 @@ function apt-cyg-pathof ()
       cache/mirrordir)  echo "$cache/$mirrordir" ;;
       setup.ini)        echo "$cache/$mirrordir/$arch/setup.ini" ;;
       *)
-        echo -e "\e[31;1mError:\e[30;0m in function $FUNCNAME: unknown parameter: $1"
+        error "unknown parameter: $1"
         exit 1
         ;;
     esac
@@ -714,7 +816,7 @@ function apt-cyg-upgrade-self ()
 {
   local basedir="$(dirname "$(readlink -f "$(which "$0")")")"
   if [ ! -d "$basedir/.git" ]; then
-    echo -e "\e[31;1mError:\e[30;0m apt-cyg is not under the git version control."
+    error "apt-cyg is not under the git version control."
     exit 1
   fi
   pushd "$basedir" > /dev/null
@@ -803,8 +905,8 @@ function package_db-version_check ()
   [ "${verhdr[0]}" = "INSTALLED.DB" ] && dbver="${verhdr[1]}" || dbver="1"
   
   if echo "$line1" | grep -Eqvx "${vernhdr}"; then
-    echo -e "\e[33;1mWarning:\e[30;0m ${PACKAGE_DB} does not have version header. The first line is below:" >&2
-    echo -e "$(head -n1 "${PACKAGE_DB}")\n" >&2
+    warning "${PACKAGE_DB} does not have version header. The first line is below:\n" \
+            "$(head -n1 "${PACKAGE_DB}")\n"
     
     # The earlyer version of apt-cyg was not treat version header correctly.
     if grep -EHnx "${vernhdr}" "${PACKAGE_DB}" >&2; then
@@ -813,9 +915,9 @@ function package_db-version_check ()
   fi
   
   if (( dbver < 3 )); then
-    echo -e "\e[33;1mWarning:\e[30;0m ${PACKAGE_DB} version is less than 3." >&2
-    echo -e "Before continuing, recommend to execute below command:" >&2
-    echo -e "    apt-cyg dist-upgrade" >&2
+    warning "${PACKAGE_DB} version is less than 3.\n" \
+            "Before continuing, recommend to execute below command:\n" \
+            "    apt-cyg dist-upgrade"
     ask_user "Do you continue?" >&2 && {
       echo "continue" >&2
     } || {
@@ -825,8 +927,8 @@ function package_db-version_check ()
   fi
   
   if (( 3 < dbver )); then
-    echo -e "\e[31;1mError:\e[30;0m ${PACKAGE_DB} has unknown version header." >&2
-    echo -e "Currently apt-cyg supports the DB of ver 3 or ealyer, but your DB is ver $dbver." >&2
+    error "${PACKAGE_DB} has unknown version header.\n" \
+          "Currently apt-cyg supports the DB of ver 3 or ealyer, but your DB is ver $dbver.\n"
     ask_user "Do you want to continue at your own risk?" >&2 && {
       echo "continue" >&2
     } || {
@@ -1056,11 +1158,11 @@ function replace_module # <pattern> <src> <dst>
 function apt-cyg-completion-install ()
 {
   if [ ! -d "/etc/bash_completion.d" ]; then
-    echo -e "\e[31;1mError:\e[30;0m /etc/bash_completion.d is not exist."
+    error "/etc/bash_completion.d is not exist."
     exit 1
   fi
   if ! package_db-is_registered "bash-completion"; then
-    echo -e "\e[31;1mError:\e[30;0m bash-completion is not installed."
+    error "bash-completion is not installed."
     exit 1
   fi
   
@@ -1173,7 +1275,7 @@ function __apt-cyg ()
 function apt-cyg-completion-uninstall ()
 {
   if [ ! -f /etc/bash_completion.d/apt-cyg ]; then
-    echo -e "\e[31;1mError:\e[30;0m /etc/bash_completion.d/apt-cyg is not exist."
+    error "/etc/bash_completion.d/apt-cyg is not exist."
     exit 1
   fi
   rm /etc/bash_completion.d/apt-cyg
@@ -1192,7 +1294,7 @@ function apt-cyg-benchmark-mirrors ()
     result="$( { time wget -qO/dev/null -T3 -t 1 "${mirror%/}/$(current_cygarch)/setup.bz2"; } 2>&1 )"
     exitcode=$?
     if [ $exitcode -ne 0 ];then
-      echo -e "\e[33;1mWarning:\e[30;0m benchmark failed with wget exitcode $exitcode: $(wget-exitstatus $exitcode): $1" >&2
+      warning "benchmark failed with wget exitcode $exitcode: $(wget-exitstatus $exitcode): $1"
       continue
     fi
     echo -e "$(echo "$result" | grep real | cut -f 2 | tr -d "\n")\t${mirror}"
@@ -1345,7 +1447,7 @@ function apt-cyg-update-setup ()
     ls -l "${SETUP_EXE}" > $(verbosefor 2)
   else
     files_restore "${TARGETS[@]}"
-    echo -e "\e[31;1mError:\e[30;0m ${SETUP_EXE} could not be downloaded: Rollbacked it and aborted." >&2
+    error "${SETUP_EXE} could not be downloaded: Rollbacked it and aborted."
     exit 1
   fi
 
@@ -1525,7 +1627,7 @@ function download_packages () #= pos section type [package_names ...]
     cd "$(apt-cyg pathof cache/mirrordir)"
     ;;
   *)
-    echo -e "\e[31;1mError:\e[0m unknown param: $pos"
+    error "unknown param: $pos"
     exit 1
     ;;
   esac
@@ -1549,7 +1651,7 @@ function download_packages () #= pos section type [package_names ...]
     fi
     "${WGET[@]}" -N "$url"
     if ! hash_check <<<"${digest} *${file}" ; then
-      verbose 1 -e "\e[31;1mError:\e[0m ${BASH_SOURCE[0]}: ${FUNCNAME[0]}: ${BASH_LINENO[0]}: hash did not match: $file"
+      error "hash did not match: $file"
     fi
     [ "$pos" = "mirror" ] && popd
   done
@@ -1963,12 +2065,12 @@ function parse_args ()
   fi
   
   if [ -n "$unknown_option" ]; then
-    echo -e "\e[31;1mError:\e[30;0m Unknown option: $unknown_option"
+    error "Unknown option: $unknown_option"
     exit 1
   fi
   
   if [ $# -gt 0 ]; then
-    echo -e "\e[31;1mError:\e[30;0m Number of parameters is not enough: $@"
+    error "Number of parameters is not enough: $@"
     exit 1
   fi
   
@@ -1976,7 +2078,8 @@ function parse_args ()
 
 parse_args "$@"
 
-: ${OPT_VERBOSE_LEVEL:=1}
+: ${OPT_VERBOSE_LEVEL:=$VERBOSE}
+VERBOSE=$OPT_VERBOSE_LEVEL
 
 [ -n "$OPT_CHARCH" ] && charch "$OPT_CHARCH" "${INITIAL_ARGS[@]}"
 
@@ -1984,7 +2087,7 @@ parse_args "$@"
 [ "${#OPT_CACHE[@]}"  -gt 0 ] && apt-cyg-set-cache  "${OPT_CACHE}"
 
 if [ -z "$GPGV" -a -z "$no_verify" ]; then
-  echo -e "\e[31;1mError:\e[30;0m GnuPG is not installed. Prease install gnupg package or use -X option."
+  error "GnuPG is not installed. Prease install gnupg package or use -X option."
   exit 1
 fi
 
@@ -2011,7 +2114,7 @@ verbosefor5=$(verbosefor 5)
 if [ -n "$OPT_AG" ]; then
   AG="$( which ag 2>/dev/null )"
   if [ -z "$AG" ]; then
-    echo -e "\e[33;1mWarning:\e[0m ag is not found."
+    warning "ag is not found. ignore option: $OPT_AG"
     unset OPT_AG
   fi
 fi
@@ -2162,7 +2265,7 @@ function apt-cyg-install ()
       done
     fi
     if [ $warn -ne 0 ]; then
-      echo "Warning: some required packages did not install, continuing"
+      warning "some required packages did not install, continuing"
     fi
     
     # run all postinstall scripts
@@ -2236,7 +2339,7 @@ function invoke_subcommand ()
   if type "$ACTION" >& /dev/null; then
     "$ACTION" "${ARGS[@]}"
   else
-    echo -e "\e[31;1mError:\e[30;0m unknown subcommand: $SUBCOMMAND"
+    error "unknown subcommand: $SUBCOMMAND"
     exit 1
   fi
 }
