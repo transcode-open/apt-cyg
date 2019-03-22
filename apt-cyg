@@ -247,6 +247,9 @@ function usage()
 	  mark-showmanual          : Print the list of manually installed packages.
 	  call [<internal_function> [<args> ...]] :
 	                             Call internal function in apt-cyg.
+	  time [<internal_function> [<args> ...]] :
+	                             Report time consumed
+	                             to call internal function in apt-cyg.
 	Options:
 	  --ag                     : use the silver searcher
 	                             (currently work only at packageof subcommand)
@@ -1736,6 +1739,12 @@ function apt-cyg-call () # [<internal_function> [<args> ...]]
 # Call internal function in apt-cyg.
 {
   "$@"
+}
+
+function apt-cyg-time () # [<internal_function> [<args> ...]]
+# Report time consumed to call internal function in apt-cyg.
+{
+  time "$@"
 }
 
 PACKAGEOF_CACHE="/tmp/.apt-cyg-packageof.cache.gz"

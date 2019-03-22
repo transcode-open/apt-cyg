@@ -59,6 +59,7 @@ Usage
 | `mark-showauto` |Print the list of automatically installed packages. |
 | `mark-showmanual` | Print the list of manually installed packages. |
 | `call [<internal_function> [<args> ...]]` | Call internal function in apt-cyg. |
+| `time [<internal_function> [<args> ...]]` | Report time consumed to call internal function in apt-cyg. |
 
 ### Options
 
