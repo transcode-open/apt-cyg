@@ -1602,7 +1602,7 @@ function get_archives_list () #= section type [package_names ...]
       } else {
       section = "curr";
       for (i = 2; i <= NF; i++) {
-        if (match($i, /^\[.*\]$/, m)) {
+        if (match($i, /^\[(.*)\]$/, m)) {
           section = m[1];
         } else if (match($i, TYPE ": *(.*)", m) && section == SECTION) {
           result[0+n++]=m[1];
