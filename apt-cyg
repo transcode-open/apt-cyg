@@ -367,26 +367,24 @@ function join_str_ex () # <separator> [<strings> ...]
   printf "%s" "${str//$'\x1c'/$1}"
 }
 
-function join_to_head () # <joined_strings> <separator> [<values> ...]
+function split_str () # <separator> [<strings> ...]
+# Split strings with separator.
+{
+  local str=( "${@:2}" )
+  (IFS=$'\n'; printf "%s" "${str[*]//$1/$'\n'}")
+}
+
+function join_str_uniq () # <separator> [<values> ...]
 # Append values to head of joined strings.
 {
-  local str="$1"
-  local sep="$2"
-  local values="$(join_str "$sep" "${@:3}")"
-  local value
-  for value in "${@:3}"; do
-    str="${str:+$sep$str$sep}"
-    str="${str//$sep$value$sep/$sep}"
-    str="${str#$sep}"
-    str="${str%$sep}"
-  done
-   [ -z "$values" -o -z "$str" ] && sep=""
-  printf "%s\n" "$values$sep$str"
+  local str
+  readarray -t str < <(split_str "$@" | uniqex)
+  join_str "$1" "${str[@]}"
 }
 
 function init_comspec ()
 {
-  : ${SYSTEMPATH:=$(join_to_head "$PATH" : "$(cygpath -u "${SYSTEMROOT:-$WINDIR}")"{/system32,})}
+  : ${SYSTEMPATH:=$(join_str_uniq : "$(cygpath -u "${SYSTEMROOT:-$WINDIR}")"{/system32,} "$PATH")}
 }
 
 function comspec () # [<parameters> ...]
@@ -1139,11 +1137,21 @@ function get_module_line () # <pattern> [<file>]
   grep -nE "^#\s*(BEGIN|END)_MODULE\s*:\s*${1}" "${@:2:1}" | grep -Eo '^[0-9]+'
 }
 
+# EMBED_BEGIN: hhs_utils.bash
+
 function headtail () # <first_line> <last_line> [<file>]
 # Split lines from <first_line> to <last_line>.
 {
   head -n+$2 "${@:3:1}" | tail -n+$1
 }
+
+function uniqex ()
+# An alternative uniq command which is not required sort
+{
+  awk '!c[$0]++'
+}
+
+# EMBED_END: hhs_utils.bash
 
 function replace_range # <first_line> <last_line> <content> [<file>]
 {
