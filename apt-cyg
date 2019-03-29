@@ -346,9 +346,25 @@ function align_columns ()
 {
   local lines w fmt
   readarray -t lines
-  w=( $(IFS=$'\n'; printf "%s" "${lines[*]}" | detect_field_width) )
+  w=( $(join_str $'\n' "${lines[@]}" | detect_field_width) )
   fmt="$(printf " %%-%ds" "${w[@]:1:${#w[@]}-2}")"
   printf "${fmt:1}\n" ${lines[@]}
+}
+
+function join_str () # <separator> [<strings> ...]
+# Join strings with separator.
+# Note that separator must be single character.
+# If you want separator with multiple character, use join_str_ex.
+{
+  (IFS="$1"; printf "%s" "${*:2}")
+}
+
+function join_str_ex () # <separator> [<strings> ...]
+# Join strings with separator.
+# Different for join_str the separator can take multiple character.
+{
+  local str="$(join_str $'\x1c' "${@:2}")"
+  printf "%s" "${str//$'\x1c'/$1}"
 }
 
 function join_to_head () # <joined_strings> <separator> [<values> ...]
@@ -356,7 +372,7 @@ function join_to_head () # <joined_strings> <separator> [<values> ...]
 {
   local str="$1"
   local sep="$2"
-  local values="$(IFS="$sep"; printf "%s" "${*:3}")"
+  local values="$(join_str "$sep" "${@:3}")"
   local value
   for value in "${@:3}"; do
     str="${str:+$sep$str$sep}"
@@ -431,7 +447,7 @@ function setuprc_get_section () # <section>
 
 function setuprc_set_section () # <section> [<values> ...]
 {
-  local s="$(join $'\n\t' "${@}")"
+  local s="$(join_str_ex $'\n\t' "${@}")"
   local setuprc="/etc/setup/setup.rc"
   local setuprc_bak="${setuprc},$(date -r "$setuprc" "+%Y%m%d_%H%M%S")"
   
@@ -993,7 +1009,7 @@ function package_db_change_mark () # <user_picked> [<package_names> ...]
 # and 1 was manually installed.
 {
   local user_picked="$1"
-  local PACKAGE_NAMES="$(join $'\x1c' "${@:2}")"
+  local PACKAGE_NAMES="$(join_str $'\x1c' "${@:2}")"
   local work="/tmp/apt-cyg.$$.${PACKAGE_DB##*/}"
   
   package_db-version_check
@@ -1030,18 +1046,6 @@ function package_db-unregister ()
   
   mv "${PACKAGE_DB}" "${PACKAGE_DB}-save"
   mv "${work}"       "${PACKAGE_DB}"
-}
-
-# Usage: join FS fields ...
-function join ()
-{
-  local FS="$1" field="" result="" sep=""
-  shift
-  for field; do
-    result="$result$sep$field"
-    sep="$FS"
-  done
-  echo -n "$result"
 }
 
 # Usage: dep_check DIR ROOTPKGS ...
@@ -1093,7 +1097,7 @@ function dep_check ()
       }
     }
   ' \
-  DIR="$1" ROOTPKGS="$(join $'\x1c' "${@:2}")" "$(apt-cyg-pathof "setup.ini")" \
+  DIR="$1" ROOTPKGS="$(join_str $'\x1c' "${@:2}")" "$(apt-cyg-pathof "setup.ini")" \
   | awk '
     function min(x,y) {return x < y ? x : y}
     function max(x,y) {return x < y ? y : x}
@@ -1578,7 +1582,7 @@ function get_archives_list () #= section type [package_names ...]
   local section="$1"
   local type="$2"
   shift 2
-  awk -v RS="\n\n@ " -v FS="\n" -v PKGS="$(join $'\x1c' "$@")" -v MIRROR="${mirror%/}/" \
+  awk -v RS="\n\n@ " -v FS="\n" -v PKGS="$(join_str $'\x1c' "$@")" -v MIRROR="${mirror%/}/" \
     -v SECTION="$section" -v TYPE="$type" '
     BEGIN {
       split(PKGS, tmp, "\x1c");
