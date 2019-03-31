@@ -171,7 +171,7 @@ If you want to use some other public keys, please use `key-*` subcommands.
 If apt-cyg is under Git version control, this fork can upgrade itself by `upgrade-self` subcommand.
 Therefore, the most recommended way to deploy this fork is below:
 
-    git clone HTTPS_clone_URL
+    git clone https://github.com/kou1okada/apt-cyg.git
     ln -s "$(realpath apt-cyg/apt-cyg)" /usr/local/bin/
     
 ### Proxy support
