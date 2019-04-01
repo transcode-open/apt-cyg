@@ -168,15 +168,15 @@ If you want to use some other public keys, please use `key-*` subcommands.
 
 ### Upgrade apt-cyg
 
-If apt-cyg is under the git version control, this fork can upgrade itself by `upgrade-self` subcommand.
-Therefore, the most recommended way to deploy this fork is below:
+If apt-cyg is under Git version control, this fork can upgrade itself by `upgrade-self` subcommand.
+Therefore, the most recommended way to deploy this fork is `copy and paste` below commands to cygwin console:
 
-    git clone HTTPS_clone_URL
+    # cd $DIR # Change working directory where you want to install apt-cyg
+    git clone https://github.com/kou1okada/apt-cyg.git
     ln -s "$(realpath apt-cyg/apt-cyg)" /usr/local/bin/
 
-`HTTPS_clone_URL` is like a `https://github.com/USERNAME/apt-cyg.git`.
-It can be found from the right side menu in each fork pages on github.
-    
+If you want to use another fork, which forked from https://github.com/kou1okada/apt-cyg, rewrite the URL for apropriate one.
+
 ### Proxy support
 
 Use `--proxy`, `-p` option.
