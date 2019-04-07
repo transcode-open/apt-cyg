@@ -2365,5 +2365,10 @@ function invoke_subcommand ()
   fi
 }
 
+[ -d "$PWD" ] || {
+  warning "Missing current directory: $PWD" \
+          "\nNote that some functions, which require access to current directory, will be failed."
+}
+
 proxy_setup
 invoke_subcommand "$SUBCOMMAND" "${ARGS[@]}"
