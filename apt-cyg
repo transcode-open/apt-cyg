@@ -161,8 +161,7 @@ TRUSTEDKEY_CYGWINPORTS_URL_LATEST="http://cygwinports.org/ports.gpg"
 WGET="$( which wget 2>/dev/null )"
 TAR="$(  which tar  2>/dev/null )"
 GAWK="$( which awk  2>/dev/null )"
-GPGV="$( which gpgv 2>/dev/null )"
-GPG="$(  which gpg  2>/dev/null )"
+GPG="$(  which gpg  2>/dev/null || which gpg2  2>/dev/null )"
 if [ -z "$WGET" -o -z "$TAR" -o -z "$GAWK" ]; then
   echo You must install wget, tar and gawk to use apt-cyg.
   exit 1
@@ -2107,7 +2106,7 @@ VERBOSE=$OPT_VERBOSE_LEVEL
 [ "${#OPT_MIRROR[@]}" -gt 0 ] && apt-cyg-set-mirror "${OPT_MIRROR[@]}"
 [ "${#OPT_CACHE[@]}"  -gt 0 ] && apt-cyg-set-cache  "${OPT_CACHE}"
 
-if [ -z "$GPGV" -a -z "$no_verify" ]; then
+if [ -z "$GPG" -a -z "$no_verify" ]; then
   error "GnuPG is not installed. Prease install gnupg package or use -X option."
   exit 1
 fi
