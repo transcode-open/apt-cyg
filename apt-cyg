@@ -230,6 +230,7 @@ function usage()
 	                             List files 'owned' by package(s).
 	  get-proxy                : Get proxies for eval.
 	  ls-categories            : List categories.
+	  ls-pkg-with-category     : List packages with category.
 	  category                 : List all packages in given category.
 	  setuprc-get <section>    : Get section from 'setup.rc'.
 	  set-cache [<cache>]      : Set cache.
@@ -1709,6 +1710,13 @@ function apt-cyg-ls-categories ()
   | sed -r 's/.*: *//g;s/ +/\n/g' \
   | sort \
   | uniq
+}
+
+function apt-cyg-ls-pkg-with-category ()
+{
+  cat "$(apt-cyg-pathof setup.ini)" \
+  | awk '$1=="@"{pkg=$2;}$1=="category:"{for(i=2;i<=NF;i++)print $i,pkg}' \
+  | align_columns
 }
 
 function apt-cyg-setuprc-get () # <section>
