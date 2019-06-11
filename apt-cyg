@@ -231,7 +231,7 @@ function usage()
 	  get-proxy                : Get proxies for eval.
 	  ls-categories            : List categories.
 	  ls-pkg-with-category     : List packages with category.
-	  category                 : List all packages in given category.
+	  category <category>      : List all packages in given <category>.
 	  setuprc-get <section>    : Get section from 'setup.rc'.
 	  set-cache [<cache>]      : Set cache.
 	  set-mirror [<mirrors> ...] :
@@ -2188,22 +2188,9 @@ function apt-cyg-find ()
 
 function apt-cyg-category ()
 {
-  local pkg
-
-  checkpackages "$@"
-  findworkspace
-  getsetup
-
-  for pkg do
-    awk '
-    $1 == "@" {
-      pcat = $2
-    }
-    $1 == "category:" && $0 ~ query {
-      print pcat
-    }
-    ' query="$pkg" setup.ini
-  done
+  apt-cyg-ls-pkg-with-category \
+  | grep "$@" \
+  | awk '$0=$2'
 }
 
 
