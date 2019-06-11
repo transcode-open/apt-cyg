@@ -1468,26 +1468,14 @@ function apt-cyg-update-setup ()
   popd > /dev/null
 }
 
-function prepare_setup_rc ()
-{
-  local cache="$(apt-cyg-pathof cache)"
-  if ! ln -f /etc/setup/setup.rc "${cache%/}/" >&/dev/null; then
-    warning "\n\tFailed: ln -f /etc/setup/setup.rc \"${cache%/}/\"" \
-            "\n\tFall back: cp -a /etc/setup/setup.rc \"${cache%/}/\""
-    unlink "${cache%/}/setup.rc"
-    cp -a /etc/setup/setup.rc "${cache%/}/" \
-    || { error "Failed: cp -a /etc/setup/setup.rc \"${cache%/}/\""; exit 1; }
-  fi
-}
-
 function apt-cyg-setup ()
 {
   pushd "$(apt-cyg pathof cache)" > /dev/null
   
-  local setup=( "./${SETUP_EXE}" -R "$(cygpath -wa /)" "$@" )
+  local setup=( "$PWD/${SETUP_EXE}" -R "$(cygpath -wa /)" "$@" )
   
   apt-cyg-update-setup
-  prepare_setup_rc
+  cd /etc/setup
   "${setup[@]}"
   
   popd > /dev/null
@@ -1495,12 +1483,12 @@ function apt-cyg-setup ()
 
 function apt-cyg-dist-upgrade-no-ask ()
 {
-  local setup=( ".\\${SETUP_EXE}" -R "$(cygpath -wa /)" -B -q -n -g)
+  local setup=( "$(cygpath -wa "$PWD")\\${SETUP_EXE}" -R "$(cygpath -wa /)" -B -q -n -g)
   
   pushd "$(apt-cyg-pathof cache)" > /dev/null
   
   apt-cyg-update-setup
-  prepare_setup_rc
+  cd /etc/setup
   cygstart "$COMSPEC" /c 'ECHO Press any key to start dist-upgrade for cygwin '"$(current_cygarch)"' && PAUSE && START /WAIT '"${setup[@]}"' && ash -c "/bin/rebaseall -v" && ECHO dist-upgrade is finished && ECHO Press any key to exit && PAUSE' # '
   kill_all_cygwin_process
   
