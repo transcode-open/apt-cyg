@@ -230,6 +230,8 @@ function usage()
 	                             List files 'owned' by package(s).
 	  get-proxy                : Get proxies for eval.
 	  ls-categories            : List categories.
+	  ls-pkg-with-category     : List packages with category.
+	  category <category>      : List all packages in given <category>.
 	  setuprc-get <section>    : Get section from 'setup.rc'.
 	  set-cache [<cache>]      : Set cache.
 	  set-mirror [<mirrors> ...] :
@@ -1233,7 +1235,7 @@ function __apt-cyg ()
   subcmd="$( "${getsubcmd[@]}" )"
   
   case "$subcmd" in
-    install|depends|rdepends|describe|find)
+    install|depends|rdepends|describe|find|category)
       COMPREPLY=( $(awk '/^@ /{print $2}' "$(apt-cyg pathof setup.ini)") )
       ;;
     remove)
@@ -1710,6 +1712,13 @@ function apt-cyg-ls-categories ()
   | uniq
 }
 
+function apt-cyg-ls-pkg-with-category ()
+{
+  cat "$(apt-cyg-pathof setup.ini)" \
+  | awk '$1=="@"{pkg=$2;}$1=="category:"{for(i=2;i<=NF;i++)print $i,pkg}' \
+  | align_columns
+}
+
 function apt-cyg-setuprc-get () # <section>
 {
   setuprc_get_section "$1"
@@ -2174,6 +2183,14 @@ function apt-cyg-find ()
       'BEGIN{RS="\n\n@ "; FS="\n"; ORS="\n"} {if ($1 ~ query) {print $1}}' \
       setup.ini
   done
+}
+
+
+function apt-cyg-category ()
+{
+  apt-cyg-ls-pkg-with-category \
+  | grep "$@" \
+  | awk '$0=$2'
 }
 
 
