@@ -2202,9 +2202,9 @@ function apt-cyg-describe ()
   findworkspace
   getsetup
   for pkg do
-    exact="$(grep "@ $pkg$" setup.ini)"
-    awk -v query="${exact:+^}$pkg${exact:+$}" -v IGNORECASE="$ignore_case" \
-      'BEGIN{RS="\n\n@ "; FS="\n"} ($1 ~ query){print "@ "$0"\n"}' \
+    exact="$(grep -Fx "@ $pkg" setup.ini)"
+    awk -v query="$pkg" -v exact="${exact:+1}" -v IGNORECASE="$ignore_case" \
+      'BEGIN{RS="\n\n@ "; FS="\n"} (exact?$1==query:$1~query){print "@ "$0"\n"}' \
       setup.ini
   done
 }
