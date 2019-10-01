@@ -251,6 +251,7 @@ function usage()
 	  time [<internal_function> [<args> ...]] :
 	                             Report time consumed
 	                             to call internal function in apt-cyg.
+	  filesearch [<pattern>]   : File search like apt-file search.
 	Options:
 	  --ag                     : use the silver searcher
 	                             (currently work only at packageof subcommand)
@@ -1765,6 +1766,30 @@ function apt-cyg-time () # [<internal_function> [<args> ...]]
 # Report time consumed to call internal function in apt-cyg.
 {
   time "$@"
+}
+
+function apt-cyg-filesearch () # [<pattern>]
+#   File search like apt-file search
+{
+  local arch cachedir cachefile cachequery colmns line package packages url
+  arch="$(current_cygarch)"
+  cachedir="/tmp/.apt-cyg.cache/filesearch"
+  cachequery="$cachedir/$(sha256sum <<<"$1"|awk '$0=$1')"
+  mkdir -p "$cachedir"
+  
+  [ ! -e "$cachequery" ] && cygcheck -p "$1" >"$cachequery"
+  readarray -t packages < "$cachequery"
+  packages=( "${packages[@]:1}" )
+  for line in "${packages[@]}"; do
+    columns=( $line )
+    url="https://cygwin.com/packages/$arch/${columns[0]%%-[0-9]*}/${columns[0]}"
+    cachefile="$cachedir/$(mirror_to_mirrordir "$url")"
+    [ ! -e "$cachefile" ] && wget -qO"$cachefile" "$url"
+    echo -n "${columns[0]}"
+    awk '/<\/pre>/{f=0}/<pre>/{f=1}f' "$cachefile" \
+    | grep -E "$1" \
+    | awk '($1=$2=$3="")||1'
+  done
 }
 
 PACKAGEOF_CACHE="/tmp/.apt-cyg-packageof.cache.gz"

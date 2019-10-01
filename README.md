@@ -61,6 +61,7 @@ Usage
 | `mark-showmanual` | Print the list of manually installed packages. |
 | `call [<internal_function> [<args> ...]]` | Call internal function in apt-cyg. |
 | `time [<internal_function> [<args> ...]]` | Report time consumed to call internal function in apt-cyg. |
+| `filesearch [<pattern>]` | File search like apt-file search. |
 
 ### Options
 
