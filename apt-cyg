@@ -112,7 +112,7 @@ function warning () #= [MESSAGES ...]
 {
   (( THRESHOLD_OF_WARNING <= ${VERBOSE:-0} )) || return 1
   echo -e "${WARNING_COLOR}Warning:${SGR_reset} $@"
-  (( THRESHOLD_OF_WARNIGN <= SOURCE_AT )) && source_at 2
+  (( THRESHOLD_OF_WARNING <= SOURCE_AT )) && source_at 2
 } >&2 #/warning
 
 function info () #= [MESSAGES ...]
@@ -290,7 +290,7 @@ function usage()
 
 function git_status ()
 {
-  local origin stauts
+  local origin status
   [ ! -d "${SCRIPT_REALDIR%/}/.git" ] && return 1
   pushd "${SCRIPT_REALDIR}" >/dev/null
   echo
@@ -1320,7 +1320,7 @@ function apt-cyg-benchmark-mirrors ()
 
 function apt-cyg-benchmark-parallel-mirrors ()
 {
-  local result="$(mktemp --tmpdir "${SCRIPTNAME}.$$.XXXXX")"
+  local result="$(mktemp --tmpdir "${SCRIPT_NAME}.$$.XXXXX")"
   local mirror
   for mirror; do echo $mirror; done | lesser-parallel apt-cyg-benchmark-mirrors {} | tee "$result"
   echo Finished benchmark.
@@ -1771,7 +1771,7 @@ function apt-cyg-time () # [<internal_function> [<args> ...]]
 function apt-cyg-filesearch () # [<pattern>]
 #   File search like apt-file search
 {
-  local arch cachedir cachefile cachequery colmns line package packages url
+  local arch cachedir cachefile cachequery columns line package packages url
   arch="$(current_cygarch)"
   cachedir="/tmp/.apt-cyg.cache/filesearch"
   cachequery="$cachedir/$(sha256sum <<<"$1"|awk '$0=$1')"
