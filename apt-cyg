@@ -834,13 +834,20 @@ function apt-cyg-pathof ()
 function apt-cyg-upgrade-self ()
 {
   local basedir="$(dirname "$(readlink -f "$(which "$0")")")"
-  if [ ! -d "$basedir/.git" ]; then
-    error "apt-cyg is not under the git version control."
-    exit 1
+  if [ -d "$basedir/.git" ]; then
+    pushd "$basedir" > /dev/null
+    git pull -v
+    popd > /dev/null
+  else
+    local updated_url='https://raw.githubusercontent.com/kou1okada/apt-cyg/master/apt-cyg'
+    local temp_file=$(mktemp)
+    local this_script="${basedir}/$(basename ${updated_url})"
+    "${WGET[@]}" "${updated_url}" -q -O "$temp_file"
+    chmod +x "$temp_file"
+    { diff "$temp_file" "$this_script" >/dev/null && exit 0; } || cp "$temp_file" "$this_script"
+    rm "$temp_file"
+    exit 0
   fi
-  pushd "$basedir" > /dev/null
-  git pull -v
-  popd > /dev/null
 }
 
 function proxy_auto ()
