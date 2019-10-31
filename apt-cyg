@@ -831,14 +831,21 @@ function apt-cyg-pathof ()
   done
 }
 
-function apt-cyg-upgrade-self ()
+function upgrade-self-with-git ()
 {
   local basedir="$(dirname "$(readlink -f "$(which "$0")")")"
-  if [ -d "$basedir/.git" ]; then
+  if [ ! -d "$basedir/.git" ]; then
+    warning "apt-cyg is not under the git version control."
+    return 1
+  fi
     pushd "$basedir" > /dev/null
     git pull -v
     popd > /dev/null
-  else
+}
+
+function upgrade-self-with-wget ()
+{
+    local basedir="$(dirname "$(readlink -f "$(which "$0")")")"
     local updated_url='https://raw.githubusercontent.com/kou1okada/apt-cyg/master/apt-cyg'
     local temp_file=$(mktemp)
     local this_script="${basedir}/$(basename ${updated_url})"
@@ -846,8 +853,13 @@ function apt-cyg-upgrade-self ()
     chmod +x "$temp_file"
     { diff "$temp_file" "$this_script" >/dev/null && exit 0; } || cp "$temp_file" "$this_script"
     rm "$temp_file"
-    exit 0
-  fi
+}
+
+function apt-cyg-upgrade-self ()
+{
+  upgrade-self-with-git && return
+  echo "Fall back to wget for upgrade-self."
+  upgrade-self-with-wget
 }
 
 function proxy_auto ()
