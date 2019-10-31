@@ -838,9 +838,9 @@ function upgrade-self-with-git ()
     warning "apt-cyg is not under the git version control."
     return 1
   fi
-    pushd "$basedir" > /dev/null
-    git pull -v
-    popd > /dev/null
+  pushd "$basedir" > /dev/null
+  git pull -v
+  popd > /dev/null
 }
 
 function upgrade-self-with-wget ()
