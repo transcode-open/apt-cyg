@@ -1970,6 +1970,11 @@ function parse_args ()
         shift 2 || break
         ;;
       
+      --use-setuprc)
+        warning "Ignore --use-setuprc. This option was removed with issue-24."
+        shift
+        ;;
+      
       --ignore-case|-i)
         ignore_case="$1"
         shift
