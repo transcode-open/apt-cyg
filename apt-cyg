@@ -844,12 +844,12 @@ function upgrade-self-with-git ()
 
 function upgrade-self-with-wget ()
 {
-    local updated_url='https://raw.githubusercontent.com/kou1okada/apt-cyg/master/apt-cyg' # TODO: Do not use MAGIC NUMBER
-    local temp_file=$(mktemp)
-    "${WGET[@]}" "${updated_url}" -q -O "$temp_file"
-    chmod +x "$temp_file"
-    { diff "$temp_file" "$SCRIPT_REALPATH" >/dev/null && exit 0; } || cp "$temp_file" "$SCRIPT_REALPATH"
-    rm "$temp_file"
+  local updated_url='https://raw.githubusercontent.com/kou1okada/apt-cyg/master/apt-cyg' # TODO: Do not use MAGIC NUMBER
+  local temp_file=$(mktemp)
+  "${WGET[@]}" "${updated_url}" -q -O "$temp_file"
+  chmod +x "$temp_file"
+  { diff "$temp_file" "$SCRIPT_REALPATH" >/dev/null && exit 0; } || cp "$temp_file" "$SCRIPT_REALPATH"
+  rm "$temp_file"
 }
 
 function apt-cyg-upgrade-self ()
