@@ -1502,9 +1502,9 @@ function apt-cyg-setup ()
 
 function apt-cyg-dist-upgrade-no-ask ()
 {
-  local setup=( "$(cygpath -wa "$PWD")\\${SETUP_EXE}" -R "$(cygpath -wa /)" -B -q -n -g)
-  
   pushd "$(apt-cyg-pathof cache)" > /dev/null
+  
+  local setup=( "$(cygpath -wa "$PWD")\\${SETUP_EXE}" -R "$(cygpath -wa /)" -B -q -n -g)
   
   apt-cyg-update-setup
   cd /etc/setup
