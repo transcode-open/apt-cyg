@@ -1390,7 +1390,7 @@ unset CODEPAGE
 
 function get_codepage ()
 {
-  echo -n "${CODEPAGE:=$(comspec /c chcp.com | awk '{printf $NF;}' | sed -re 's/^[^0-9]*([0-9]+).*$/CP\1/g')}"
+  echo -n "${CODEPAGE:=$(comspec /c chcp.com | awk '{printf $NF;}' | sed -E 's/^[^0-9]*([0-9]+).*$/CP\1/g;s/CP20127/US-ASCII/g')}"
 }
 
 function cp2utf8 () # [<iconv_args> ...]
@@ -1503,7 +1503,7 @@ function apt-cyg-setup ()
 function apt-cyg-dist-upgrade-no-ask ()
 {
   pushd "$(apt-cyg-pathof cache)" > /dev/null
-  
+
   local setup=( "$(cygpath -wa "$PWD")\\${SETUP_EXE}" -R "$(cygpath -wa /)" -B -q -n -g)
   
   apt-cyg-update-setup
