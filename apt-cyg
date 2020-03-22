@@ -432,9 +432,10 @@ function current_cygarch ()
   arch | sed -e 's/^i686$/x86/g'
 }
 
-function mirror_to_mirrordir ()
+function mirror_to_mirrordir () # <mirror>
 {
-  echo "$1" | sed -e "s/:/%3a/g" -e "s:/:%2f:g"
+  local tmp="${1//:/%3a}"
+  echo "${tmp//\//%2f}"
 }
 
 function setuprc_get_section () # <section>
