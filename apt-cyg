@@ -876,10 +876,10 @@ function apt-cyg-upgrade-self ()
 
 function proxy_auto ()
 {
-  local hash="$(ipconfig 2>&1 | md5sum -b | awk '{print $1}')"
+  local hash=( $(ipconfig |& md5sum -b) )
   local cache="/tmp/apt-cyg.proxy.$hash"
   local last="$(stat -c %Y "$cache" 2>/dev/null)"
-  local now="$(date +%s)"
+  local now="$(printf "%(%s)T")"
   local proxy
   
   [ -n "$OPT_PROXY_FORCE_REFRESH" ] && last=0
