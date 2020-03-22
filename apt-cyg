@@ -2205,11 +2205,6 @@ eval "$(wget --help |& awk '
 (( "${OPT_VERBOSE_LEVEL}" < 1 )) && WGET+=( --quiet $HAVE_SHOW_PROGRESS ) || \
 (( "${OPT_VERBOSE_LEVEL}" < 2 )) && WGET+=( $HAVE_NO_VERBOSE $HAVE_SHOW_PROGRESS )
 verbosefor0=$(verbosefor 0)
-verbosefor1=$(verbosefor 1)
-verbosefor2=$(verbosefor 2)
-verbosefor3=$(verbosefor 3)
-verbosefor4=$(verbosefor 4)
-verbosefor5=$(verbosefor 5)
 
 if [ -n "$OPT_AG" ]; then
   AG="$( type -p ag 2>/dev/null )"
