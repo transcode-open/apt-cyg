@@ -2197,8 +2197,10 @@ for file in "${OPT_FILES[@]}"; do
   fi
 done
 
-wget --help | grep -- --show-progress &>/dev/null && HAVE_SHOW_PROGRESS="--show-progress"
-wget --help | grep -- --no-verbose    &>/dev/null && HAVE_NO_VERBOSE="--no-verbose"
+eval "$(wget --help |& awk '
+  /--show-progres/{print "HAVE_SHOW_PROGRESS=--show-progress"}
+  /--no-verbose/  {print "HAVE_NO_VERBOSE=--no-verbose"}
+')"
 (( "${OPT_VERBOSE_LEVEL}" < 0 )) && WGET+=( --quiet ) || \
 (( "${OPT_VERBOSE_LEVEL}" < 1 )) && WGET+=( --quiet $HAVE_SHOW_PROGRESS ) || \
 (( "${OPT_VERBOSE_LEVEL}" < 2 )) && WGET+=( $HAVE_NO_VERBOSE $HAVE_SHOW_PROGRESS )
