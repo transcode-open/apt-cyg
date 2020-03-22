@@ -158,10 +158,10 @@ TRUSTEDKEY_CYGWINPORTS_URL_LATEST="http://cygwinports.org/ports.gpg"
 
 # this script requires some packages
 
-WGET="$( which wget 2>/dev/null )"
-TAR="$(  which tar  2>/dev/null )"
-GAWK="$( which awk  2>/dev/null )"
-GPG="$(  which gpg  2>/dev/null || which gpg2  2>/dev/null )"
+WGET="$( type -p wget 2>/dev/null )"
+TAR="$(  type -p tar  2>/dev/null )"
+GAWK="$( type -p awk  2>/dev/null )"
+GPG="$(  type -p gpg  2>/dev/null || type -p gpg2  2>/dev/null )"
 if [ -z "$WGET" -o -z "$TAR" -o -z "$GAWK" ]; then
   echo You must install wget, tar and gawk to use apt-cyg.
   exit 1
@@ -599,8 +599,8 @@ function charch ()
     shift
     chroot "$rootdir" "$rootdir/bin/bash" -lc \
       'cd "$1"; shift ; "$0" "$@"' \
-      "$(which "$0" | xargs cygpath -aml | xargs cygpath -u)" \
-      "$(pwd        | xargs cygpath -aml | xargs cygpath -u)" \
+      "$(type -p "$0" | xargs cygpath -aml | xargs cygpath -u)" \
+      "$(pwd          | xargs cygpath -aml | xargs cygpath -u)" \
       "$@"
     exit $?
   fi
@@ -1216,7 +1216,7 @@ function apt-cyg-completion-install ()
   
   local __APT_CYG_SUBCMDS
   local __APT_CYG_OPTIONS
-  local __APT_CYG_SCRIPTPATH="$(realpath "$(which apt-cyg)")"
+  local __APT_CYG_SCRIPTPATH="$(realpath "$(type -p apt-cyg)")"
   local __APT_CYG_SCRIPTDIR="${__APT_CYG_SCRIPTPATH%/*}"
   local __APT_CYG_COMPLETION_DISABLE_AUTOUPDATE="$OPT_COMPLETION_DISABLE_AUTOUPDATE"
   
@@ -2210,7 +2210,7 @@ verbosefor4=$(verbosefor 4)
 verbosefor5=$(verbosefor 5)
 
 if [ -n "$OPT_AG" ]; then
-  AG="$( which ag 2>/dev/null )"
+  AG="$( type -p ag 2>/dev/null )"
   if [ -z "$AG" ]; then
     warning "ag is not found. ignore option: $OPT_AG"
     unset OPT_AG
