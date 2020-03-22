@@ -718,10 +718,10 @@ function fetch_trustedkeys ()
   local FILE_LATEST="$(mktemp)"
   for i in "${TRUSTEDKEYS[@]}"; do
     local LABEL="TRUSTEDKEY_${i}"
-    local SUM="$(eval echo "\$${LABEL}_SUM")"
-    local FPR="$(eval echo "\$${LABEL}_FPR")"
-    local URL="$(eval echo "\$${LABEL}_URL")"
-    local URL_LATEST="$(eval echo "\$${LABEL}_URL_LATEST")"
+    local -n SUM="${LABEL}_SUM"
+    local -n FPR="${LABEL}_FPR"
+    local -n URL="${LABEL}_URL"
+    local -n URL_LATEST="${LABEL}_URL_LATEST"
     local CASE=""
     if [ -z "$force_fetch_trustedkeys" ] && { "${GPG[@]}" --fingerprint --with-colons | grep -q "$FPR"; } &> $(verbosefor 2); then
       continue
