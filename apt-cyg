@@ -438,6 +438,20 @@ function mirror_to_mirrordir () # <mirror>
   echo "${tmp//\//%2f}"
 }
 
+function setuprc_import_sections () # <section> ...
+{
+  local IFS="|"
+  cp2utf8 /etc/setup/setup.rc \
+  | awk -vRS='\n\\<|\n\\'\' -vFS='\n\t' -vsections="^${*//\\/\\\\}$" '
+    match($1, sections) {
+      s = gensub(/-/, "_", "g", $1) "=("
+      for(i = 2; i <= NF; i++) s = s " \x27" $i "\x27";
+      s = s " )";
+      print s;
+    }
+  '
+}
+
 function setuprc_get_section () # <section>
 {
   cp2utf8 /etc/setup/setup.rc \
@@ -465,8 +479,8 @@ function setuprc_set_section () # <section> [<values> ...]
 
 function findworkspace()
 {
-  readarray -t last_mirror < <(setuprc_get_section last-mirror)
-  readarray -t last_cache  < <(setuprc_get_section last-cache)
+  eval "$(setuprc_import_sections last-cache last-mirror)"
+
   mirror="$last_mirror"
   cache="$(cygpath -au "$last_cache")"
   arch="$(current_cygarch)"
