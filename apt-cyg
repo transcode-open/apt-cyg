@@ -384,6 +384,12 @@ function join_str_uniq () # <separator> [<values> ...]
   join_str "$1" "${str[@]}"
 }
 
+function mktmpfn () # -v <var>
+# Temporary filename
+{
+  printf ${@:1:2} "/tmp/${SCRIPT_NAME}.$$.%04x%04x" $RANDOM $RANDOM
+}
+
 function init_comspec ()
 {
   : ${SYSTEMPATH:=$(join_str_uniq : "$(cygpath -u "${SYSTEMROOT:-$WINDIR}")"{/system32,} "$PATH")}
@@ -714,8 +720,8 @@ function fetch_trustedkeys ()
 {
   [ -z "$GPG" ] && return
   local i
-  local FILE="$(mktemp)"
-  local FILE_LATEST="$(mktemp)"
+  local FILE       ; mktmpfn -v FILE
+  local FILE_LATEST; mktmpfn -v FILE_LATEST
   for i in "${TRUSTEDKEYS[@]}"; do
     local LABEL="TRUSTEDKEY_${i}"
     local -n SUM="${LABEL}_SUM"
@@ -770,8 +776,8 @@ function fetch_trustedkeys ()
         exit 1
         ;;
     esac
+    rm "$FILE" "$FILE_LATEST" &>/dev/null
   done
-  rm "$FILE" "$FILE_LATEST"
 }
 
 # Usage: verify_signatures files ...
@@ -860,7 +866,7 @@ function upgrade-self-with-git ()
 function upgrade-self-with-wget ()
 {
   local updated_url='https://raw.githubusercontent.com/kou1okada/apt-cyg/master/apt-cyg' # TODO: Do not use MAGIC NUMBER
-  local temp_file=$(mktemp)
+  local temp_file; mktmpfn -v temp_file
   "${WGET[@]}" "${updated_url}" -q -O "$temp_file"
   chmod +x "$temp_file"
   { diff "$temp_file" "$SCRIPT_REALPATH" >/dev/null && exit 0; } || cp "$temp_file" "$SCRIPT_REALPATH"
@@ -1196,7 +1202,7 @@ function replace_range # <first_line> <last_line> <content> [<file>]
 
 function replace_module # <pattern> <src> <dst>
 {
-  local tmpfile="$(mktemp -u)"
+  local tmpfile; mktmpfn -v tmpfile
   local srclines=( $(get_module_line "bash completion for apt-cyg" "$2") )
   local dstlines=( $(get_module_line "bash completion for apt-cyg" "$3") )
   replace_range "${dstlines[@]}" "$(headtail "${srclines[@]}" "$2")" "$3" > "$tmpfile"
@@ -1351,7 +1357,7 @@ function apt-cyg-benchmark-mirrors ()
 
 function apt-cyg-benchmark-parallel-mirrors ()
 {
-  local result="$(mktemp --tmpdir "${SCRIPT_NAME}.$$.XXXXX")"
+  local result; mktmpfn -v result
   local mirror
   for mirror; do echo $mirror; done | lesser-parallel apt-cyg-benchmark-mirrors {} | tee "$result"
   echo Finished benchmark.
