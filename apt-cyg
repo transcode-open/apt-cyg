@@ -1388,9 +1388,15 @@ function apt-cyg-show-packages-busyness ()
 
 unset CODEPAGE
 
+function get_codepage_wt_chcp ()
+{
+  comspec /c chcp.com \
+  | awk 'match($NF, /([0-9]+)/, m) { print m[1] == "20127" ? "US-ASCII" : ("CP" m[1]) }'
+}
+
 function get_codepage ()
 {
-  echo -n "${CODEPAGE:=$(comspec /c chcp.com | awk '{printf $NF;}' | sed -E 's/^[^0-9]*([0-9]+).*$/CP\1/g;s/CP20127/US-ASCII/g')}"
+  echo -n "${CODEPAGE:=$(get_codepage_wt_chcp)}"
 }
 
 function cp2utf8 () # [<iconv_args> ...]
