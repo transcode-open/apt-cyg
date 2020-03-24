@@ -500,19 +500,52 @@ function setuprc_set_section () # <section> [<values> ...]
   | utf82cp > "$setuprc"
 }
 
+function set_cachefile ()
+{
+  cachefile="$apt_cyg_cachedir/$FUNCNAME[0]"
+}
+
+function is_cachevars_fresh () # [<depended files> ...]
+{
+  local i
+  set_cachefile
+  set -- "$SCRIPT_PATH" "$@"
+  for i; do
+    [ "$cachefile" -nt "$i" ] || return 1
+  done
+}
+
+function restore_cachevars () # [<depended files> ...]
+{
+  local cachefile
+  is_cachevars_fresh "$@" || return $?
+  source "$cachefile"
+}
+
+function save_cachevars () # [<varnames> ...]
+{
+  local cachefile; set_cachefile
+  declare -p "$@" | sed -E 's/^declare .. //g' >"$cachefile"
+}
+
 function findworkspace()
 {
-  eval "$(setuprc_import_sections last-cache last-mirror)"
+  local cachevars=( last_cache last_mirror mirror cache arch mirrordir )
+  restore_cachevars /etc/setup/setup.rc || {
+    eval "$(setuprc_import_sections last-cache last-mirror)"
 
-  mirror="$last_mirror"
-  cache="$(cygpath -au "$last_cache")"
-  arch="$(current_cygarch)"
-  
-  cache="${cache%/}"
-  mirror="${mirror%/}"
-  
-  mirrordir="$(mirror_to_mirrordir "$mirror/")"
-  
+    mirror="$last_mirror"
+    cache="$(cygpath -au "$last_cache")"
+    arch="$(current_cygarch)"
+    
+    cache="${cache%/}"
+    mirror="${mirror%/}"
+    
+    mirrordir="$(mirror_to_mirrordir "$mirror/")"
+
+    save_cachevars "${cachevars[@]}"
+  }
+
   verbose 1 "Cache directory is $cache"
   verbose 1 "Mirror is $mirror"
 
