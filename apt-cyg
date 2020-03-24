@@ -384,6 +384,11 @@ function join_str_uniq () # <separator> [<values> ...]
   join_str "$1" "${str[@]}"
 }
 
+function mkdirp () # <dir>
+{
+  [ -d "$1" ] || mkdir -p "$1" || { error "mkdir failed: $1"; exit 1; }
+}
+
 function mktmpfn () # -v <var>
 # Temporary filename
 {
@@ -499,7 +504,8 @@ function findworkspace()
   
   verbose 1 "Cache directory is $cache"
   verbose 1 "Mirror is $mirror"
-  mkdir -p "$cache/$mirrordir/$arch"
+
+  mkdirp "$cache/$mirrordir/$arch"
   cd "$cache/$mirrordir/$arch"
   
   init_gnupg
@@ -546,7 +552,7 @@ function files_backup_clean ()
 function setupini_download ()
 {
   local BASEDIR="$cache/$mirrordir/$arch"
-  mkdir -p "$BASEDIR" || { error "mkdir failed: $BASEDIR"; exit 1; }
+  mkdirp "$BASEDIR"
   
   [ $noscripts -ne 0 -o $noupdate -ne 0 ] && return
   
@@ -1709,7 +1715,7 @@ function download_packages () #= pos section type [package_names ...]
     local size="${tmp[1]}"
     local digest="${tmp[2]}"
     if [ "$pos" = "mirror" ]; then  
-      mkdir -vp "$path"
+      mkdirp "$path"
       pushd "$path"
     fi
     "${WGET[@]}" -N "$url"
@@ -1821,7 +1827,7 @@ function apt-cyg-filesearch () # [<pattern>]
   arch="$(current_cygarch)"
   cachedir="/tmp/.apt-cyg.cache/filesearch"
   cachequery="$cachedir/$(sha256sum <<<"$1"|awk '$0=$1')"
-  mkdir -p "$cachedir"
+  mkdirp "$cachedir"
   
   [ ! -e "$cachequery" ] && cygcheck -p "$1" >"$cachequery"
   readarray -t packages < "$cachequery"
@@ -2312,7 +2318,7 @@ function apt-cyg-install ()
     
     # look for package and save desc file
     
-    mkdir -p "release/$pkg"
+    mkdirp "release/$pkg"
     awk > "release/$pkg/desc" -v package="$pkg" \
       'BEGIN{RS="\n\n@ "; FS="\n"} {if ($1 == package) {desc = $0; px++}} \
        END {if (px == 1 && desc != "") print desc; else print "Package not found"}' \
