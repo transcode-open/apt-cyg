@@ -723,12 +723,23 @@ function wget_and_hash_check ()
   echo "$LABEL: OK"
 }
 
+function get_gpg_fingerprint_to_assoc () # <assoc varname>
+{
+  local -n result="$1"
+  local line lines
+  readarray -t lines < <("${GPG[@]}" --with-colons --fingerprint)
+  for line in "${lines[@]}"; do
+    [[ "$line" =~ ^fpr:+([0-9A-Za-z]+):* ]] && result[${BASH_REMATCH[1]}]=1
+  done
+}
+
 function fetch_trustedkeys ()
 {
   [ -z "$GPG" ] && return
   local i
   local FILE       ; mktmpfn -v FILE
   local FILE_LATEST; mktmpfn -v FILE_LATEST
+  local -A FPRS_assoc; get_gpg_fingerprint_to_assoc FPRS_assoc
   for i in "${TRUSTEDKEYS[@]}"; do
     local LABEL="TRUSTEDKEY_${i}"
     local -n SUM="${LABEL}_SUM"
@@ -736,7 +747,7 @@ function fetch_trustedkeys ()
     local -n URL="${LABEL}_URL"
     local -n URL_LATEST="${LABEL}_URL_LATEST"
     local CASE=""
-    if [ -z "$force_fetch_trustedkeys" ] && { "${GPG[@]}" --fingerprint --with-colons | grep -q "$FPR"; } &> $(verbosefor 2); then
+    if [ -z "$force_fetch_trustedkeys" -a -n "${FPRS_assoc[$FPR]}" ]; then
       continue
     fi
     if [ -n "$URL" ]; then
