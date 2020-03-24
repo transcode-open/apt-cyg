@@ -450,10 +450,21 @@ function mirror_to_mirrordir () # <mirror>
   echo "${tmp//\//%2f}"
 }
 
+function get_utf8_setuprc ()
+{
+  local utf8_setuprc="$apt_cyg_cachedir/setup.rc.utf8"
+  mkdirp "$apt_cyg_cachedir"
+  [ "$utf8_setuprc" -nt /etc/setup/setup.rc ] && {
+    cat "$utf8_setuprc"
+  } || {
+    cp2utf8 /etc/setup/setup.rc | tee "$utf8_setuprc"
+  }
+}
+
 function setuprc_import_sections () # <section> ...
 {
   local IFS="|"
-  cp2utf8 /etc/setup/setup.rc \
+  get_utf8_setuprc \
   | awk -vRS='\n\\<|\n\\'\' -vFS='\n\t' -vsections="^${*//\\/\\\\}$" '
     match($1, sections) {
       s = gensub(/-/, "_", "g", $1) "=("
@@ -466,7 +477,7 @@ function setuprc_import_sections () # <section> ...
 
 function setuprc_get_section () # <section>
 {
-  cp2utf8 /etc/setup/setup.rc \
+  get_utf8_setuprc \
   | awk -vRS='\n\\<|\n\\'\' -vFS='\n\t' -vsection="${1//\\/\\\\}" '
     $1 == section {for(i = 2; i <= NF; i++) print $i;}
   '
@@ -1983,6 +1994,7 @@ function apt-cyg-help ()
 
 # process options
 
+apt_cyg_cachedir="${tmp:-/tmp}/.apt-cyg.cache"
 noscripts=0
 OPT_USER_PICKED=1
 noupdate=0
