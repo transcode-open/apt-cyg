@@ -435,7 +435,8 @@ function is_official_mirrors_of_cygwin () # <mirrors> ...
 
 function current_cygarch ()
 {
-  arch | sed -e 's/^i686$/x86/g'
+  local arch="${HOSTTYPE:-$(arch)}"
+  echo "${arch/i686/x86}"
 }
 
 function mirror_to_mirrordir () # <mirror>
