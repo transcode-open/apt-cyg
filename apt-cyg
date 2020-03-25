@@ -1338,12 +1338,12 @@ function apt-cyg-completion-install ()
     )
   
   cat <<-EOD > /etc/bash_completion.d/apt-cyg
-		$(declare -p __APT_CYG_{SUBCMDS,OPTIONS,SCRIPTPATH,SCRIPTDIR,COMPLETION_DISABLE_AUTOUPDATE} | sed -re 's/^declare/\0 -g/g')
+		$(declare -p __APT_CYG_{SUBCMDS,OPTIONS,SCRIPTPATH,SCRIPTDIR,COMPLETION_DISABLE_AUTOUPDATE} | sed -E 's/^declare/\0 -g/g')
 		
 		# BEGIN_MODULE: bash completion for apt-cyg
 		# END_MODULE:   bash completion for apt-cyg
 		
-		complete -F __apt-cyg apt-cyg
+		complete -o filenames -F __apt-cyg apt-cyg
 		EOD
   
   replace_module "bash completion for apt-cyg" "${BASH_SOURCE}" /etc/bash_completion.d/apt-cyg
@@ -1368,7 +1368,7 @@ function __apt-cyg ()
   
   _get_comp_words_by_ref -n : cur prev
   
-  getsubcmd=( apt-cyg --completion-get-subcommand $(echo "${COMP_LINE}" | sed -r -e 's/^[^ \t]+//g' -e 's/[^ \t]+$//g') )
+  getsubcmd=( apt-cyg --completion-get-subcommand $(echo "${COMP_LINE}" | sed -E 's/^[ \t]*[^ \t]+//g;s/[^ \t]+$//g') )
   subcmd="$( "${getsubcmd[@]}" )"
   
   case "$subcmd" in
@@ -1382,7 +1382,7 @@ function __apt-cyg ()
       COMPREPLY=( cache mirror mirrordir cache/mirrordir setup.ini )
       ;;
     *)
-      COMPREPLY=( "${__APT_CYG_SUBCMDS[*]}" )
+      COMPREPLY=( "${__APT_CYG_SUBCMDS[@]}" )
       ;;
   esac
   case "$prev" in
@@ -1390,36 +1390,38 @@ function __apt-cyg ()
       COMPREPLY=( x86 x86_64 )
       ;;
     --cache|-c)
-      COMPREPLY=( $(compgen -d -- "$cur") )
+      readarray -t COMPREPLY < <(compgen -d -- "$cur")
       ;;
     --mirror|-m)
-      COMPREPLY=( $(awk '/^[^ \t]+/{section=\$1}section=="mirrors-lst"&&match(\$0,/^[ \t]+([^;]+);/,m){print "\""m[1]"\""}' "/etc/setup/setup.rc") )
+      COMPREPLY=( $(apt-cyg mirrors-list) )
       ;;
     --file|-f)
-      COMPREPLY=( $(compgen -f -- "$cur") )
+      readarray -t COMPREPLY < <(compgen -f -- "$cur")
       ;;
     --proxy|-p)
       COMPREPLY=( auto inherit none http:// )
       ;;
     *)
-      COMPREPLY+=( "${__APT_CYG_OPTIONS[*]}" )
+      COMPREPLY+=( "${__APT_CYG_OPTIONS[@]}" )
       ;;
   esac
   if [ -n "$DEBUG_COMPLETION" ]; then
     echo
-    echo "COMP_WORDBREAKS: $COMP_WORDBREAKS"
-    echo "getsubcmd: '${getsubcmd[@]}'"
-    echo "subcmd: '${subcmd[@]}'"
-    echo "COMP_LINE: '${COMP_LINE}'"
-    echo "cur: $cur"
-    echo "prev: $prev"
-    echo "COMP_WORDS: ${COMP_WORDS[@]}"
+    echo "COMP_WORDBREAKS: ${COMP_WORDBREAKS@Q}"
+    echo "getsubcmd: ${getsubcmd[@]@Q}"
+    echo "subcmd: ${subcmd[@]@Q}"
+    echo "COMP_LINE: ${COMP_LINE@Q}"
+    echo "cur: ${cur@Q}"
+    echo "prev: ${prev@Q}"
+    echo "COMP_WORDS: ${COMP_WORDS[@]@Q}"
     echo "#COMPREPLY[@]: ${#COMPREPLY[@]}"
+    echo "COMPREPLY[@]: ${COMPREPLY[@]@Q}"
+    echo "BASH_SOURCE[@]: ${BASH_SOURCE[@]@Q}"
     echo
     echo -n "${COMP_LINE}"
 
   fi
-  COMPREPLY=( $(compgen -W "${COMPREPLY[*]}" -- "$cur") )
+  readarray -t COMPREPLY < <(compgen -W "${COMPREPLY[*]@Q}" -- "$cur")
   __ltrim_colon_completions "$cur"
 }
 
