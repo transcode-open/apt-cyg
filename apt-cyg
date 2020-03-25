@@ -316,15 +316,22 @@ function version ()
 # Usage: verbose [level [msg ...]]
 function verbose ()
 {
-  (( "${OPT_VERBOSE_LEVEL}" < "${1:-1}" )) && return
-  shift
-  (( 0 < $# )) && echo "$@" || cat
+  (( OPT_VERBOSE_LEVEL < "${1:-1}" )) && return
+  (( 1 < $# )) && echo "${@:2}" || cat
 } >&2
 
 # Usage: verbosefor [level]
 function verbosefor ()
 {
-  (( ${OPT_VERBOSE_LEVEL} < ${1:-1} )) && echo "/dev/null" || echo "/dev/stderr"
+  (( OPT_VERBOSE_LEVEL < ${1:-1} )) && echo /dev/null || echo /dev/stderr
+}
+
+function update_verbosefor ()
+{
+  local i
+  for i in {0..5}; do
+    (( OPT_VERBOSE_LEVEL < i )) && verbosefor[i]=/dev/null || verbosefor[i]=/dev/stderr
+  done
 }
 
 function detect_field_width ()
@@ -846,7 +853,7 @@ function fetch_trustedkeys ()
 function verify_signatures ()
 {
   while [ $# -gt 0 ]; do
-    if ! "${GPG[@]}" --verify "$1" &> $(verbosefor 2); then
+    if ! "${GPG[@]}" --verify "$1" &>"${verbosefor[2]}"; then
       error "BAD signature: $1"
       return 1
     else
@@ -1566,7 +1573,7 @@ function apt-cyg-update-setup ()
   if download_and_verify "https://cygwin.com/${SETUP_EXE}"; then
     files_backup_clean "${TARGETS[@]}"
     chmod +x "${SETUP_EXE}"
-    ls -l "${SETUP_EXE}" > $(verbosefor 2)
+    ls -l "${SETUP_EXE}" >"${verbosefor[2]}"
   else
     files_restore "${TARGETS[@]}"
     error "${SETUP_EXE} could not be downloaded: Rollbacked it and aborted."
@@ -1909,7 +1916,7 @@ function update_packageof_cache ()
   local n="$(ls -1 /etc/setup/*.lst.gz|wc -l)"
   
   if (( cache_stamp < lstgz_stamp )) || [ -n "$OPT_FORCE_UPDATE_PACKAGEOF_CACHE" ]; then
-    verbose 1 "Updating packageof cache:" >&2
+    verbose 1 "Updating packageof cache:"
     progress_init
     for path in /etc/setup/*.lst.gz; do
       progress_update $(( i++ )) $n
@@ -1927,7 +1934,7 @@ function progress_init ()
   [ -n "$OPT_NO_PROGRESS" ] && return
   #          0        1         2         3         4         5
   #          12345678901234567890123456789012345678901234567890
-  echo -ne "|..................................................|\r" >"$verbosefor0"
+  echo -ne "|..................................................|\r" >"${verbosefor[0]}"
 }
 
 function progress_update () #= current total=100
@@ -1937,16 +1944,16 @@ function progress_update () #= current total=100
   local p=$((2 + 50 * ($1    ) / $n))
   local q=$((2 + 50 * ($1 + 1) / $n))
   if (( q - p <= 1 )); then
-    printf "\e[%dG%s" $p "${PROGRESS_CHAR[($1 % 4 + 1) * (1 + $p - $q)]}" >"$verbosefor0"
+    printf "\e[%dG%s" $p "${PROGRESS_CHAR[($1 % 4 + 1) * (1 + $p - $q)]}" >"${verbosefor[0]}"
   else
-    printf "\e[%dG%s" $p "$(seq $((q - p))|awk '{printf "="}')" >"$verbosefor0"
+    printf "\e[%dG%s" $p "$(seq $((q - p))|awk '{printf "="}')" >"${verbosefor[0]}"
   fi
 }
 
 function progress_finish ()
 {
   [ -n "$OPT_NO_PROGRESS" ] && return
-  echo >"$verbosefor0"
+  echo >"${verbosefor[0]}"
 }
 
 # Lesser Parallel for Embedding
@@ -2273,7 +2280,8 @@ eval "$(wget --help |& awk '
 (( "${OPT_VERBOSE_LEVEL}" < 0 )) && WGET+=( --quiet ) || \
 (( "${OPT_VERBOSE_LEVEL}" < 1 )) && WGET+=( --quiet $HAVE_SHOW_PROGRESS ) || \
 (( "${OPT_VERBOSE_LEVEL}" < 2 )) && WGET+=( $HAVE_NO_VERBOSE $HAVE_SHOW_PROGRESS )
-verbosefor0=$(verbosefor 0)
+
+update_verbosefor
 
 if [ -n "$OPT_AG" ]; then
   AG="$( type -p ag 2>/dev/null )"
