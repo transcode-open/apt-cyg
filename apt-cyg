@@ -565,10 +565,10 @@ function findworkspace()
 
 function download_and_verify ()
 {
-  "${WGET[@]}" -N "$1" || return 1
+  wget -N "$1" || return 1
   [ -e "${1##*/}" ] || return 1
   if [ -z "$no_verify" ]; then
-    "${WGET[@]}" -N "${1}.sig" || return 1
+    wget -N "${1}.sig" || return 1
     [ -e "${1##*/}.sig" ] && verify_signatures "${1##*/}.sig" || { rm -f "${1##*/}" "${1##*/}.sig"; return 1; }
   fi
   return
@@ -704,6 +704,32 @@ function ask_user ()
   done
 }
 
+unset INIT_WGET
+function init_wget ()
+{
+  [ -n "$INIT_WGET" ] && return
+
+  eval "$(
+    "$WGET" --help \
+    |& awk '
+      /--show-progres/{print "HAVE_SHOW_PROGRESS=--show-progress"}
+      /--no-verbose/  {print "HAVE_NO_VERBOSE=--no-verbose"}
+    ')"
+  (( OPT_VERBOSE_LEVEL < 0 )) && WGET+=( --quiet ) || \
+  (( OPT_VERBOSE_LEVEL < 1 )) && WGET+=( --quiet $HAVE_SHOW_PROGRESS ) || \
+  (( OPT_VERBOSE_LEVEL < 2 )) && WGET+=( $HAVE_NO_VERBOSE $HAVE_SHOW_PROGRESS )
+  
+  proxy_setup
+  
+  INIT_WGET=DONE
+}
+
+function wget ()
+{
+  init_wget
+  "${WGET[@]}" "$@"
+}
+
 # Reference:
 # https://www.gnu.org/software/wget/manual/wget.html#Exit-Status
 # Usage: wget-exitstatus EXITSTATUS
@@ -763,7 +789,7 @@ function wget_and_hash_check ()
   local SUM="$2"
   local URL="$3"
   local FILE="$4"
-  if ! { "${WGET[@]}" "$URL" -O "$FILE" || get_advice wget; }; then
+  if ! { wget "$URL" -O "$FILE" || get_advice wget; }; then
     echo "$LABEL: FAILED: Could not download $URL."
     return 1
   fi
@@ -936,7 +962,7 @@ function upgrade-self-with-wget ()
 {
   local updated_url='https://raw.githubusercontent.com/kou1okada/apt-cyg/master/apt-cyg' # TODO: Do not use MAGIC NUMBER
   local temp_file; mktmpfn -v temp_file
-  "${WGET[@]}" "${updated_url}" -q -O "$temp_file"
+  wget "${updated_url}" -q -O "$temp_file"
   chmod +x "$temp_file"
   { diff "$temp_file" "$SCRIPT_REALPATH" >/dev/null && exit 0; } || cp "$temp_file" "$SCRIPT_REALPATH"
   rm "$temp_file"
@@ -983,8 +1009,10 @@ function proxy_unset ()
   export -n ftp_proxy
 }
 
+unset PROXY_SETUP
 function proxy_setup ()
 {
+  [ -n "$PROXY_SETUP" ] && return
   case "$OPT_PROXY" in
     auto)
       proxy_auto
@@ -998,10 +1026,12 @@ function proxy_setup ()
       proxy_set "$OPT_PROXY"
       ;;
   esac
+  PROXY_SETUP=DONE
 }
 
 function apt-cyg-get-proxy ()
 {
+  proxy_setup
   declare -p ftp_proxy http_proxy https_proxy
 }
 
@@ -1780,7 +1810,7 @@ function download_packages () #= pos section type [package_names ...]
       mkdirp "$path"
       pushd "$path"
     fi
-    "${WGET[@]}" -N "$url"
+    wget -N "$url"
     if ! hash_check <<<"${digest} *${file}" ; then
       error "hash did not match: $file"
     fi
@@ -2174,7 +2204,7 @@ function parse_args ()
         ;;
       
       --ipv4|-4)
-        WGET=( "${WGET[@]}" "--prefer-family=IPv4" )
+        WGET+=( "--prefer-family=IPv4" )
         shift
         ;;
       
@@ -2272,14 +2302,6 @@ for file in "${OPT_FILES[@]}"; do
     echo File $file not found, skipping
   fi
 done
-
-eval "$(wget --help |& awk '
-  /--show-progres/{print "HAVE_SHOW_PROGRESS=--show-progress"}
-  /--no-verbose/  {print "HAVE_NO_VERBOSE=--no-verbose"}
-')"
-(( "${OPT_VERBOSE_LEVEL}" < 0 )) && WGET+=( --quiet ) || \
-(( "${OPT_VERBOSE_LEVEL}" < 1 )) && WGET+=( --quiet $HAVE_SHOW_PROGRESS ) || \
-(( "${OPT_VERBOSE_LEVEL}" < 2 )) && WGET+=( $HAVE_NO_VERBOSE $HAVE_SHOW_PROGRESS )
 
 update_verbosefor
 
@@ -2407,7 +2429,7 @@ function apt-cyg-install ()
     
     local file="$(basename "$install")"
     cd "release/$pkg"
-    "${WGET[@]}" -Nc $mirror/$install
+    wget -Nc $mirror/$install
     
     # check the SHA512 hash
     local digest="$(awk '/^install: / { print $4; exit }' "desc")"
@@ -2529,5 +2551,4 @@ function invoke_subcommand ()
           "\nNote that some functions, which require access to current directory, will be failed."
 }
 
-proxy_setup
 invoke_subcommand "$SUBCOMMAND" "${ARGS[@]}"
