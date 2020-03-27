@@ -563,15 +563,14 @@ function findworkspace()
   fetch_trustedkeys
 }
 
-function download_and_verify ()
+function download_and_verify () # <url>
 {
-  wget -N "$1" || return 1
-  [ -e "${1##*/}" ] || return 1
+  local urls=( "$1"{,.sig} )
+  wget -N "${urls[@]}" || return 1
   if [ -z "$no_verify" ]; then
-    wget -N "${1}.sig" || return 1
-    [ -e "${1##*/}.sig" ] && verify_signatures "${1##*/}.sig" || { rm -f "${1##*/}" "${1##*/}.sig"; return 1; }
+    [ -e "${1##*/}.sig" ] && verify_signatures "${1##*/}.sig" || return 1
   fi
-  return
+  [ -e "${1##*/}" ]
 }
 
 function files_backup ()
