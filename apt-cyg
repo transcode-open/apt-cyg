@@ -1407,19 +1407,11 @@ function __apt-cyg ()
   esac
   if [ -n "$DEBUG_COMPLETION" ]; then
     echo
-    echo "COMP_WORDBREAKS: ${COMP_WORDBREAKS@Q}"
-    echo "getsubcmd: ${getsubcmd[@]@Q}"
-    echo "subcmd: ${subcmd[@]@Q}"
-    echo "COMP_LINE: ${COMP_LINE@Q}"
-    echo "cur: ${cur@Q}"
-    echo "prev: ${prev@Q}"
-    echo "COMP_WORDS: ${COMP_WORDS[@]@Q}"
-    echo "#COMPREPLY[@]: ${#COMPREPLY[@]}"
-    echo "COMPREPLY[@]: ${COMPREPLY[@]@Q}"
-    echo "BASH_SOURCE[@]: ${BASH_SOURCE[@]@Q}"
-    echo
+    declare -p BASH_SOURCE "${!COMP@}" getsubcmd subcmd cur prev
+    echo -n "${PS1@P}"
+    [[ "$COMP_LINE" =~ ^\  ]] && echo -n "time" # maybe...
     echo -n "${COMP_LINE}"
-
+    (( ${#COMP_LINE} - COMP_POINT )) && echo -ne "\e[$(( ${#COMP_LINE} - COMP_POINT ))D"
   fi
   readarray -t COMPREPLY < <(compgen -W "${COMPREPLY[*]@Q}" -- "$cur")
   __ltrim_colon_completions "$cur"
