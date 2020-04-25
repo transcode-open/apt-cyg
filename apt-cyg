@@ -507,28 +507,28 @@ function setuprc_set_section () # <section> [<values> ...]
   | utf82cp > "$setuprc"
 }
 
-function set_cachefile ()
+function set_cachefile () #
+#   Set filename of cachevars to $cachefile.
+# Returns:
+#   $cachefile : Overwrite with filename of cachevars.
+# Note:
+#   This is internal function for load_vars_from_cache and save_vars_to_cache.
 {
-  cachefile="$apt_cyg_cachedir/cachefile_for_vars_of_${FUNCNAME[2]}"
+  cachefile="$apt_cyg_cachedir/cache_for_vars_of_${FUNCNAME[2]}"
 }
 
-function is_cachevars_fresh () # [<depended files> ...]
-{
-  local i
-  set -- "$SCRIPT_PATH" "$@"
-  for i; do
-    [ "$cachefile" -nt "$i" ] || return 1
-  done
-}
-
-function restore_cachevars () # [<depended files> ...]
+function load_vars_from_cache () # [<depended files> ...] || { init_vars ...; save_vars_to_cache [<varnames> ...]; }
+#   restore vars from cache.
 {
   local cachefile; set_cachefile
-  is_cachevars_fresh "$@" || return $?
+  local i
+  set -- "$SCRIPT_PATH" "$@"
+  for i; do [ "$cachefile" -nt "$i" ] || return 1; done
   source "$cachefile"
 }
 
-function save_cachevars () # [<varnames> ...]
+function save_vars_to_cache () # [<varnames> ...]
+#   save vars to cache.
 {
   local cachefile; set_cachefile
   declare -p "$@" | sed -E 's/^declare .. //g' >"$cachefile"
@@ -537,7 +537,7 @@ function save_cachevars () # [<varnames> ...]
 function findworkspace()
 {
   local cachevars=( last_cache last_mirror mirror cache arch mirrordir )
-  restore_cachevars /etc/setup/setup.rc || {
+  load_vars_from_cache /etc/setup/setup.rc || {
     eval "$(setuprc_import_sections last-cache last-mirror)"
 
     mirror="$last_mirror"
@@ -549,7 +549,7 @@ function findworkspace()
     
     mirrordir="$(mirror_to_mirrordir "$mirror/")"
 
-    save_cachevars "${cachevars[@]}"
+    save_vars_to_cache "${cachevars[@]}"
   }
 
   verbose 1 "Cache directory is $cache"
