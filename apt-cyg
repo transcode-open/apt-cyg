@@ -197,6 +197,7 @@ function usage()
 	  completion-install       : to install completion.
 	  completion-uninstall     : to uninstall completion.
 	  mirrors-list             : to show list of mirros.
+	  mirrors-list-online      : to show list of mirros from online.
 	  benchmark-mirrors <urls> ... :
 	                             to benchmark mirrors.
 	  benchmark-parallel-mirrors <urls> ... :
@@ -420,6 +421,13 @@ function cygstart () # [<parameters> ...]
   PATH="$SYSTEMPATH" cygstart.exe "$@"
 }
 
+function update_cache_for_mirrors_list_online ()
+{
+  pushd "$apt_cyg_cachedir" >/dev/null
+  wget -qN https://cygwin.com/mirrors.lst
+  popd >/dev/null
+}
+
 function is_official_mirrors_of_cygwin () # <mirrors> ...
 # Check <mirrors> whether are listed in official mirrors list of cygwin.
 # Official mirros list provides on https://cygwin.com/mirrors.html.
@@ -431,7 +439,7 @@ function is_official_mirrors_of_cygwin () # <mirrors> ...
   local mirror
   local result=0
   local local_list="$(apt-cyg-mirrors-list)"
-  local online_list="$(wget -qO- https://cygwin.com/mirrors.lst)"
+  local online_list="$(apt-cyg-mirrors-list-online)"
   for mirror; do
     if ! grep -q "$mirror" <<< "$local_list"; then
       warning "/etc/setup/setup.rc doesn't know your mirror: ${SGR_bold}$mirror${SGR_reset}" >&2
@@ -1429,6 +1437,12 @@ function apt-cyg-completion-uninstall ()
 function apt-cyg-mirrors-list ()
 {
   setuprc_get_section mirrors-lst | sed -re 's/;.*//g'
+}
+
+function apt-cyg-mirrors-list-online ()
+{
+  update_cache_for_mirrors_list_online
+  cat "${apt_cyg_cachedir}/mirrors.lst"
 }
 
 function apt-cyg-benchmark-mirrors ()
