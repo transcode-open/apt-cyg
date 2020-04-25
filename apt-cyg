@@ -509,13 +509,12 @@ function setuprc_set_section () # <section> [<values> ...]
 
 function set_cachefile ()
 {
-  cachefile="$apt_cyg_cachedir/$FUNCNAME[0]"
+  cachefile="$apt_cyg_cachedir/cachefile_for_vars_of_${FUNCNAME[2]}"
 }
 
 function is_cachevars_fresh () # [<depended files> ...]
 {
   local i
-  set_cachefile
   set -- "$SCRIPT_PATH" "$@"
   for i; do
     [ "$cachefile" -nt "$i" ] || return 1
@@ -524,7 +523,7 @@ function is_cachevars_fresh () # [<depended files> ...]
 
 function restore_cachevars () # [<depended files> ...]
 {
-  local cachefile
+  local cachefile; set_cachefile
   is_cachevars_fresh "$@" || return $?
   source "$cachefile"
 }
