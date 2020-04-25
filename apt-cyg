@@ -626,7 +626,6 @@ function setupini_download ()
 
 function getsetup ()
 {
-  is_official_mirrors_of_cygwin "$mirror"
   setupini_download || return 1
 }
 
@@ -1870,6 +1869,7 @@ function apt-cyg-set-mirror () # [<mirrors> ...]
 {
   set -- "${@%/}"
   (( 0 < $# )) && setuprc_set_section last-mirror "${@/%/\/}"
+  is_official_mirrors_of_cygwin "${@/%/\/}"
 }
 
 function apt-cyg-mark-auto () # [<packages> ...]
