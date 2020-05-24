@@ -1311,6 +1311,11 @@ function apt-cyg-mirrors-list ()
   setuprc_get_section mirrors-lst | sed -re 's/;.*//g'
 }
 
+function apt-cyg-mirrors-list-long ()
+{
+  setuprc_get_section mirrors-lst | column -t -s ";"
+}
+
 function apt-cyg-benchmark-mirrors ()
 {
   local mirror result exitcode
