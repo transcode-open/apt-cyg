@@ -188,6 +188,7 @@ function usage()
 	  completion-install       : to install completion.
 	  completion-uninstall     : to uninstall completion.
 	  mirrors-list             : to show list of mirros.
+	  mirrors-list-long        : to show list of mirros with full details.
 	  benchmark-mirrors <urls> ... :
 	                             to benchmark mirrors.
 	  benchmark-parallel-mirrors <urls> ... :
@@ -1309,6 +1310,11 @@ function apt-cyg-completion-uninstall ()
 function apt-cyg-mirrors-list ()
 {
   setuprc_get_section mirrors-lst | sed -re 's/;.*//g'
+}
+
+function apt-cyg-mirrors-list-long ()
+{
+  setuprc_get_section mirrors-lst | column -t -s ";"
 }
 
 function apt-cyg-benchmark-mirrors ()
