@@ -2225,11 +2225,11 @@ function apt-cyg-find ()
 }
 
 
-function apt-cyg-category ()
+function apt-cyg-category () # <category>
+#   List all packages in given <category>.
 {
   apt-cyg-ls-pkg-with-category \
-  | grep "$@" \
-  | awk '$0=$2'
+  | awk -vcategory="$1" '$1==category {print $2}'
 }
 
 
