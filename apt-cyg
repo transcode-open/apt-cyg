@@ -138,23 +138,14 @@ init_SGR
 
 # EMBED_END: hhs_embed
 
-TRUSTEDKEYS=( CYGWIN CYGWINPORTS );
+TRUSTEDKEYS=( CYGWIN );
 # ./pubring.asc
 # ------------
-# pub   1024D/676041BA 2008-06-13
+# pub   4096R/E2E56300 2020-02-27 [expires: 2022-02-26]
 # uid                  Cygwin <cygwin@cygwin.com>
-# sub   1024g/A1DB7B5C 2008-06-13
-TRUSTEDKEY_CYGWIN_SUM="e6630b94e6bf1afcc1b1054afa9994a423764d795b2a3a5e831fc658962905dcadf63c3a29155136f3138d6375176c9384de68d12a6dd4dde35b55c9b225cd7f"
-TRUSTEDKEY_CYGWIN_FPR="1169DF9F22734F743AA59232A9A262FF676041BA"
+TRUSTEDKEY_CYGWIN_SUM="6291bf8f958e1ea05501b91d776ea10b2cd781c5caeb3d72da63333e5c45698fa4766d524a2d9a128b09b8446ee7e25cbb7942ee49d7409583e712d5c68ee81e"
+TRUSTEDKEY_CYGWIN_FPR="56405CF6FCC81574682A5D561A698DE9E2E56300"
 TRUSTEDKEY_CYGWIN_URL_LATEST="https://cygwin.com/key/pubring.asc"
-# ./ports.gpg
-# -----------
-# pub   1024D/66EE1F94 2008-10-27
-# uid                  Yaakov Selkowitz (Cygwin Ports) <yselkowitz@users.sourceforge.net>
-# sub   4096g/7D66B0D2 2008-10-27
-TRUSTEDKEY_CYGWINPORTS_SUM="ccf174d1e6ec20e50ff954e3d4a0c3de478032a100d26789c0190587ae80128e842ff5404ed3b48f8693c8803c88a3acbf8dca339edfdaab0f3c247fb6091e42"
-TRUSTEDKEY_CYGWINPORTS_FPR="45600BB98CA878AA97A70119FF20AF9A66EE1F94"
-TRUSTEDKEY_CYGWINPORTS_URL_LATEST="http://cygwinports.org/ports.gpg"
 
 # this script requires some packages
 
@@ -197,6 +188,7 @@ function usage()
 	  completion-install       : to install completion.
 	  completion-uninstall     : to uninstall completion.
 	  mirrors-list             : to show list of mirros.
+	  mirrors-list-long        : to show list of mirros with full details.
 	  mirrors-list-online      : to show list of mirros from online.
 	  benchmark-mirrors <urls> ... :
 	                             to benchmark mirrors.
@@ -1439,6 +1431,11 @@ function apt-cyg-mirrors-list ()
   setuprc_get_section mirrors-lst | sed -re 's/;.*//g'
 }
 
+function apt-cyg-mirrors-list-long ()
+{
+  setuprc_get_section mirrors-lst | column -t -s ";"
+}
+
 function apt-cyg-mirrors-list-online ()
 {
   update_cache_for_mirrors_list_online
@@ -2357,11 +2354,11 @@ function apt-cyg-find ()
 }
 
 
-function apt-cyg-category ()
+function apt-cyg-category () # <category>
+#   List all packages in given <category>.
 {
   apt-cyg-ls-pkg-with-category \
-  | grep "$@" \
-  | awk '$0=$2'
+  | awk -vcategory="$1" '$1==category {print $2}'
 }
 
 

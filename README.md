@@ -32,6 +32,7 @@ Usage
 | `completion-install` |  to install completion. |
 | `completion-uninstall` |  to uninstall completion. |
 | `mirrors-list` |  to show list of mirrors. |
+| `mirrors-list-long` |  to show list of mirros with full details. |
 | `mirrors-list-online` |  to show list of mirrors from online. |
 | `benchmark-mirrors <urls> ...` |  to benchmark mirrors. |
 | `benchmark-parallel-mirrors <urls> ...` |  to benchmark mirrors in parallel. |
@@ -53,6 +54,7 @@ Usage
 | `get-proxy` |  Get proxies for eval. |
 | `ls-categories` |  List categories. |
 | `ls-pkg-with-category` |  List packages with category. |
+| `category <category>` | List all packages in given \<category\>.|
 | `setuprc-get <section>` | Get section from **`setup.rc`**. |
 | `set-cache [<cache>]` | Set cache. |
 | `set-mirror [<mirrors> ...]` | Set mirrors. Note: `setup-x86{,_64}.exe` uses all of them but currently `apt-cyg` uses the first one only. |
