@@ -53,6 +53,7 @@ Usage
 | `get-proxy` |  Get proxies for eval. |
 | `ls-categories` |  List categories. |
 | `ls-pkg-with-category` |  List packages with category. |
+| `category <category>` | List all packages in given \<category\>.|
 | `setuprc-get <section>` | Get section from **`setup.rc`**. |
 | `set-cache [<cache>]` | Set cache. |
 | `set-mirror [<mirrors> ...]` | Set mirrors. Note: `setup-x86{,_64}.exe` uses all of them but currently `apt-cyg` uses the first one only. |
