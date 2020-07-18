@@ -149,10 +149,10 @@ TRUSTEDKEY_CYGWIN_URL_LATEST="https://cygwin.com/key/pubring.asc"
 
 # this script requires some packages
 
-WGET="$( which wget 2>/dev/null )"
-TAR="$(  which tar  2>/dev/null )"
-GAWK="$( which awk  2>/dev/null )"
-GPG="$(  which gpg  2>/dev/null || which gpg2  2>/dev/null )"
+WGET="$( type -p wget 2>/dev/null )"
+TAR="$(  type -p tar  2>/dev/null )"
+GAWK="$( type -p awk  2>/dev/null )"
+GPG="$(  type -p gpg  2>/dev/null || type -p gpg2  2>/dev/null )"
 if [ -z "$WGET" -o -z "$TAR" -o -z "$GAWK" ]; then
   echo You must install wget, tar and gawk to use apt-cyg.
   exit 1
@@ -189,6 +189,7 @@ function usage()
 	  completion-uninstall     : to uninstall completion.
 	  mirrors-list             : to show list of mirros.
 	  mirrors-list-long        : to show list of mirros with full details.
+	  mirrors-list-online      : to show list of mirros from online.
 	  benchmark-mirrors <urls> ... :
 	                             to benchmark mirrors.
 	  benchmark-parallel-mirrors <urls> ... :
@@ -308,15 +309,22 @@ function version ()
 # Usage: verbose [level [msg ...]]
 function verbose ()
 {
-  (( "${OPT_VERBOSE_LEVEL}" < "${1:-1}" )) && return
-  shift
-  (( 0 < $# )) && echo "$@" || cat
+  (( OPT_VERBOSE_LEVEL < "${1:-1}" )) && return
+  (( 1 < $# )) && echo "${@:2}" || cat
 } >&2
 
 # Usage: verbosefor [level]
 function verbosefor ()
 {
-  (( ${OPT_VERBOSE_LEVEL} < ${1:-1} )) && echo "/dev/null" || echo "/dev/stderr"
+  (( OPT_VERBOSE_LEVEL < ${1:-1} )) && echo /dev/null || echo /dev/stderr
+}
+
+function update_verbosefor ()
+{
+  local i
+  for i in {0..5}; do
+    (( OPT_VERBOSE_LEVEL < i )) && verbosefor[i]=/dev/null || verbosefor[i]=/dev/stderr
+  done
 }
 
 function detect_field_width ()
@@ -376,6 +384,17 @@ function join_str_uniq () # <separator> [<values> ...]
   join_str "$1" "${str[@]}"
 }
 
+function mkdirp () # <dir>
+{
+  [ -d "$1" ] || mkdir -p "$1" || { error "mkdir failed: $1"; exit 1; }
+}
+
+function mktmpfn () # -v <var>
+# Temporary filename
+{
+  printf ${@:1:2} "/tmp/${SCRIPT_NAME}.$$.%04x%04x" $RANDOM $RANDOM
+}
+
 function init_comspec ()
 {
   : ${SYSTEMPATH:=$(join_str_uniq : "$(cygpath -u "${SYSTEMROOT:-$WINDIR}")"{/system32,} "$PATH")}
@@ -394,6 +413,13 @@ function cygstart () # [<parameters> ...]
   PATH="$SYSTEMPATH" cygstart.exe "$@"
 }
 
+function update_cache_for_mirrors_list_online ()
+{
+  pushd "$apt_cyg_cachedir" >/dev/null
+  wget -qN https://cygwin.com/mirrors.lst
+  popd >/dev/null
+}
+
 function is_official_mirrors_of_cygwin () # <mirrors> ...
 # Check <mirrors> whether are listed in official mirrors list of cygwin.
 # Official mirros list provides on https://cygwin.com/mirrors.html.
@@ -405,7 +431,7 @@ function is_official_mirrors_of_cygwin () # <mirrors> ...
   local mirror
   local result=0
   local local_list="$(apt-cyg-mirrors-list)"
-  local online_list="$(wget -qO- https://cygwin.com/mirrors.lst)"
+  local online_list="$(apt-cyg-mirrors-list-online)"
   for mirror; do
     if ! grep -q "$mirror" <<< "$local_list"; then
       warning "/etc/setup/setup.rc doesn't know your mirror: ${SGR_bold}$mirror${SGR_reset}" >&2
@@ -421,17 +447,44 @@ function is_official_mirrors_of_cygwin () # <mirrors> ...
 
 function current_cygarch ()
 {
-  arch | sed -e 's/^i686$/x86/g'
+  local arch="${HOSTTYPE:-$(arch)}"
+  echo "${arch/i686/x86}"
 }
 
-function mirror_to_mirrordir ()
+function mirror_to_mirrordir () # <mirror>
 {
-  echo "$1" | sed -e "s/:/%3a/g" -e "s:/:%2f:g"
+  local tmp="${1//:/%3a}"
+  echo "${tmp//\//%2f}"
+}
+
+function get_utf8_setuprc ()
+{
+  local utf8_setuprc="$apt_cyg_cachedir/setup.rc.utf8"
+  mkdirp "$apt_cyg_cachedir"
+  [ "$utf8_setuprc" -nt /etc/setup/setup.rc ] && {
+    cat "$utf8_setuprc"
+  } || {
+    cp2utf8 /etc/setup/setup.rc | tee "$utf8_setuprc"
+  }
+}
+
+function setuprc_import_sections () # <section> ...
+{
+  local IFS="|"
+  get_utf8_setuprc \
+  | awk -vRS='\n\\<|\n\\'\' -vFS='\n\t' -vsections="^${*//\\/\\\\}$" '
+    match($1, sections) {
+      s = gensub(/-/, "_", "g", $1) "=("
+      for(i = 2; i <= NF; i++) s = s " \x27" $i "\x27";
+      s = s " )";
+      print s;
+    }
+  '
 }
 
 function setuprc_get_section () # <section>
 {
-  cp2utf8 /etc/setup/setup.rc \
+  get_utf8_setuprc \
   | awk -vRS='\n\\<|\n\\'\' -vFS='\n\t' -vsection="${1//\\/\\\\}" '
     $1 == section {for(i = 2; i <= NF; i++) print $i;}
   '
@@ -454,37 +507,69 @@ function setuprc_set_section () # <section> [<values> ...]
   | utf82cp > "$setuprc"
 }
 
+function set_cachefile () #
+#   Set filename of cachevars to $cachefile.
+# Returns:
+#   $cachefile : Overwrite with filename of cachevars.
+# Note:
+#   This is internal function for load_vars_from_cache and save_vars_to_cache.
+{
+  cachefile="$apt_cyg_cachedir/cache_for_vars_of_${FUNCNAME[2]}"
+}
+
+function load_vars_from_cache () # [<depended files> ...] || { init_vars ...; save_vars_to_cache [<varnames> ...]; }
+#   restore vars from cache.
+{
+  local cachefile; set_cachefile
+  local i
+  set -- "$SCRIPT_PATH" "$@"
+  for i; do [ "$cachefile" -nt "$i" ] || return 1; done
+  source "$cachefile"
+}
+
+function save_vars_to_cache () # [<varnames> ...]
+#   save vars to cache.
+{
+  local cachefile; set_cachefile
+  declare -p "$@" | sed -E 's/^declare .. //g' >"$cachefile"
+}
+
 function findworkspace()
 {
-  readarray -t last_mirror < <(setuprc_get_section last-mirror)
-  readarray -t last_cache  < <(setuprc_get_section last-cache)
-  mirror="$last_mirror"
-  cache="$(cygpath -au "$last_cache")"
-  arch="$(current_cygarch)"
-  
-  cache="${cache%/}"
-  mirror="${mirror%/}"
-  
-  mirrordir="$(mirror_to_mirrordir "$mirror/")"
-  
+  local cachevars=( last_cache last_mirror mirror cache arch mirrordir )
+  load_vars_from_cache /etc/setup/setup.rc || {
+    eval "$(setuprc_import_sections last-cache last-mirror)"
+
+    mirror="$last_mirror"
+    cache="$(cygpath -au "$last_cache")"
+    arch="$(current_cygarch)"
+    
+    cache="${cache%/}"
+    mirror="${mirror%/}"
+    
+    mirrordir="$(mirror_to_mirrordir "$mirror/")"
+
+    save_vars_to_cache "${cachevars[@]}"
+  }
+
   verbose 1 "Cache directory is $cache"
   verbose 1 "Mirror is $mirror"
-  mkdir -p "$cache/$mirrordir/$arch"
+
+  mkdirp "$cache/$mirrordir/$arch"
   cd "$cache/$mirrordir/$arch"
   
   init_gnupg
   fetch_trustedkeys
 }
 
-function download_and_verify ()
+function download_and_verify () # <url>
 {
-  "${WGET[@]}" -N "$1" || return 1
-  [ -e "${1##*/}" ] || return 1
+  local urls=( "$1"{,.sig} )
+  wget -N "${urls[@]}" || return 1
   if [ -z "$no_verify" ]; then
-    "${WGET[@]}" -N "${1}.sig" || return 1
-    [ -e "${1##*/}.sig" ] && verify_signatures "${1##*/}.sig" || { rm -f "${1##*/}" "${1##*/}.sig"; return 1; }
+    [ -e "${1##*/}.sig" ] && verify_signatures "${1##*/}.sig" || return 1
   fi
-  return
+  [ -e "${1##*/}" ]
 }
 
 function files_backup ()
@@ -516,7 +601,7 @@ function files_backup_clean ()
 function setupini_download ()
 {
   local BASEDIR="$cache/$mirrordir/$arch"
-  mkdir -p "$BASEDIR" || { error "mkdir failed: $BASEDIR"; exit 1; }
+  mkdirp "$BASEDIR"
   
   [ $noscripts -ne 0 -o $noupdate -ne 0 ] && return
   
@@ -541,7 +626,6 @@ function setupini_download ()
 
 function getsetup ()
 {
-  is_official_mirrors_of_cygwin "$mirror"
   setupini_download || return 1
 }
 
@@ -576,8 +660,8 @@ function charch ()
     shift
     chroot "$rootdir" "$rootdir/bin/bash" -lc \
       'cd "$1"; shift ; "$0" "$@"' \
-      "$(which "$0" | xargs cygpath -aml | xargs cygpath -u)" \
-      "$(pwd        | xargs cygpath -aml | xargs cygpath -u)" \
+      "$(type -p "$0" | xargs cygpath -aml | xargs cygpath -u)" \
+      "$(pwd          | xargs cygpath -aml | xargs cygpath -u)" \
       "$@"
     exit $?
   fi
@@ -615,6 +699,32 @@ function ask_user ()
       retcode=$(( retcode + 1 ))
     done
   done
+}
+
+unset INIT_WGET
+function init_wget ()
+{
+  [ -n "$INIT_WGET" ] && return
+
+  eval "$(
+    "$WGET" --help \
+    |& awk '
+      /--show-progres/{print "HAVE_SHOW_PROGRESS=--show-progress"}
+      /--no-verbose/  {print "HAVE_NO_VERBOSE=--no-verbose"}
+    ')"
+  (( OPT_VERBOSE_LEVEL < 0 )) && WGET+=( --quiet ) || \
+  (( OPT_VERBOSE_LEVEL < 1 )) && WGET+=( --quiet $HAVE_SHOW_PROGRESS ) || \
+  (( OPT_VERBOSE_LEVEL < 2 )) && WGET+=( $HAVE_NO_VERBOSE $HAVE_SHOW_PROGRESS )
+  
+  proxy_setup
+  
+  INIT_WGET=DONE
+}
+
+function wget ()
+{
+  init_wget
+  "${WGET[@]}" "$@"
 }
 
 # Reference:
@@ -676,7 +786,7 @@ function wget_and_hash_check ()
   local SUM="$2"
   local URL="$3"
   local FILE="$4"
-  if ! { "${WGET[@]}" "$URL" -O "$FILE" || get_advice wget; }; then
+  if ! { wget "$URL" -O "$FILE" || get_advice wget; }; then
     echo "$LABEL: FAILED: Could not download $URL."
     return 1
   fi
@@ -687,20 +797,31 @@ function wget_and_hash_check ()
   echo "$LABEL: OK"
 }
 
+function get_gpg_fingerprint_to_assoc () # <assoc varname>
+{
+  local -n result="$1"
+  local line lines
+  readarray -t lines < <("${GPG[@]}" --with-colons --fingerprint)
+  for line in "${lines[@]}"; do
+    [[ "$line" =~ ^fpr:+([0-9A-Za-z]+):* ]] && result[${BASH_REMATCH[1]}]=1
+  done
+}
+
 function fetch_trustedkeys ()
 {
   [ -z "$GPG" ] && return
   local i
-  local FILE="$(mktemp)"
-  local FILE_LATEST="$(mktemp)"
+  local FILE       ; mktmpfn -v FILE
+  local FILE_LATEST; mktmpfn -v FILE_LATEST
+  local -A FPRS_assoc; get_gpg_fingerprint_to_assoc FPRS_assoc
   for i in "${TRUSTEDKEYS[@]}"; do
     local LABEL="TRUSTEDKEY_${i}"
-    local SUM="$(eval echo "\$${LABEL}_SUM")"
-    local FPR="$(eval echo "\$${LABEL}_FPR")"
-    local URL="$(eval echo "\$${LABEL}_URL")"
-    local URL_LATEST="$(eval echo "\$${LABEL}_URL_LATEST")"
+    local -n SUM="${LABEL}_SUM"
+    local -n FPR="${LABEL}_FPR"
+    local -n URL="${LABEL}_URL"
+    local -n URL_LATEST="${LABEL}_URL_LATEST"
     local CASE=""
-    if [ -z "$force_fetch_trustedkeys" ] && { "${GPG[@]}" --fingerprint --with-colons | grep -q "$FPR"; } &> $(verbosefor 2); then
+    if [ -z "$force_fetch_trustedkeys" -a -n "${FPRS_assoc[$FPR]}" ]; then
       continue
     fi
     if [ -n "$URL" ]; then
@@ -747,15 +868,15 @@ function fetch_trustedkeys ()
         exit 1
         ;;
     esac
+    rm "$FILE" "$FILE_LATEST" &>/dev/null
   done
-  rm "$FILE" "$FILE_LATEST"
 }
 
 # Usage: verify_signatures files ...
 function verify_signatures ()
 {
   while [ $# -gt 0 ]; do
-    if ! "${GPG[@]}" --verify "$1" &> $(verbosefor 2); then
+    if ! "${GPG[@]}" --verify "$1" &>"${verbosefor[2]}"; then
       error "BAD signature: $1"
       return 1
     else
@@ -837,8 +958,8 @@ function upgrade-self-with-git ()
 function upgrade-self-with-wget ()
 {
   local updated_url='https://raw.githubusercontent.com/kou1okada/apt-cyg/master/apt-cyg' # TODO: Do not use MAGIC NUMBER
-  local temp_file=$(mktemp)
-  "${WGET[@]}" "${updated_url}" -q -O "$temp_file"
+  local temp_file; mktmpfn -v temp_file
+  wget "${updated_url}" -q -O "$temp_file"
   chmod +x "$temp_file"
   { diff "$temp_file" "$SCRIPT_REALPATH" >/dev/null && exit 0; } || cp "$temp_file" "$SCRIPT_REALPATH"
   rm "$temp_file"
@@ -853,10 +974,10 @@ function apt-cyg-upgrade-self ()
 
 function proxy_auto ()
 {
-  local hash="$(ipconfig 2>&1 | md5sum -b | awk '{print $1}')"
+  local hash=( $(ipconfig |& md5sum -b) )
   local cache="/tmp/apt-cyg.proxy.$hash"
   local last="$(stat -c %Y "$cache" 2>/dev/null)"
-  local now="$(date +%s)"
+  local now="$(printf "%(%s)T")"
   local proxy
   
   [ -n "$OPT_PROXY_FORCE_REFRESH" ] && last=0
@@ -885,8 +1006,10 @@ function proxy_unset ()
   export -n ftp_proxy
 }
 
+unset PROXY_SETUP
 function proxy_setup ()
 {
+  [ -n "$PROXY_SETUP" ] && return
   case "$OPT_PROXY" in
     auto)
       proxy_auto
@@ -900,10 +1023,12 @@ function proxy_setup ()
       proxy_set "$OPT_PROXY"
       ;;
   esac
+  PROXY_SETUP=DONE
 }
 
 function apt-cyg-get-proxy ()
 {
+  proxy_setup
   declare -p ftp_proxy http_proxy https_proxy
 }
 
@@ -1173,7 +1298,7 @@ function replace_range # <first_line> <last_line> <content> [<file>]
 
 function replace_module # <pattern> <src> <dst>
 {
-  local tmpfile="$(mktemp -u)"
+  local tmpfile; mktmpfn -v tmpfile
   local srclines=( $(get_module_line "bash completion for apt-cyg" "$2") )
   local dstlines=( $(get_module_line "bash completion for apt-cyg" "$3") )
   replace_range "${dstlines[@]}" "$(headtail "${srclines[@]}" "$2")" "$3" > "$tmpfile"
@@ -1193,7 +1318,7 @@ function apt-cyg-completion-install ()
   
   local __APT_CYG_SUBCMDS
   local __APT_CYG_OPTIONS
-  local __APT_CYG_SCRIPTPATH="$(realpath "$(which apt-cyg)")"
+  local __APT_CYG_SCRIPTPATH="$(realpath "$(type -p apt-cyg)")"
   local __APT_CYG_SCRIPTDIR="${__APT_CYG_SCRIPTPATH%/*}"
   local __APT_CYG_COMPLETION_DISABLE_AUTOUPDATE="$OPT_COMPLETION_DISABLE_AUTOUPDATE"
   
@@ -1210,12 +1335,12 @@ function apt-cyg-completion-install ()
     )
   
   cat <<-EOD > /etc/bash_completion.d/apt-cyg
-		$(declare -p __APT_CYG_{SUBCMDS,OPTIONS,SCRIPTPATH,SCRIPTDIR,COMPLETION_DISABLE_AUTOUPDATE} | sed -re 's/^declare/\0 -g/g')
+		$(declare -p __APT_CYG_{SUBCMDS,OPTIONS,SCRIPTPATH,SCRIPTDIR,COMPLETION_DISABLE_AUTOUPDATE} | sed -E 's/^declare/\0 -g/g')
 		
 		# BEGIN_MODULE: bash completion for apt-cyg
 		# END_MODULE:   bash completion for apt-cyg
 		
-		complete -F __apt-cyg apt-cyg
+		complete -o filenames -F __apt-cyg apt-cyg
 		EOD
   
   replace_module "bash completion for apt-cyg" "${BASH_SOURCE}" /etc/bash_completion.d/apt-cyg
@@ -1240,7 +1365,7 @@ function __apt-cyg ()
   
   _get_comp_words_by_ref -n : cur prev
   
-  getsubcmd=( apt-cyg --completion-get-subcommand $(echo "${COMP_LINE}" | sed -r -e 's/^[^ \t]+//g' -e 's/[^ \t]+$//g') )
+  getsubcmd=( apt-cyg --completion-get-subcommand $(echo "${COMP_LINE}" | sed -E 's/^[ \t]*[^ \t]+//g;s/[^ \t]+$//g') )
   subcmd="$( "${getsubcmd[@]}" )"
   
   case "$subcmd" in
@@ -1254,7 +1379,7 @@ function __apt-cyg ()
       COMPREPLY=( cache mirror mirrordir cache/mirrordir setup.ini )
       ;;
     *)
-      COMPREPLY=( "${__APT_CYG_SUBCMDS[*]}" )
+      COMPREPLY=( "${__APT_CYG_SUBCMDS[@]}" )
       ;;
   esac
   case "$prev" in
@@ -1262,36 +1387,30 @@ function __apt-cyg ()
       COMPREPLY=( x86 x86_64 )
       ;;
     --cache|-c)
-      COMPREPLY=( $(compgen -d -- "$cur") )
+      readarray -t COMPREPLY < <(compgen -d -- "$cur")
       ;;
     --mirror|-m)
-      COMPREPLY=( $(awk '/^[^ \t]+/{section=\$1}section=="mirrors-lst"&&match(\$0,/^[ \t]+([^;]+);/,m){print "\""m[1]"\""}' "/etc/setup/setup.rc") )
+      COMPREPLY=( $(apt-cyg mirrors-list) )
       ;;
     --file|-f)
-      COMPREPLY=( $(compgen -f -- "$cur") )
+      readarray -t COMPREPLY < <(compgen -f -- "$cur")
       ;;
     --proxy|-p)
       COMPREPLY=( auto inherit none http:// )
       ;;
     *)
-      COMPREPLY+=( "${__APT_CYG_OPTIONS[*]}" )
+      COMPREPLY+=( "${__APT_CYG_OPTIONS[@]}" )
       ;;
   esac
   if [ -n "$DEBUG_COMPLETION" ]; then
     echo
-    echo "COMP_WORDBREAKS: $COMP_WORDBREAKS"
-    echo "getsubcmd: '${getsubcmd[@]}'"
-    echo "subcmd: '${subcmd[@]}'"
-    echo "COMP_LINE: '${COMP_LINE}'"
-    echo "cur: $cur"
-    echo "prev: $prev"
-    echo "COMP_WORDS: ${COMP_WORDS[@]}"
-    echo "#COMPREPLY[@]: ${#COMPREPLY[@]}"
-    echo
+    declare -p BASH_SOURCE "${!COMP@}" getsubcmd subcmd cur prev
+    echo -n "${PS1@P}"
+    [[ "$COMP_LINE" =~ ^\  ]] && echo -n "time" # maybe...
     echo -n "${COMP_LINE}"
-
+    (( ${#COMP_LINE} - COMP_POINT )) && echo -ne "\e[$(( ${#COMP_LINE} - COMP_POINT ))D"
   fi
-  COMPREPLY=( $(compgen -W "${COMPREPLY[*]}" -- "$cur") )
+  readarray -t COMPREPLY < <(compgen -W "${COMPREPLY[*]@Q}" -- "$cur")
   __ltrim_colon_completions "$cur"
 }
 
@@ -1317,6 +1436,12 @@ function apt-cyg-mirrors-list-long ()
   setuprc_get_section mirrors-lst | column -t -s ";"
 }
 
+function apt-cyg-mirrors-list-online ()
+{
+  update_cache_for_mirrors_list_online
+  cat "${apt_cyg_cachedir}/mirrors.lst"
+}
+
 function apt-cyg-benchmark-mirrors ()
 {
   local mirror result exitcode
@@ -1333,7 +1458,7 @@ function apt-cyg-benchmark-mirrors ()
 
 function apt-cyg-benchmark-parallel-mirrors ()
 {
-  local result="$(mktemp --tmpdir "${SCRIPT_NAME}.$$.XXXXX")"
+  local result; mktmpfn -v result
   local mirror
   for mirror; do echo $mirror; done | lesser-parallel apt-cyg-benchmark-mirrors {} | tee "$result"
   echo Finished benchmark.
@@ -1385,9 +1510,15 @@ function apt-cyg-show-packages-busyness ()
 
 unset CODEPAGE
 
+function get_codepage_wt_chcp ()
+{
+  comspec /c chcp.com \
+  | awk 'match($NF, /([0-9]+)/, m) { print m[1] == "20127" ? "US-ASCII" : ("CP" m[1]) }'
+}
+
 function get_codepage ()
 {
-  echo -n "${CODEPAGE:=$(comspec /c chcp.com | awk '{printf $NF;}' | sed -E 's/^[^0-9]*([0-9]+).*$/CP\1/g;s/CP20127/US-ASCII/g')}"
+  echo -n "${CODEPAGE:=$(get_codepage_wt_chcp)}"
 }
 
 function cp2utf8 () # [<iconv_args> ...]
@@ -1474,7 +1605,7 @@ function apt-cyg-update-setup ()
   if download_and_verify "https://cygwin.com/${SETUP_EXE}"; then
     files_backup_clean "${TARGETS[@]}"
     chmod +x "${SETUP_EXE}"
-    ls -l "${SETUP_EXE}" > $(verbosefor 2)
+    ls -l "${SETUP_EXE}" >"${verbosefor[2]}"
   else
     files_restore "${TARGETS[@]}"
     error "${SETUP_EXE} could not be downloaded: Rollbacked it and aborted."
@@ -1678,10 +1809,10 @@ function download_packages () #= pos section type [package_names ...]
     local size="${tmp[1]}"
     local digest="${tmp[2]}"
     if [ "$pos" = "mirror" ]; then  
-      mkdir -vp "$path"
+      mkdirp "$path"
       pushd "$path"
     fi
-    "${WGET[@]}" -N "$url"
+    wget -N "$url"
     if ! hash_check <<<"${digest} *${file}" ; then
       error "hash did not match: $file"
     fi
@@ -1749,6 +1880,7 @@ function apt-cyg-set-mirror () # [<mirrors> ...]
 {
   set -- "${@%/}"
   (( 0 < $# )) && setuprc_set_section last-mirror "${@/%/\/}"
+  is_official_mirrors_of_cygwin "${@/%/\/}"
 }
 
 function apt-cyg-mark-auto () # [<packages> ...]
@@ -1790,7 +1922,7 @@ function apt-cyg-filesearch () # [<pattern>]
   arch="$(current_cygarch)"
   cachedir="/tmp/.apt-cyg.cache/filesearch"
   cachequery="$cachedir/$(sha256sum <<<"$1"|awk '$0=$1')"
-  mkdir -p "$cachedir"
+  mkdirp "$cachedir"
   
   [ ! -e "$cachequery" ] && cygcheck -p "$1" >"$cachequery"
   readarray -t packages < "$cachequery"
@@ -1817,7 +1949,7 @@ function update_packageof_cache ()
   local n="$(ls -1 /etc/setup/*.lst.gz|wc -l)"
   
   if (( cache_stamp < lstgz_stamp )) || [ -n "$OPT_FORCE_UPDATE_PACKAGEOF_CACHE" ]; then
-    verbose 1 "Updating packageof cache:" >&2
+    verbose 1 "Updating packageof cache:"
     progress_init
     for path in /etc/setup/*.lst.gz; do
       progress_update $(( i++ )) $n
@@ -1835,7 +1967,7 @@ function progress_init ()
   [ -n "$OPT_NO_PROGRESS" ] && return
   #          0        1         2         3         4         5
   #          12345678901234567890123456789012345678901234567890
-  echo -ne "|..................................................|\r" >"$verbosefor0"
+  echo -ne "|..................................................|\r" >"${verbosefor[0]}"
 }
 
 function progress_update () #= current total=100
@@ -1845,16 +1977,16 @@ function progress_update () #= current total=100
   local p=$((2 + 50 * ($1    ) / $n))
   local q=$((2 + 50 * ($1 + 1) / $n))
   if (( q - p <= 1 )); then
-    printf "\e[%dG%s" $p "${PROGRESS_CHAR[($1 % 4 + 1) * (1 + $p - $q)]}" >"$verbosefor0"
+    printf "\e[%dG%s" $p "${PROGRESS_CHAR[($1 % 4 + 1) * (1 + $p - $q)]}" >"${verbosefor[0]}"
   else
-    printf "\e[%dG%s" $p "$(seq $((q - p))|awk '{printf "="}')" >"$verbosefor0"
+    printf "\e[%dG%s" $p "$(seq $((q - p))|awk '{printf "="}')" >"${verbosefor[0]}"
   fi
 }
 
 function progress_finish ()
 {
   [ -n "$OPT_NO_PROGRESS" ] && return
-  echo >"$verbosefor0"
+  echo >"${verbosefor[0]}"
 }
 
 # Lesser Parallel for Embedding
@@ -1935,6 +2067,7 @@ function apt-cyg-help ()
 
 # process options
 
+apt_cyg_cachedir="${tmp:-/tmp}/.apt-cyg.cache"
 noscripts=0
 OPT_USER_PICKED=1
 noupdate=0
@@ -2074,7 +2207,7 @@ function parse_args ()
         ;;
       
       --ipv4|-4)
-        WGET=( "${WGET[@]}" "--prefer-family=IPv4" )
+        WGET+=( "--prefer-family=IPv4" )
         shift
         ;;
       
@@ -2173,20 +2306,10 @@ for file in "${OPT_FILES[@]}"; do
   fi
 done
 
-wget --help | grep -- --show-progress &>/dev/null && HAVE_SHOW_PROGRESS="--show-progress"
-wget --help | grep -- --no-verbose    &>/dev/null && HAVE_NO_VERBOSE="--no-verbose"
-(( "${OPT_VERBOSE_LEVEL}" < 0 )) && WGET+=( --quiet ) || \
-(( "${OPT_VERBOSE_LEVEL}" < 1 )) && WGET+=( --quiet $HAVE_SHOW_PROGRESS ) || \
-(( "${OPT_VERBOSE_LEVEL}" < 2 )) && WGET+=( $HAVE_NO_VERBOSE $HAVE_SHOW_PROGRESS )
-verbosefor0=$(verbosefor 0)
-verbosefor1=$(verbosefor 1)
-verbosefor2=$(verbosefor 2)
-verbosefor3=$(verbosefor 3)
-verbosefor4=$(verbosefor 4)
-verbosefor5=$(verbosefor 5)
+update_verbosefor
 
 if [ -n "$OPT_AG" ]; then
-  AG="$( which ag 2>/dev/null )"
+  AG="$( type -p ag 2>/dev/null )"
   if [ -z "$AG" ]; then
     warning "ag is not found. ignore option: $OPT_AG"
     unset OPT_AG
@@ -2284,7 +2407,7 @@ function apt-cyg-install ()
     
     # look for package and save desc file
     
-    mkdir -p "release/$pkg"
+    mkdirp "release/$pkg"
     awk > "release/$pkg/desc" -v package="$pkg" \
       'BEGIN{RS="\n\n@ "; FS="\n"} {if ($1 == package) {desc = $0; px++}} \
        END {if (px == 1 && desc != "") print desc; else print "Package not found"}' \
@@ -2309,7 +2432,7 @@ function apt-cyg-install ()
     
     local file="$(basename "$install")"
     cd "release/$pkg"
-    "${WGET[@]}" -Nc $mirror/$install
+    wget -Nc $mirror/$install
     
     # check the SHA512 hash
     local digest="$(awk '/^install: / { print $4; exit }' "desc")"
@@ -2431,5 +2554,4 @@ function invoke_subcommand ()
           "\nNote that some functions, which require access to current directory, will be failed."
 }
 
-proxy_setup
 invoke_subcommand "$SUBCOMMAND" "${ARGS[@]}"

@@ -33,6 +33,7 @@ Usage
 | `completion-uninstall` |  to uninstall completion. |
 | `mirrors-list` |  to show list of mirrors. |
 | `mirrors-list-long` |  to show list of mirros with full details. |
+| `mirrors-list-online` |  to show list of mirrors from online. |
 | `benchmark-mirrors <urls> ...` |  to benchmark mirrors. |
 | `benchmark-parallel-mirrors <urls> ...` |  to benchmark mirrors in parallel. |
 | `benchmark-parallel-mirrors-list` |  to benchmark mirrors-list in parallel. |
