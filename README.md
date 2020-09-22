@@ -46,7 +46,7 @@ Usage
 | `packages-total-size [<pattern of section>]` |  count size of total packages from setup.ini |
 | `packages-cached-count` |  count number of cached packages in cache/mirrordir. |
 | `packages-cached-size` |  count size of cached packages in cache/mirrordir. |
-| `repair-acl` |  repair the windows ACL (Access Control List). |
+| `repair-acl` |  to repair the windows ACL (Access Control List). |
 | `source <package names> ...` |  download source archive. |
 | `download <package names> ...` |  download the binary package into the current directory. |
 | `mirror <package names> ...` |  download the binary package into the current cache/mirrordir as mirror. |
@@ -71,7 +71,7 @@ Usage
 | Option | Description |
 |:------ |:----------- |
 | `--ag` | use the silver searcher (currently work only at packageof subcommand) |
-| `--charch <arch>` | change archetecture |
+| `--charch <arch>` | change architecture |
 | `--ignore-case`, `-i` | ignore case distinctions for `<patterns>` |
 | `--force-remove` | force remove
 | `--force-fetch-trustedkeys` | force fetch trustedkeys |

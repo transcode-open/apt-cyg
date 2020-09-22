@@ -248,7 +248,7 @@ function usage()
 	Options:
 	  --ag                     : use the silver searcher
 	                             (currently work only at packageof subcommand)
-	  --charch <arch>          : change archetecture
+	  --charch <arch>          : change architecture
 	  --ignore-case, -i        : ignore case distinctions for <patterns>
 	  --force-remove           : force remove
 	  --force-fetch-trustedkeys :
