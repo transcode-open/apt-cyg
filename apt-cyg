@@ -669,7 +669,7 @@ function charch ()
 
 function init_gnupg ()
 {
-  [ -z "$GPG" ] && return
+  [ -z "$GPG" -o -n "$no_verify" ] && return
   export GNUPGHOME="$cache/.apt-cyg"
   if [ ! -d "$GNUPGHOME" ]; then
     if ! { mkdir -p "$GNUPGHOME" && chmod 700 "$GNUPGHOME"; } then
@@ -809,7 +809,7 @@ function get_gpg_fingerprint_to_assoc () # <assoc varname>
 
 function fetch_trustedkeys ()
 {
-  [ -z "$GPG" ] && return
+  [ -z "$GPG" -o -n "$no_verify" ] && return
   local i
   local FILE       ; mktmpfn -v FILE
   local FILE_LATEST; mktmpfn -v FILE_LATEST
@@ -1617,7 +1617,7 @@ function apt-cyg-update-setup ()
 
 function apt-cyg-setup ()
 {
-  pushd "$(apt-cyg pathof cache)" > /dev/null
+  pushd "$(apt-cyg-pathof cache)" > /dev/null
   
   local setup=( "$PWD/${SETUP_EXE}" -R "$(cygpath -wa /)" "$@" )
   
@@ -1656,7 +1656,7 @@ function apt-cyg-dist-upgrade ()
 
 function apt-cyg-packages-total-count ()
 {
-  grep ^@ <"$(apt-cyg pathof setup.ini)" | wc -l
+  grep ^@ <"$(apt-cyg-pathof setup.ini)" | wc -l
 }
 
 # Usage: apt-cyg-packages-total-size [pattern_of_section]
@@ -1670,19 +1670,19 @@ function apt-cyg-packages-total-size ()
     match($0,/^\[([ -~]*)\] *$/,m) {section = m[1]}
     match(section, SECTION) && $1 == "install:" {sum += $3}
     END {print sum}
-  ' "$(apt-cyg pathof setup.ini)"
+  ' "$(apt-cyg-pathof setup.ini)"
 }
 
 function apt-cyg-packages-cached-count ()
 {
-  pushd "$(apt-cyg pathof cache/mirrordir)" > /dev/null
+  pushd "$(apt-cyg-pathof cache/mirrordir)" > /dev/null
   find . -type f | grep tar | wc -l
   popd > /dev/null
 }
 
 function apt-cyg-packages-cached-size ()
 {
-  pushd "$(apt-cyg pathof cache/mirrordir)" > /dev/null
+  pushd "$(apt-cyg-pathof cache/mirrordir)" > /dev/null
   find . -type f -iname '*tar*' -exec ls -l {} + \
   | awk '{sum+=$5}END{print sum}'
   popd > /dev/null
@@ -1787,7 +1787,7 @@ function download_packages () #= pos section type [package_names ...]
   here)
     ;;
   mirror)
-    cd "$(apt-cyg pathof cache/mirrordir)"
+    cd "$(apt-cyg-pathof cache/mirrordir)"
     ;;
   *)
     error "unknown param: $pos"
@@ -1795,7 +1795,7 @@ function download_packages () #= pos section type [package_names ...]
     ;;
   esac
   
-  local mirror="$(apt-cyg pathof mirror)"
+  local mirror="$(apt-cyg-pathof mirror)"
   local line
   local pkgs="$(get_archives_list "$section" "$type" "$@")"
   local total="$(echo "$pkgs" | awk '{sum+=$2}END{print sum;}')"
