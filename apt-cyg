@@ -212,13 +212,18 @@ function usage()
 	                             in cache/mirrordir.
 	  repair-acl               : repair acl.
 	  source <package names> ... :
- 	                             download source archive.
+	                             download source archive.
+	  mirror-source <package names> ... :
+	                             download the source package
+	                             into the current cache/mirrordir as mirror.
 	  download <package names> ... :
 	                             download the binary package
 	                             into the current directory.
 	  mirror <package names> ... :
 	                             download the binary package
 	                             into the current cache/mirrordir as mirror.
+	  web <package names> ... :
+	                             Open web pages of packages.
 	  listfiles [<package names> ...] :
 	                             List files 'owned' by package(s).
 	  get-proxy                : Get proxies for eval.
@@ -1797,12 +1802,12 @@ function download_packages () #= pos section type [package_names ...]
   esac
   
   local mirror="$(apt-cyg-pathof mirror)"
-  local line
-  local pkgs="$(get_archives_list "$section" "$type" "$@")"
-  local total="$(echo "$pkgs" | awk '{sum+=$2}END{print sum;}')"
-  local n="$(echo "$pkgs" | wc -l)"
+  local pkgs; readarray -t pkgs < <(get_archives_list "$section" "$type" "$@")
+  local total="$(printf "%s\n" "${pkgs[@]}" | awk '{sum+=$2}END{print sum;}')"
+  local n=${#pkgs[@]}
   echo "$n packages, total $total bytes will be downloaded."
-  echo "$pkgs" | while read line; do
+  local line reply=()
+  for line in "${pkgs[@]}"; do
     local tmp=( $line )
     local path="${tmp[0]%/*}/"
     local file="${tmp[0]##*/}"
@@ -1816,14 +1821,22 @@ function download_packages () #= pos section type [package_names ...]
     wget -N "$url"
     if ! hash_check <<<"${digest} *${file}" ; then
       error "hash did not match: $file"
+    else
+      reply+=( "$(cygpath -a "$file" )" )
     fi
     [ "$pos" = "mirror" ] && popd
   done
+  REPLY=( "${reply[@]}" )
 }
 
 function apt-cyg-source ()
 {
   download_packages here curr source "$@"
+}
+
+function apt-cyg-mirror-source ()
+{
+  download_packages mirror curr source "$@"
 }
 
 function apt-cyg-download ()
@@ -1834,6 +1847,34 @@ function apt-cyg-download ()
 function apt-cyg-mirror ()
 {
   download_packages mirror curr install "$@"
+}
+
+function apt-cyg-web ()
+{
+  apt-cyg-mirror-source "$@"
+  declare -p REPLY
+
+  local source sources=( "${REPLY[@]}" )
+
+  for source in "${sources[@]}"; do
+    local PN="${source##*/}";PN="${PN%%-[0-9]*}"
+    local cygport cygports=()
+    readarray -t cygports < <(tar tf "$source" | grep '\.cygport$')
+    for cygport in "${cygports[@]}"; do
+      local url
+      read url < <(
+        tar xf "$source" "$cygport" -O \
+        | grep -E '^HOMEPAGE=' \
+        | sed -E "s/HOMEPAGE=(.*?)\s*/\1/g;s/[\"']+//g;s/\\$\\{PN\\}/$PN/g" \
+        )
+      if [[ "$url" =~ ^https?:// ]]; then
+        echo "Open: $url"
+        cygstart "$url"
+      else
+        error "Invalid URL: $url"
+      fi
+    done
+  done
 }
 
 function apt-cyg-listfiles () # [<package names> ...]
