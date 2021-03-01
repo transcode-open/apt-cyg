@@ -244,7 +244,7 @@ function usage()
 	  time [<internal_function> [<args> ...]] :
 	                             Report time consumed
 	                             to call internal function in apt-cyg.
-	  filelist [<package>]     : File list line apt-file list.
+	  filelist [<package>]     : File list like apt-file list.
 	  filesearch [<pattern>]   : File search like apt-file search.
 	Options:
 	  --ag                     : use the silver searcher
