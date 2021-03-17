@@ -1852,7 +1852,6 @@ function apt-cyg-mirror ()
 function apt-cyg-web ()
 {
   apt-cyg-mirror-source "$@"
-  declare -p REPLY
 
   local source sources=( "${REPLY[@]}" )
 
@@ -1860,12 +1859,15 @@ function apt-cyg-web ()
     local PN="${source##*/}";PN="${PN%%-[0-9]*}"
     local cygport cygports=()
     readarray -t cygports < <(tar tf "$source" | grep '\.cygport$')
+    if (( ${#cygport} <= 0 )); then
+      readarray -t cygports < <(tar tf "$source" | grep '\.patch$')
+    fi
     for cygport in "${cygports[@]}"; do
       local url
       read url < <(
         tar xf "$source" "$cygport" -O \
-        | grep -E '^HOMEPAGE=' \
-        | sed -E "s/HOMEPAGE=(.*?)\s*/\1/g;s/[\"']+//g;s/\\$\\{PN\\}/$PN/g" \
+        | grep -E '^\+?HOMEPAGE=' \
+        | sed -E "s/\+?HOMEPAGE=(.*?)\s*/\1/g;s/[\"']+//g;s/\\$\\{PN\\}/$PN/g" \
         )
       if [[ "$url" =~ ^https?:// ]]; then
         echo "Open: $url"
