@@ -48,8 +48,11 @@ Usage
 | `packages-cached-size` |  count size of cached packages in cache/mirrordir. |
 | `repair-acl` |  to repair the windows ACL (Access Control List). |
 | `source <package names> ...` |  download source archive. |
+| `mirror-source <package names> ...` | download the source package into the current cache/mirrordir as mirror. |
 | `download <package names> ...` |  download the binary package into the current directory. |
 | `mirror <package names> ...` |  download the binary package into the current cache/mirrordir as mirror. |
+| `homepage [<package names> ...]` | Open homepages of packages. |
+| `web [<package names> ...]` | Synonym for `homepage`. |
 | `listfiles <package names> ...` |  List files 'owned' by package(s). |
 | `get-proxy` |  Get proxies for eval. |
 | `ls-categories` |  List categories. |
