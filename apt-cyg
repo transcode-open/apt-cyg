@@ -75,6 +75,14 @@ function abort () #= [EXITCODE=1 [CALLSTACKSKIP=0]]
   exit "${1:-1}"
 }
 
+function assert_command_exists () #= [COMMAND ...]
+{
+  local command
+  for command in $@; do
+    hash $command 2>/dev/null || { error "Required command [$command] not found."; exit 1; }
+  done
+}
+
 function dump_callstack () #= [N=1]
 #? N is a depth to skip the callstack.
 #? $CALLSTACK_SKIP is depth to skip the callstack too.
@@ -2561,6 +2569,7 @@ function invoke_subcommand ()
   local ARGS=( "${@:2}" )
   local ACTION="apt-cyg-${SUBCOMMAND:-help}"
   if type "$ACTION" >& /dev/null; then
+    assert_command_exists iconv
     "$ACTION" "${ARGS[@]}"
   else
     error "unknown subcommand: $SUBCOMMAND"
