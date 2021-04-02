@@ -222,8 +222,10 @@ function usage()
 	  mirror <package names> ... :
 	                             download the binary package
 	                             into the current cache/mirrordir as mirror.
-	  web <package names> ... :
-	                             Open web pages of packages.
+	  homepage [<package names> ...] :
+	                             Open homepages of packages.
+	  web [<package names> ...] :
+	                             Synonym for `homepage`.
 	  listfiles [<package names> ...] :
 	                             List files 'owned' by package(s).
 	  get-proxy                : Get proxies for eval.
@@ -1849,7 +1851,8 @@ function apt-cyg-mirror ()
   download_packages mirror curr install "$@"
 }
 
-function apt-cyg-web ()
+function apt-cyg-homepage () # [<package names> ...]
+#   Open homepages of packages. 
 {
   apt-cyg-mirror-source "$@"
 
@@ -1877,6 +1880,12 @@ function apt-cyg-web ()
       fi
     done
   done
+}
+
+function apt-cyg-web () # [<package names> ...]
+#   Synonym for `homepage`.
+{
+  apt-cyg-homepage "$@"
 }
 
 function apt-cyg-listfiles () # [<package names> ...]
