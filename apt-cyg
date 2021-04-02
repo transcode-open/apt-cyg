@@ -1859,7 +1859,7 @@ function apt-cyg-web ()
     local PN="${source##*/}";PN="${PN%%-[0-9]*}"
     local cygport cygports=()
     readarray -t cygports < <(tar tf "$source" | grep '\.cygport$')
-    if (( ${#cygport} <= 0 )); then
+    if (( ${#cygports} <= 0 )); then
       readarray -t cygports < <(tar tf "$source" | grep '\.patch$')
     fi
     for cygport in "${cygports[@]}"; do
