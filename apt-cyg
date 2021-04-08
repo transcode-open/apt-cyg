@@ -233,7 +233,7 @@ function usage()
 	  homepage [<package names> ...] :
 	                             Open homepages of packages.
 	  web [<package names> ...] :
-	                             Synonym for `homepage`.
+	                             Synonym for homepage.
 	  listfiles [<package names> ...] :
 	                             List files 'owned' by package(s).
 	  get-proxy                : Get proxies for eval.
