@@ -1989,7 +1989,7 @@ function apt-cyg-filelist () # [<package>]
   )
   if (( ${#list_rel_urls[@]} )); then
     wget -qO- "https://cygwin.com/packages/${list_rel_urls[-1]}" \
-    | awk '/^<pre>$/,/^<\/pre>$/' | tail -n+2 | head -n-1 \
+    | awk '/<pre>$/,/^<\/pre>/' | tail -n+2 | head -n-1 \
     | awk -vpkg="$1" '$0=pkg": /"$4'
   fi
 }
