@@ -104,7 +104,7 @@ Requirements
 
 `apt-cyg` requires the Cygwin default environment and the additional *Cygwin* packages:
 
-`wget`, `ca-certificates`, `gnupg`
+`wget`, `ca-certificates`, `gnupg`, `iconv`
 
 In **32bit** version of cygwin, `wget` requires an additional setting for the `ca-certificates` package.
 Choose one of below settings.
