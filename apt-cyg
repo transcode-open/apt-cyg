@@ -75,6 +75,9 @@ OPERATIONS
     This will search each package in the master package list (setup.ini) for
     names that match regexp.
 
+  listcategories
+    List all package categories.
+
   category
     Display all packages that are members of a named category.
 
@@ -237,6 +240,11 @@ function apt-listall {
     let sbq++ && echo
     awk '$1~pkg && $0=$1' RS='\n\n@ ' FS='\n' pkg="$pkg" setup.ini
   done
+}
+
+function apt-listcategories {
+  find-workspace
+  grep '^category: ' setup.ini | cut -c 11- | sort -u
 }
 
 function apt-listfiles {
@@ -643,7 +651,7 @@ do
       shift
     ;;
 
-    list | cache  | remove | depends | listall  | download | listfiles |\
+    list | cache  | remove | depends | listall  | download | listfiles | listcategories |\
     show | mirror | search | install | category | rdepends | searchall )
       if [[ $command ]]
       then
