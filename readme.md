@@ -43,6 +43,9 @@ listall
   This will search each package in the master package list (setup.ini) for
   names that match regexp.
 
+listcategories
+  List all package categories.
+
 category
   Display all packages that are members of a named category.
 
