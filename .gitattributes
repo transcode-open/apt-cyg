@@ -1,0 +1,2 @@
+# Configure Unix line endings even on Windows
+* text eol=lf
