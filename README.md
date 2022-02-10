@@ -51,8 +51,9 @@ Usage
 | `mirror-source <package names> ...` | download the source package into the current cache/mirrordir as mirror. |
 | `download <package names> ...` |  download the binary package into the current directory. |
 | `mirror <package names> ...` |  download the binary package into the current cache/mirrordir as mirror. |
-| `homepage [<package names> ...]` | Open homepages of packages. |
-| `web [<package names> ...]` | Synonym for `homepage`. |
+| `browse-homepage-with-mirror-source [<package names> ...]` | Browse homepages of packages with mirror-source. |
+| `browse-homepage [<package names> ...]` | Browse homepages of packages. |
+| `browse-summary [<package names> ...]` | Browse summaries of packages. |
 | `listfiles <package names> ...` |  List files 'owned' by package(s). |
 | `get-proxy` |  Get proxies for eval. |
 | `ls-categories` |  List categories. |

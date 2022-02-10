@@ -230,10 +230,12 @@ function usage()
 	  mirror <package names> ... :
 	                             download the binary package
 	                             into the current cache/mirrordir as mirror.
-	  homepage [<package names> ...] :
-	                             Open homepages of packages.
-	  web [<package names> ...] :
-	                             Synonym for homepage.
+	  browse-homepage-with-mirror-source [<package names> ...] :
+	                             Browse homepages of packages with mirror-source.
+	  browse-homepage [<package names> ...] :
+	                             Browse homepages of packages.
+	  browse-summary [<package names> ...] :
+	                             Browse summaries of packages.
 	  listfiles [<package names> ...] :
 	                             List files 'owned' by package(s).
 	  get-proxy                : Get proxies for eval.
@@ -1859,8 +1861,8 @@ function apt-cyg-mirror ()
   download_packages mirror curr install "$@"
 }
 
-function apt-cyg-homepage () # [<package names> ...]
-#   Open homepages of packages. 
+function apt-cyg-browse-homepage-with-mirror-source () # [<package names> ...]
+#   Browse homepages of packages with mirror-source. 
 {
   apt-cyg-mirror-source "$@"
 
@@ -1890,10 +1892,39 @@ function apt-cyg-homepage () # [<package names> ...]
   done
 }
 
-function apt-cyg-web () # [<package names> ...]
-#   Synonym for `homepage`.
+function apt-cyg-browse-homepage () # [<package name> ...]
+#   Browse homepages of packages.
 {
-  apt-cyg-homepage "$@"
+  local basepath="cygwin.com/packages/summary/"
+  local pkg summary_path srcsummary_path homepage_url
+
+  pushd "$(apt-cyg-pathof cache)" > /dev/null
+  for pkg; do
+    summary_path="${basepath}${pkg}.html"
+    [ -e "$summary_path" ] || wget -q -N -x "https://$summary_path"
+    read srcsummary_path < <(
+      cat "$summary_path" \
+      | grep "source package" \
+      | sed -E 's@.*\shref="([^"]+)".*@'"${basepath}"'\1@g'
+      )
+    [ -e "$srcsummary_path" ] || wget -q -N -x "https://$srcsummary_path"
+    read homepage_url < <(
+      cat "$srcsummary_path" \
+      | grep "homepage" \
+      | sed -E 's/.*\shref="([^"]+)".*/\1/g'
+      )
+    cygstart "$homepage_url"
+  done
+  popd
+}
+
+function apt-cyg-browse-summary () # [<package names> ...]
+#   Browse summaries of packages.
+{
+  local pkg
+  for pkg; do
+    cygstart "https://cygwin.com/packages/summary/${pkg}.html"
+  done
 }
 
 function apt-cyg-listfiles () # [<package names> ...]
