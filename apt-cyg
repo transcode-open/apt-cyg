@@ -616,14 +616,17 @@ function setupini_download ()
   [ $noscripts -ne 0 -o $noupdate -ne 0 ] && return
   
   pushd "$BASEDIR" > /dev/null
-  files_backup setup.ini setup.ini.sig setup.bz2 setup.bz2.sig
+  files_backup setup.{zst,xz,bz2,ini}{,.sig}
   
   while true; do
     verbose 1 "Updating setup.ini"
-    download_and_verify "$mirror/$arch/setup.bz2" && { bunzip2 -k setup.bz2 && mv setup setup.ini || rm -f setup.bz2; }
+    false \
+    || { download_and_verify "$mirror/$arch/setup.zst" && { zstd  -dfkq setup.zst && mv setup setup.ini || rm -f setup.zst; }; } \
+    || { download_and_verify "$mirror/$arch/setup.xz"  && { xz    -dfk  setup.xz  && mv setup setup.ini || rm -f setup.xz;  }; } \
+    || { download_and_verify "$mirror/$arch/setup.bz2" && { bzip2 -dfk  setup.bz2 && mv setup setup.ini || rm -f setup.bz2; }; }
     download_and_verify "$mirror/$arch/setup.ini" || break
     
-    files_backup_clean setup.ini setup.ini.sig setup.bz2 setup.bz2.sig
+    files_backup_clean setup.{zst,xz,bz2,ini}{,.sig}
     popd > /dev/null
     verbose 1 "Updated setup.ini"
     return
