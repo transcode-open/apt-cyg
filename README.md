@@ -76,7 +76,6 @@ Usage
 | Option | Description |
 |:------ |:----------- |
 | `--ag` | use the silver searcher (currently work only at packageof subcommand) |
-| `--charch <arch>` | change architecture |
 | `--ignore-case`, `-i` | ignore case distinctions for `<patterns>` |
 | `--force-remove` | force remove
 | `--force-fetch-trustedkeys` | force fetch trustedkeys |
@@ -156,18 +155,6 @@ Note that all of running tasks on the cygwin will be killed before starting dist
 After the middle of 2015-03, the cygwin project changed the hash algorithm for checking tarball from md5 to sha512.
 But, as of 2015-04-09, the cygwinports project seems still using md5.
 This fork is available for both of cygwin and cygwinports by supporting algorithm of md5, sha1, sha224, sha256 and sha512.
-
-### True multi-architecture support
-
-Let think a case that you want to install the x86 package when you are working under the x86_64 environment.
-For example:
-
-    apt-cyg --charch x86 install chere
-
-As of 2013-10-26, chere package is provided for only the repository for x86.
-
-Remarks:
-Of course, you must install both environments of x86_64 and x86, beforehand.
 
 ### Signature check and key management by GnuPG
 

@@ -266,7 +266,6 @@ function usage()
 	Options:
 	  --ag                     : use the silver searcher
 	                             (currently work only at packageof subcommand)
-	  --charch <arch>          : change architecture
 	  --ignore-case, -i        : ignore case distinctions for <patterns>
 	  --force-remove           : force remove
 	  --force-fetch-trustedkeys :
@@ -652,36 +651,6 @@ function checkpackages()
   if [ $# -eq 0 ]; then
     echo Nothing to do, exiting
     exit 0
-  fi
-}
-
-# Usage: getrootdir arch
-function getrootdir ()
-{
-  case "$1" in
-    x86)
-      cygpath -u "$(< /proc/registry32/HKEY_LOCAL_MACHINE/SOFTWARE/Cygwin/setup/rootdir)" ;;
-    x86_64)
-      cygpath -u "$(< /proc/registry64/HKEY_LOCAL_MACHINE/SOFTWARE/Cygwin/setup/rootdir)" ;;
-    *)
-      error "unknown arch: $1" ;;
-  esac
-}
-
-# Usage: charch arch apt-cyg_parms ...
-function charch ()
-{
-  local rootdir
-  if [ "$(current_cygarch)" != "$1" ]; then
-    echo -e "${SGR_fg_green}${SGR_bold}charch to:${SGR_reset} $1"
-    rootdir="$(getrootdir "$1")"
-    shift
-    chroot "$rootdir" "$rootdir/bin/bash" -lc \
-      'cd "$1"; shift ; "$0" "$@"' \
-      "$(type -p "$0" | xargs cygpath -aml | xargs cygpath -u)" \
-      "$(pwd          | xargs cygpath -aml | xargs cygpath -u)" \
-      "$@"
-    exit $?
   fi
 }
 
@@ -1398,9 +1367,6 @@ function __apt-cyg ()
       ;;
   esac
   case "$prev" in
-    --charch)
-      COMPREPLY=( x86 x86_64 )
-      ;;
     --cache|-c)
       readarray -t COMPREPLY < <(compgen -d -- "$cur")
       ;;
@@ -2204,11 +2170,6 @@ function parse_args ()
         shift
         ;;
       
-      --charch)
-        OPT_CHARCH="$2"
-        shift 2 || break
-        ;;
-      
       --use-setuprc)
         warning "Ignore --use-setuprc. This option was removed with issue-24."
         shift
@@ -2394,8 +2355,6 @@ parse_args "$@"
 
 : ${OPT_VERBOSE_LEVEL:=$VERBOSE}
 VERBOSE=$OPT_VERBOSE_LEVEL
-
-[ -n "$OPT_CHARCH" ] && charch "$OPT_CHARCH" "${INITIAL_ARGS[@]}"
 
 [ "${#OPT_MIRROR[@]}" -gt 0 ] && apt-cyg-set-mirror "${OPT_MIRROR[@]}"
 [ "${#OPT_CACHE[@]}"  -gt 0 ] && apt-cyg-set-cache  "${OPT_CACHE}"
