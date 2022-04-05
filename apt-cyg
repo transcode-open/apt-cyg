@@ -1068,19 +1068,18 @@ function package_db-version_check ()
   [ -n "$PACKAGE_DB_VERSION_CHECK_DONE" ] && return
   
   local vernhdr='INSTALLED\.DB [0-9]+'
-  local line1="$(head -n1 "${PACKAGE_DB}")"
-  local verhdr=( $line1 )
-  local pkgname="${verhdr[0]}"
-  local dbver
-  [ "${verhdr[0]}" = "INSTALLED.DB" ] && dbver="${verhdr[1]}" || dbver="1"
+  local line1; read line1 < "${PACKAGE_DB}"
+  local dbver=1
   
-  if echo "$line1" | grep -Eqvx "${vernhdr}"; then
+  if [[ "$line1" =~ ^INSTALLED\.DB[[:space:]]+([0-9]+)$ ]]; then
+    dbver="${BASH_REMATCH[1]}"
+  else
     warning "${PACKAGE_DB} does not have version header. The first line is below:\n" \
             "$(head -n1 "${PACKAGE_DB}")\n"
     
     # The earlyer version of apt-cyg was not treat version header correctly.
     if grep -EHnx "${vernhdr}" "${PACKAGE_DB}" >&2; then
-      echo -e "The above line looks like version header, but it is not the first line.\n" >&2
+      echo "The above line looks like version header, but it is not the first line." >&2
     fi
   fi
   
@@ -1094,9 +1093,7 @@ function package_db-version_check ()
       echo "abort" >&2
       exit 1
     }
-  fi
-  
-  if (( 3 < dbver )); then
+  elif (( 3 < dbver )); then
     error "${PACKAGE_DB} has unknown version header.\n" \
           "Currently apt-cyg supports the DB of ver 3 or ealyer, but your DB is ver $dbver.\n"
     ask_user "Do you want to continue at your own risk?" >&2 && {
