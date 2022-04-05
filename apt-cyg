@@ -1089,7 +1089,7 @@ function package_db-list ()
   
   awk '
     NF == 3 {
-      version = gensub(/^(.*)\.(tgz|tbz|tbz2|tb2|taz|tz|tlz|txz|tar\.(gz|bz2|Z|lz|lzma|xz))$/, "\\1", 1, substr($2, length($1) + 2));
+      version = gensub(/^(.*)\.(tgz|tbz|tbz2|tb2|taz|tz|tlz|txz|tar\.(gz|bz2|Z|lz|lzma|xz|zst))$/, "\\1", 1, substr($2, length($1) + 2));
       printf("%s %s %s\n", $1, version, $3);
     }
   ' "${PACKAGE_DB}"
