@@ -157,10 +157,10 @@ TRUSTEDKEY_CYGWIN_URL_LATEST="https://cygwin.com/key/pubring.asc"
 
 # this script requires some packages
 
-WGET="$( type -p wget 2>/dev/null )"
-TAR="$(  type -p tar  2>/dev/null )"
-GAWK="$( type -p awk  2>/dev/null )"
-GPG="$(  type -p gpg  2>/dev/null || type -p gpg2  2>/dev/null )"
+read WGET < <( type -p wget 2>/dev/null )
+read TAR  < <( type -p tar  2>/dev/null )
+read GAWK < <( type -p awk  2>/dev/null )
+read GPG  < <( type -p gpg  2>/dev/null || type -p gpg2  2>/dev/null )
 if [ -z "$WGET" -o -z "$TAR" -o -z "$GAWK" ]; then
   echo You must install wget, tar and gawk to use apt-cyg.
   exit 1
@@ -266,7 +266,6 @@ function usage()
 	Options:
 	  --ag                     : use the silver searcher
 	                             (currently work only at packageof subcommand)
-	  --charch <arch>          : change architecture
 	  --ignore-case, -i        : ignore case distinctions for <patterns>
 	  --force-remove           : force remove
 	  --force-fetch-trustedkeys :
@@ -463,12 +462,6 @@ function is_official_mirrors_of_cygwin () # <mirrors> ...
   return $result
 }
 
-function current_cygarch ()
-{
-  local arch="${HOSTTYPE:-$(arch)}"
-  echo "${arch/i686/x86}"
-}
-
 function mirror_to_mirrordir () # <mirror>
 {
   local tmp="${1//:/%3a}"
@@ -560,7 +553,6 @@ function findworkspace()
 
     mirror="$last_mirror"
     cache="$(cygpath -au "$last_cache")"
-    arch="$(current_cygarch)"
     
     cache="${cache%/}"
     mirror="${mirror%/}"
@@ -624,14 +616,17 @@ function setupini_download ()
   [ $noscripts -ne 0 -o $noupdate -ne 0 ] && return
   
   pushd "$BASEDIR" > /dev/null
-  files_backup setup.ini setup.ini.sig setup.bz2 setup.bz2.sig
+  files_backup setup.{zst,xz,bz2,ini}{,.sig}
   
   while true; do
     verbose 1 "Updating setup.ini"
-    download_and_verify "$mirror/$arch/setup.bz2" && { bunzip2 -k setup.bz2 && mv setup setup.ini || rm -f setup.bz2; }
+    false \
+    || { download_and_verify "$mirror/$arch/setup.zst" && { zstd  -dfkq setup.zst && mv setup setup.ini || rm -f setup.zst; }; } \
+    || { download_and_verify "$mirror/$arch/setup.xz"  && { xz    -dfk  setup.xz  && mv setup setup.ini || rm -f setup.xz;  }; } \
+    || { download_and_verify "$mirror/$arch/setup.bz2" && { bzip2 -dfk  setup.bz2 && mv setup setup.ini || rm -f setup.bz2; }; }
     download_and_verify "$mirror/$arch/setup.ini" || break
     
-    files_backup_clean setup.ini setup.ini.sig setup.bz2 setup.bz2.sig
+    files_backup_clean setup.{zst,xz,bz2,ini}{,.sig}
     popd > /dev/null
     verbose 1 "Updated setup.ini"
     return
@@ -652,36 +647,6 @@ function checkpackages()
   if [ $# -eq 0 ]; then
     echo Nothing to do, exiting
     exit 0
-  fi
-}
-
-# Usage: getrootdir arch
-function getrootdir ()
-{
-  case "$1" in
-    x86)
-      cygpath -u "$(< /proc/registry32/HKEY_LOCAL_MACHINE/SOFTWARE/Cygwin/setup/rootdir)" ;;
-    x86_64)
-      cygpath -u "$(< /proc/registry64/HKEY_LOCAL_MACHINE/SOFTWARE/Cygwin/setup/rootdir)" ;;
-    *)
-      error "unknown arch: $1" ;;
-  esac
-}
-
-# Usage: charch arch apt-cyg_parms ...
-function charch ()
-{
-  local rootdir
-  if [ "$(current_cygarch)" != "$1" ]; then
-    echo -e "${SGR_fg_green}${SGR_bold}charch to:${SGR_reset} $1"
-    rootdir="$(getrootdir "$1")"
-    shift
-    chroot "$rootdir" "$rootdir/bin/bash" -lc \
-      'cd "$1"; shift ; "$0" "$@"' \
-      "$(type -p "$0" | xargs cygpath -aml | xargs cygpath -u)" \
-      "$(pwd          | xargs cygpath -aml | xargs cygpath -u)" \
-      "$@"
-    exit $?
   fi
 }
 
@@ -1068,19 +1033,18 @@ function package_db-version_check ()
   [ -n "$PACKAGE_DB_VERSION_CHECK_DONE" ] && return
   
   local vernhdr='INSTALLED\.DB [0-9]+'
-  local line1="$(head -n1 "${PACKAGE_DB}")"
-  local verhdr=( $line1 )
-  local pkgname="${verhdr[0]}"
-  local dbver
-  [ "${verhdr[0]}" = "INSTALLED.DB" ] && dbver="${verhdr[1]}" || dbver="1"
+  local line1; read line1 < "${PACKAGE_DB}"
+  local dbver=1
   
-  if echo "$line1" | grep -Eqvx "${vernhdr}"; then
+  if [[ "$line1" =~ ^INSTALLED\.DB[[:space:]]+([0-9]+)$ ]]; then
+    dbver="${BASH_REMATCH[1]}"
+  else
     warning "${PACKAGE_DB} does not have version header. The first line is below:\n" \
             "$(head -n1 "${PACKAGE_DB}")\n"
     
     # The earlyer version of apt-cyg was not treat version header correctly.
     if grep -EHnx "${vernhdr}" "${PACKAGE_DB}" >&2; then
-      echo -e "The above line looks like version header, but it is not the first line.\n" >&2
+      echo "The above line looks like version header, but it is not the first line." >&2
     fi
   fi
   
@@ -1094,9 +1058,7 @@ function package_db-version_check ()
       echo "abort" >&2
       exit 1
     }
-  fi
-  
-  if (( 3 < dbver )); then
+  elif (( 3 < dbver )); then
     error "${PACKAGE_DB} has unknown version header.\n" \
           "Currently apt-cyg supports the DB of ver 3 or ealyer, but your DB is ver $dbver.\n"
     ask_user "Do you want to continue at your own risk?" >&2 && {
@@ -1127,7 +1089,7 @@ function package_db-list ()
   
   awk '
     NF == 3 {
-      version = gensub(/^(.*)\.(tgz|tbz|tbz2|tb2|taz|tz|tlz|txz|tar\.(gz|bz2|Z|lz|lzma|xz))$/, "\\1", 1, substr($2, length($1) + 2));
+      version = gensub(/^(.*)\.(tgz|tbz|tbz2|tb2|taz|tz|tlz|txz|tar\.(gz|bz2|Z|lz|lzma|xz|zst))$/, "\\1", 1, substr($2, length($1) + 2));
       printf("%s %s %s\n", $1, version, $3);
     }
   ' "${PACKAGE_DB}"
@@ -1401,9 +1363,6 @@ function __apt-cyg ()
       ;;
   esac
   case "$prev" in
-    --charch)
-      COMPREPLY=( x86 x86_64 )
-      ;;
     --cache|-c)
       readarray -t COMPREPLY < <(compgen -d -- "$cur")
       ;;
@@ -1464,7 +1423,7 @@ function apt-cyg-benchmark-mirrors ()
 {
   local mirror result exitcode
   for mirror; do
-    result="$( { time wget -qO/dev/null -T3 -t 1 "${mirror%/}/$(current_cygarch)/setup.bz2"; } 2>&1 )"
+    result="$( { time wget -qO/dev/null -T3 -t 1 "${mirror%/}/$arch/setup.bz2"; } 2>&1 )"
     exitcode=$?
     if [ $exitcode -ne 0 ];then
       warning "benchmark failed with wget exitcode $exitcode: $(wget-exitstatus $exitcode): $1"
@@ -1654,7 +1613,7 @@ function apt-cyg-dist-upgrade-no-ask ()
   
   apt-cyg-update-setup
   cd /etc/setup
-  cygstart "$COMSPEC" /c 'ECHO Press any key to start dist-upgrade for cygwin '"$(current_cygarch)"' && PAUSE && START /WAIT '"${setup[@]}"' && ash -c "/bin/rebaseall -v" && ECHO dist-upgrade is finished && ECHO Press any key to exit && PAUSE' # '
+  cygstart "$COMSPEC" /c 'ECHO Press any key to start dist-upgrade for cygwin '"$arch"' && PAUSE && START /WAIT '"${setup[@]}"' && ash -c "/bin/rebaseall -v" && ECHO dist-upgrade is finished && ECHO Press any key to exit && PAUSE' # '
   kill_all_cygwin_process
   
   popd > /dev/null
@@ -2010,8 +1969,7 @@ function apt-cyg-time () # [<internal_function> [<args> ...]]
 function apt-cyg-filelist () # [<package>]
 #   File list like apt-file list
 {
-  local arch list_rel_urls
-  arch="$(current_cygarch)"
+  local list_rel_urls
   readarray -t list_rel_urls < <(
     wget -qO- "https://cygwin.com/packages/summary/${1}.html" \
     | grep -E '<a[^>]*>list of files</a>' \
@@ -2028,8 +1986,7 @@ function apt-cyg-filelist () # [<package>]
 function apt-cyg-filesearch () # [<pattern>]
 #   File search like apt-file search
 {
-  local arch cachedir cachefile cachequery columns line package packages url
-  arch="$(current_cygarch)"
+  local cachedir cachefile cachequery columns line package packages url
   cachedir="/tmp/.apt-cyg.cache/filesearch"
   cachequery="$cachedir/$(sha256sum <<<"$1"|awk '$0=$1')"
   mkdirp "$cachedir"
@@ -2177,6 +2134,7 @@ function apt-cyg-help ()
 
 # process options
 
+arch="${HOSTTYPE:-$(arch)}";arch="${arch/i686/x86}"
 apt_cyg_cachedir="${tmp:-/tmp}/.apt-cyg.cache"
 noscripts=0
 OPT_USER_PICKED=1
@@ -2190,7 +2148,7 @@ no_verify=""
 OPT_PROXY=${APT_CYG_PROXY:-auto}
 OPT_PROXY_REFRESH_INTERVAL=${APT_CYG_PROXY_REFRESH_INTERVAL:-86400} # 86400s = 1day
 OPTS4INHERIT=()
-SETUP_EXE="setup-$(current_cygarch).exe"
+SETUP_EXE="setup-$arch.exe"
 YES_TO_ALL=false
 INITIAL_ARGS=( "$@" )
 ARGS=()
@@ -2205,11 +2163,6 @@ function parse_args ()
       --ag)
         OPT_AG="$1"
         shift
-        ;;
-      
-      --charch)
-        OPT_CHARCH="$2"
-        shift 2 || break
         ;;
       
       --use-setuprc)
@@ -2398,8 +2351,6 @@ parse_args "$@"
 : ${OPT_VERBOSE_LEVEL:=$VERBOSE}
 VERBOSE=$OPT_VERBOSE_LEVEL
 
-[ -n "$OPT_CHARCH" ] && charch "$OPT_CHARCH" "${INITIAL_ARGS[@]}"
-
 [ "${#OPT_MIRROR[@]}" -gt 0 ] && apt-cyg-set-mirror "${OPT_MIRROR[@]}"
 [ "${#OPT_CACHE[@]}"  -gt 0 ] && apt-cyg-set-cache  "${OPT_CACHE}"
 
@@ -2419,7 +2370,7 @@ done
 update_verbosefor
 
 if [ -n "$OPT_AG" ]; then
-  AG="$( type -p ag 2>/dev/null )"
+  read AG < <( type -p ag 2>/dev/null )
   if [ -z "$AG" ]; then
     warning "ag is not found. ignore option: $OPT_AG"
     unset OPT_AG
