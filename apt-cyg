@@ -933,6 +933,7 @@ function upgrade-self-with-git ()
     warning "apt-cyg is not under the git version control."
     return 1
   fi
+  proxy_setup
   pushd "$SCRIPT_REALDIR" > /dev/null
   git pull -v
   popd > /dev/null
