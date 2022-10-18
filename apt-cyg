@@ -421,7 +421,7 @@ function comspec () # [<parameters> ...]
 # Call $COMSPEC.
 {
   init_comspec
-  PATH="$SYSTEMPATH" "${COMSPEC//\\//}" "$@"
+  PATH="$SYSTEMPATH" "$(cygpath "$COMSPEC")" "$@"
 }
 
 function cygstart () # [<parameters> ...]
