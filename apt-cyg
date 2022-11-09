@@ -1191,10 +1191,11 @@ function dep_check ()
       pkg = $2;
       available[pkg] = 1;
     }
-    $1 == "requires:" {
+    $1 == "requires:" || $1 == "depends2:" {
       for (req = 2; req <= NF; req++) {
-        dep["rdepends", $req, dep["rdepends", $req, "n"]++] = pkg;
-        dep["depends" , pkg , dep["depends" , pkg , "n"]++] = $req;
+        reqpkg = gensub(/,$/, "", "g", $req);
+        dep["rdepends", reqpkg, dep["rdepends", reqpkg, "n"]++] = pkg;
+        dep["depends" , pkg   , dep["depends" , pkg   , "n"]++] = reqpkg;
       }
     }
     END {
@@ -2516,7 +2517,7 @@ function apt-cyg-install ()
     
     # recursively install required packages
     
-    local requires="$(grep "^requires: " "release/$pkg/desc" | sed -re 's/^requires: *(.*[^ ]) */\1/g' -e 's/ +/ /g')"
+    local requires="$(grep -E "^(requires|depends2): " "release/$pkg/desc" | sed -re 's/^(requires|depends2): *(.*[^ ]) */\2/g' -e 's/,? +/ /g')"
     
     local warn=0
     if [ -n "$requires" ]; then
