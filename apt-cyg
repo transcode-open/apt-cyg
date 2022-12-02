@@ -25,6 +25,8 @@
 # THE SOFTWARE.
 # 
 
+shopt -s extglob
+
 # EMBED_BEGIN: hhs_embed
 
 (( 5 <= DEBUG )) && set -x
@@ -2557,11 +2559,12 @@ function apt-cyg-install ()
     
     # run all postinstall scripts
     
-    local pis="$(ls /etc/postinstall/*.sh 2>/dev/null | wc -l)"
     apt-cyg-repair-postinstall
-    if [ $pis -gt 0 -a $noscripts -ne 1 ]; then
+    
+    local postinstalls=( /etc/postinstall/*.?(da)sh )
+    if [ -e "$postinstalls" -a $noscripts -ne 1 ]; then
       verbose 0 "Running postinstall scripts"
-      for script in /etc/postinstall/*.sh; do
+      for script in "${postinstalls[@]}"; do
         $script \
         && [[ $script != /*/?p_* ]] \
         && mv $script $script.done
@@ -2604,8 +2607,8 @@ function apt-cyg-remove()
     # run preremove scripts
     
     local i postinstalls preremoves
-    readarray -t postinstalls < <(zgrep -E "^etc/postinstall/.*[.]sh$"    "/etc/setup/${pkg}.lst.gz" | awk '{print "/"$0}')
-    readarray -t preremoves   < <(zgrep -E "^etc/preremove/.*[.](da)?sh$" "/etc/setup/${pkg}.lst.gz" | awk '{print "/"$0}')
+    readarray -t postinstalls < <(zgrep -E "^etc/postinstall/.*[.](da)?sh$" "/etc/setup/${pkg}.lst.gz" | awk '{print "/"$0}')
+    readarray -t preremoves   < <(zgrep -E "^etc/preremove/.*[.](da)?sh$"   "/etc/setup/${pkg}.lst.gz" | awk '{print "/"$0}')
     for i in "${preremoves[@]}"; do
       verbose 0 "Running: ${i}"
       "${i}"
