@@ -219,6 +219,7 @@ function usage()
 	  packages-cached-size     : count size of cached packages
 	                             in cache/mirrordir.
 	  repair-acl               : repair acl.
+	  repair-postinstall       : Repair postinstall scripts.
 	  source <package names> ... :
 	                             download source archive.
 	  mirror-source <package names> ... :
@@ -1706,6 +1707,24 @@ function apt-cyg-repair-acl ()
   | cp2utf8
 }
 
+function apt-cyg-repair-postinstall ()
+# Repair postinstall scripts
+{
+  # Repair type p scripts that were marked "done" incorrectly. 
+  local i done_marked_p=( /etc/postinstall/[0_z]p_*.done )
+  [[ ! -e "$done_marked_p" ]] && return
+
+  verbose 0 -e "${SGR_fg_green}${SGR_bold}Repairing:${SGR_reset} type p postinstall scripts that were marked .done incorrectly."
+  for i in "${done_marked_p[@]}"; do
+    if [[ "$i" -ot "${i%.done}" ]]; then
+      rm -v "$i"
+    else
+      mv -v "$i" "${i%.done}"
+    fi
+  done
+  echo
+}
+
 function get_archives_list () #= section type [package_names ...]
 #? get archives list by format below:
 #?    path size digest
@@ -2538,11 +2557,13 @@ function apt-cyg-install ()
     # run all postinstall scripts
     
     local pis="$(ls /etc/postinstall/*.sh 2>/dev/null | wc -l)"
+    apt-cyg-repair-postinstall
     if [ $pis -gt 0 -a $noscripts -ne 1 ]; then
       verbose 0 "Running postinstall scripts"
       for script in /etc/postinstall/*.sh; do
-        $script
-        mv $script $script.done
+        $script \
+        && [[ $script != /*/?p_* ]] \
+        && mv $script $script.done
       done
     fi
     
