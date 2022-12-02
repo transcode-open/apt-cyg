@@ -47,6 +47,7 @@ Usage
 | `packages-cached-count` |  count number of cached packages in cache/mirrordir. |
 | `packages-cached-size` |  count size of cached packages in cache/mirrordir. |
 | `repair-acl` |  to repair the windows ACL (Access Control List). |
+| `repair-postinstall` | Repair postinstall scripts. |
 | `source <package names> ...` |  download source archive. |
 | `mirror-source <package names> ...` | download the source package into the current cache/mirrordir as mirror. |
 | `download <package names> ...` |  download the binary package into the current directory. |
