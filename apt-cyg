@@ -269,6 +269,9 @@ function usage()
 	Options:
 	  --ag                     : use the silver searcher
 	                             (currently work only at packageof subcommand)
+	  --benchmark-timeout <duration> :
+	                             Truncate items that take longer than <duration>
+	                             when benchmarking.
 	  --ignore-case, -i        : ignore case distinctions for <patterns>
 	  --force-remove           : force remove
 	  --force-fetch-trustedkeys :
@@ -1427,14 +1430,20 @@ function apt-cyg-mirrors-list-online ()
 function apt-cyg-benchmark-mirrors ()
 {
   local mirror result exitcode
+  local WGET=( wget )
+  [ -n "$OPT_BENCHMARK_TIMEOUT" ] && WGET=( timeout "$OPT_BENCHMARK_TIMEOUT" "${WGET[@]}" )
   for mirror; do
-    result="$( { time wget -qO/dev/null -T3 -t 1 "${mirror%/}/$arch/setup.bz2"; } 2>&1 )"
+    result="$( { time "${WGET[@]}" -qO/dev/null -T3 -t 1 "${mirror%/}/$arch/setup.bz2"; } 2>&1 )"
     exitcode=$?
     if [ $exitcode -ne 0 ];then
-      warning "benchmark failed with wget exitcode $exitcode: $(wget-exitstatus $exitcode): $1"
+      if [ $exitcode -eq 124 ]; then
+        echo -e "Timeout:\t${mirror}" >&2
+      else
+        warning "benchmark failed with wget exitcode $exitcode: $(wget-exitstatus $exitcode): $1"
+      fi
       continue
     fi
-    echo -e "$(echo "$result" | grep real | cut -f 2 | tr -d "\n")\t${mirror}"
+    [[ "$result" =~ real[^0-9]*([0-9]*m[0-9.]*s) ]] && echo -e "${BASH_REMATCH[1]}\t${mirror}"
   done
 }
 
@@ -2188,6 +2197,11 @@ function parse_args ()
         shift
         ;;
       
+      --benchmark-timeout)
+        OPT_BENCHMARK_TIMEOUT="$2"
+        shift 2 || break
+        ;;
+
       --use-setuprc)
         warning "Ignore --use-setuprc. This option was removed with issue-24."
         shift
