@@ -77,6 +77,7 @@ Usage
 | Option | Description |
 |:------ |:----------- |
 | `--ag` | use the silver searcher (currently work only at packageof subcommand) |
+| `--benchmark-timeout <duration>` | Truncate items that take longer than \<duration\> when benchmarking |
 | `--ignore-case`, `-i` | ignore case distinctions for `<patterns>` |
 | `--force-remove` | force remove
 | `--force-fetch-trustedkeys` | force fetch trustedkeys |
