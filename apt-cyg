@@ -162,7 +162,7 @@ TRUSTEDKEY_CYGWIN_URL_LATEST="https://cygwin.com/key/pubring.asc"
 read WGET < <( type -p wget 2>/dev/null )
 read TAR  < <( type -p tar  2>/dev/null )
 read GAWK < <( type -p awk  2>/dev/null )
-read GPG  < <( type -p gpg  2>/dev/null || type -p gpg2  2>/dev/null )
+read GPG  < <( type -p gpg2 2>/dev/null || type -p gpg   2>/dev/null )
 if [ -z "$WGET" -o -z "$TAR" -o -z "$GAWK" ]; then
   echo You must install wget, tar and gawk to use apt-cyg.
   exit 1
