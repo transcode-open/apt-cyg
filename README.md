@@ -21,7 +21,7 @@ Usage
 | `find <patterns>` |  to find packages matching patterns |
 | `describe <patterns>` |  to describe packages matching patterns |
 | `packageof <command or file names> ...` |  to locate parent packages |
-| `pathof {cache\|mirror\|mirrordir\|cache/mirrordir\|setup.ini}` |  to show path |
+| `pathof {cache\|mirror\|mirrordir\|cache/mirrordir\|setup.ini|lastmirror}` |  to show path |
 | `key-add <files> ...` |  to add keys contained in \<files\> |
 | `key-del <keyids> ...` |  to remove keys \<keyids\> |
 | `key-list` |  to list keys |
@@ -91,6 +91,7 @@ Usage
 | `--completion-disable-autoupdate` | disable completion autoupdate |
 | `--max-jobs`, `-j <n>` | Run \<n\> jobs in parallel |
 | `--mirror`, `-m <url>` | set mirror
+| `--mirror-index`, `-M <n>` | choose mirror from last-mirror list. \<n\> is 0-based index in last-mirror. |
 | `--cache`, `-c <dir>` | set cache |
 | `--file`, `-f <file>` | read package names from \<file\> |
 | `--noupdate`, `-u` | don't update setup.ini from mirror |
