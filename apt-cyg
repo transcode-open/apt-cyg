@@ -182,7 +182,7 @@ function usage()
 	  describe <patterns> ...  : to describe packages matching patterns
 	  packageof <command or file names> ... :
 	                             to locate parent packages
-	  pathof {cache|mirror|mirrordir|cache/mirrordir|setup.ini|lastmirror} :
+	  pathof {cache|mirror|mirros|mirrordir|cache/mirrordir|setup.ini} :
 	                             to show path
 	  key-add <files> ...      : to add keys contained in <files>
 	  key-del <keyids> ...     : to remove keys <keyids>
@@ -559,28 +559,21 @@ function findworkspace()
   load_vars_from_cache /etc/setup/setup.rc || {
     eval "$(setuprc_import_sections last-cache last-mirror)"
 
-    mirror="$last_mirror"
+    mirror=( "${last_mirror[@]}" )
     cache="$(cygpath -au "$last_cache")"
     
-    cache="${cache%/}"
-    mirror="${mirror%/}"
+    cache=( "${cache[@]/%*(\/)/}" )
+    mirror=( "${mirror[@]/%*(\/)/}" )
     
-    mirrordir="$(mirror_to_mirrordir "$mirror/")"
+    readarray -t mirrordir < <(mirror_to_mirrordir "${mirror[@]/%/\/}" )
 
     save_vars_to_cache "${cachevars[@]}"
   }
-  # apt-cyg-pathof suppresses output from fd 1 and fd 2,
-  # and fd 3 is duplicated from actual fd 2 for bypass.
-  # Other callers don't have fd 3, so check it and duplicate fd 2 to fd 3.
-  { exec 2>&3; } 2>/dev/null || exec 3>&2
   [ -z "$OPT_MIRROR_INDEX" ] || {
-    [[ $OPT_MIRROR_INDEX =~ ^[0-9]+$ ]] && \
-      (( 0 <= $OPT_MIRROR_INDEX && $OPT_MIRROR_INDEX < ${#last_mirror[@]} )) || \
-        { error "mirror index must be from 0 to $((${#last_mirror[@]}-1)), inclusive"; exit 1; }
-    mirror="${last_mirror[OPT_MIRROR_INDEX]}"
-    mirror="${mirror%/}"
-    mirrordir="$(mirror_to_mirrordir "$mirror/")"
-  } 2>&3
+    [[ $OPT_MIRROR_INDEX =~ ^[0-9]+$ ]] || { error "--mirror-index, -M <n> must be 0 <= n: n = $OPT_MIRROR_INDEX"; exit 1; }
+    mirror=( "${mirror[@]:OPT_MIRROR_INDEX:1}" "${mirror[@]:0:OPT_MIRROR_INDEX}" "${mirror[@]:OPT_MIRROR_INDEX+1}" )
+    readarray -t mirrordir < <(mirror_to_mirrordir "${mirror[@]/%/\/}" )
+  }
 
   verbose 1 "Cache directory is $cache"
   verbose 1 "Mirror is $mirror"
@@ -930,15 +923,15 @@ function apt-cyg-key-finger ()
 
 function apt-cyg-pathof ()
 {
-  findworkspace 3>&2 >& /dev/null
+  OPT_VERBOSE_LEVEL=0 findworkspace
   while [ "$#" -gt 0 ]; do
     case "$1" in
       cache)            echo "$cache" ;;
       mirror)           echo "$mirror" ;;
+      mirrors)          printf "%s/\n" "${mirror[@]}" ;;
       mirrordir)        echo "$mirrordir" ;;
       cache/mirrordir)  echo "$cache/$mirrordir" ;;
       setup.ini)        echo "$cache/$mirrordir/$arch/setup.ini" ;;
-      lastmirror)       echo "${last_mirror[@]}" ;;
       *)
         error "unknown parameter: $1"
         exit 1
@@ -1370,17 +1363,17 @@ function __apt-cyg ()
   
   getsubcmd=( apt-cyg --completion-get-subcommand $(echo "${COMP_LINE}" | sed -E 's/^[ \t]*[^ \t]+//g;s/[^ \t]+$//g') )
   subcmd="$( "${getsubcmd[@]}" )"
-  mirroridxopt=$(echo ${COMP_LINE} | awk 'BEGIN { RS=" " } /^-M|--mirror-index$/ { if(getline) printf "-M %s", $1 }')
+  mirroridxopt=( $(echo ${COMP_LINE} | awk 'BEGIN { RS=" " } /^-M|--mirror-index$/ { if(getline) printf "-M %s", $1 }') )
   
   case "$subcmd" in
     install|depends|rdepends|describe|find|category)
-      COMPREPLY=( $(awk '/^@ /{print $2}' "$(apt-cyg pathof ${mirroridxopt} setup.ini)") )
+      COMPREPLY=( $(awk '/^@ /{print $2}' "$(apt-cyg pathof "${mirroridxopt[@]}" setup.ini)") )
       ;;
     remove)
       COMPREPLY=( $(apt-cyg --no-header show 2>/dev/null | awk '$0=$1') )
       ;;
     pathof)
-      COMPREPLY=( cache mirror mirrordir cache/mirrordir setup.ini lastmirror )
+      COMPREPLY=( cache mirror mirrors mirrordir cache/mirrordir setup.ini )
       ;;
     *)
       COMPREPLY=( "${__APT_CYG_SUBCMDS[@]}" )
@@ -1400,7 +1393,7 @@ function __apt-cyg ()
       COMPREPLY=( auto inherit none http:// )
       ;;
     --mirror-index|-M)
-      COMPREPLY=( $(seq 0 $(($(apt-cyg pathof lastmirror | wc -w)-1))) )
+      COMPREPLY=( $(seq 0 $(($(apt-cyg pathof mirrors | wc -w)-1))) )
       ;;
     *)
       COMPREPLY+=( "${__APT_CYG_OPTIONS[@]}" )
