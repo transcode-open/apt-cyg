@@ -118,17 +118,6 @@ The MIT License (MIT)
 Copyright (c) 2005-9 Stephen Jungels
 "
 
-function wget {
-  if command wget -h &>/dev/null
-  then
-    command wget "$@"
-  else
-    warn wget is not installed, using lynx as fallback
-    set "${*: -1}"
-    lynx -source "$1" > "${1##*/}"
-  fi
-}
-
 function find-workspace {
   # default working directory and mirror
   
@@ -168,7 +157,7 @@ function find-workspace {
 function get-setup {
   touch setup.ini
   mv setup.ini setup.ini-save
-  wget -N $mirror/$arch/setup.bz2
+  curl --ssl-no-revoke -sRLO $mirror/$arch/setup.bz2
   if [ -e setup.bz2 ]
   then
     bunzip2 setup.bz2
@@ -388,7 +377,7 @@ function download {
   cd "$cache/$mirrordir/$dn"
   if ! test -e $bn || ! $hash -c <<< "$digest $bn"
   then
-    wget -O $bn $mirror/$dn/$bn
+    curl --ssl-no-revoke -sLo $bn $mirror/$dn/$bn
     $hash -c <<< "$digest $bn" || exit
   fi
 
@@ -424,7 +413,7 @@ function apt-searchall {
   for pkg in "${pks[@]}"
   do
     printf -v qs 'text=1&arch=%s&grep=%s' $arch "$pkg"
-    wget -O matches cygwin.com/cgi-bin2/package-grep.cgi?"$qs"
+    curl --ssl-no-revoke -sLo matches cygwin.com/cgi-bin2/package-grep.cgi?"$qs"
     awk '
     NR == 1 {next}
     mc[$1]++ {next}
@@ -488,7 +477,7 @@ function apt-install {
         echo Package $package is already installed, skipping
         continue
       fi
-      apt-cyg install --noscripts $package || (( wr++ ))
+      "$0" install --noscripts $package || (( wr++ ))
     done
   fi
   if (( wr ))
