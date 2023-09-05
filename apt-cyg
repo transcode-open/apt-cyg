@@ -157,7 +157,7 @@ function find-workspace {
 function get-setup {
   touch setup.ini
   mv setup.ini setup.ini-save
-  curl -sRLO $mirror/$arch/setup.bz2
+  curl --ssl-no-revoke -sRLO $mirror/$arch/setup.bz2
   if [ -e setup.bz2 ]
   then
     bunzip2 setup.bz2
@@ -377,7 +377,7 @@ function download {
   cd "$cache/$mirrordir/$dn"
   if ! test -e $bn || ! $hash -c <<< "$digest $bn"
   then
-    curl -sLo $bn $mirror/$dn/$bn
+    curl --ssl-no-revoke -sLo $bn $mirror/$dn/$bn
     $hash -c <<< "$digest $bn" || exit
   fi
 
@@ -413,7 +413,7 @@ function apt-searchall {
   for pkg in "${pks[@]}"
   do
     printf -v qs 'text=1&arch=%s&grep=%s' $arch "$pkg"
-    curl -sLo matches cygwin.com/cgi-bin2/package-grep.cgi?"$qs"
+    curl --ssl-no-revoke -sLo matches cygwin.com/cgi-bin2/package-grep.cgi?"$qs"
     awk '
     NR == 1 {next}
     mc[$1]++ {next}
