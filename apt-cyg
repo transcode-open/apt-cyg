@@ -77,14 +77,6 @@ function abort () #= [EXITCODE=1 [CALLSTACKSKIP=0]]
   exit "${1:-1}"
 }
 
-function assert_command_exists () #= [COMMAND ...]
-{
-  local command
-  for command in $@; do
-    hash $command 2>/dev/null || { error "Required command [$command] not found."; exit 1; }
-  done
-}
-
 function dump_callstack () #= [N=1]
 #? N is a depth to skip the callstack.
 #? $CALLSTACK_SKIP is depth to skip the callstack too.
@@ -159,12 +151,13 @@ TRUSTEDKEY_CYGWIN_URL_LATEST="https://cygwin.com/key/pubring.asc"
 
 # this script requires some packages
 
-read WGET < <( type -p wget 2>/dev/null )
-read TAR  < <( type -p tar  2>/dev/null )
-read GAWK < <( type -p awk  2>/dev/null )
-read GPG  < <( type -p gpg2 2>/dev/null || type -p gpg   2>/dev/null )
-if [ -z "$WGET" -o -z "$TAR" -o -z "$GAWK" ]; then
-  echo You must install wget, tar and gawk to use apt-cyg.
+read WGET  < <( type -p wget  2>/dev/null )
+read TAR   < <( type -p tar   2>/dev/null )
+read GAWK  < <( type -p awk   2>/dev/null )
+read ICONV < <( type -p iconv 2>/dev/null )
+read GPG   < <( type -p gpg2  2>/dev/null || type -p gpg   2>/dev/null )
+if [ -z "$WGET" -o -z "$TAR" -o -z "$GAWK" -o -z "$ICONV" ]; then
+  echo You must install wget, tar, gawk and libiconv to use apt-cyg.
   exit 1
 fi
 
@@ -2660,7 +2653,6 @@ function invoke_subcommand ()
   local ARGS=( "${@:2}" )
   local ACTION="apt-cyg-${SUBCOMMAND:-help}"
   if type "$ACTION" >& /dev/null; then
-    assert_command_exists iconv
     "$ACTION" "${ARGS[@]}"
   else
     error "unknown subcommand: $SUBCOMMAND"
